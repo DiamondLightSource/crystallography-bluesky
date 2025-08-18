@@ -9,10 +9,26 @@ classifiers = [
     "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
 ]
+
 description = "Bluesky plans, plan stubs, and utilities for crystallography beamlines"
-dependencies = [] # Add project dependencies here, e.g. ["click", "numpy"]
+dependencies = [
+    "ispyb",
+    "matplotlib",
+    "numpy >= 2.2.6",
+    "pydantic>=2.0",
+    "pyepics",
+    "requests",
+    "scanspec",
+    "scipy",
+    "deepdiff",
+    "matplotlib",
+    "blueapi >= 0.15.0",
+    "ophyd-async[ca,pva]>=0.13.0",
+    "bluesky >= 1.13.1",
+    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@main",
+]
+
 dynamic = ["version"]
 license.file = "LICENSE"
 readme = "README.md"
@@ -41,13 +57,16 @@ GitHub = "https://github.com/DiamondLightSource/crystallography-bluesky"
 email = "1576793+Mark-Booth@users.noreply.github.com"
 name = "Mark Booth"
 
+[[project.authors]]
+email = "Richard.Dixey@diamond.ac.uk"
+name = "Richard Dixey"
 
 [tool.setuptools_scm]
 version_file = "src/crystallography_bluesky/_version.py"
 
 [tool.pyright]
-typeCheckingMode = "strict"
-reportMissingImports = false # Ignore missing stubs in imported modules
+typeCheckingMode = "standard"
+reportMissingImports = false  # Ignore missing stubs in imported modules
 
 [tool.pytest.ini_options]
 # Run pytest with all our checkers, and don't spam us with massive tracebacks on error
