@@ -14,7 +14,7 @@ from dodal.utils import get_beamline_name
 from ophyd_async.core import DEFAULT_TIMEOUT, TriggerInfo
 from pydantic import NonNegativeFloat, NonNegativeInt, validate_call
 
-BL = get_beamline_name(os.environ("BEAMLINE"))  # type: ignore
+BL = get_beamline_name(os.environ.get("BEAMLINE"))
 
 DEFAULT_MYTHEN: Mythen3 = inject("mythen3")
 DEFAULT_AXIS: Motor = inject("diff_stage.delta")
