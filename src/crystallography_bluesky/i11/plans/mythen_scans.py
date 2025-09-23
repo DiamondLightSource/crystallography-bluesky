@@ -9,12 +9,11 @@ from dodal.common import inject
 from dodal.devices.i11.mythen import Mythen3
 from dodal.devices.motors import Motor
 from dodal.log import LOGGER
-from dodal.plan_stubs.data_session import attach_data_session_metadata_decorator
 from dodal.utils import get_beamline_name
 from ophyd_async.core import DEFAULT_TIMEOUT, TriggerInfo
 from pydantic import NonNegativeFloat, NonNegativeInt, validate_call
 
-BL = get_beamline_name(os.environ.get("BEAMLINE"))
+BL = get_beamline_name(os.environ.get("BEAMLINE")) #type: ignore
 
 DEFAULT_MYTHEN: Mythen3 = inject("mythen3")
 DEFAULT_AXIS: Motor = inject("diff_stage.delta")
@@ -34,10 +33,8 @@ def create_steps(
 
     return step_points
 
-
-@attach_data_session_metadata_decorator
-@bpp.run_decorator()  #    # open/close run
 @validate_call(config={"arbitrary_types_allowed": True})
+# @bpp.run_decorator()  #    # open/close run
 def mythen_scan(
     start: float | int,
     stop: float | int | None = None,
@@ -56,6 +53,7 @@ def mythen_scan(
     This is equivalent to the gda commands 'scan 1 3 0.5 mythen_nx 1'
     """
 
+    # step_points = create_steps(start, stop, step)
     step_points = create_steps(start, stop, step)
     number_of_images = len(step_points)
 
@@ -68,6 +66,7 @@ def mythen_scan(
     yield from bps.prepare(mythen, trigger_info, group="setup")
     yield from bps.wait(group="setup", timeout=DEFAULT_TIMEOUT)
 
-    yield from bsp.list_scan(
-        [mythen], (axis, step_points)
-    )  # contains the stage and unstage
+    # yield from bsp.list_scan(
+    #     [mythen], axis, step_points
+    # )  # contains the stage and unstage
+    yield from bsp.scan([mythen], axis, start, stop, number_of_images)
