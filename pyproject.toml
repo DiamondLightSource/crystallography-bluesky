@@ -46,6 +46,7 @@ dev = [
     "ruff",
     "tox-direct",
     "types-mock",
+    "pytest-asyncio",
 ]
 
 [project.scripts]
@@ -71,6 +72,8 @@ reportMissingImports = false  # Ignore missing stubs in imported modules
 
 [tool.pytest.ini_options]
 # Run pytest with all our checkers, and don't spam us with massive tracebacks on error
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 addopts = """
     --tb=native -vv
     """
@@ -78,6 +81,7 @@ addopts = """
 filterwarnings = "error"
 # Doctest python code in docs, python code in src docstrings, test functions in tests
 testpaths = "docs src tests"
+
 
 [tool.coverage.run]
 data_file = "/tmp/crystallography_bluesky.coverage"
