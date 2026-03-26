@@ -20,3 +20,11 @@ async def test_plan_loads_robot(robot: Robot):
 
     assert await robot.puck_sel.get_value() == 1
     assert await robot.pos_sel.get_value() == 2
+
+
+async def test_robot_load_plan_moves_cobra_and_blower_into_safe_position(robot: Robot):
+    RE = RunEngine()
+    RE(robot_load(1, 2, robot))
+
+    assert await robot.puck_sel.get_value() == 1
+    assert await robot.pos_sel.get_value() == 2
