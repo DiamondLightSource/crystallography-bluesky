@@ -26,5 +26,7 @@ def move_devices_to_safe_position(blower: Blower, cobra: Cobra):
     yield from bps.abs_set(
         blower.position, TemperatureControllerPosition.SAFE, group=group
     )
-    yield from bps.abs_set(cobra.position, True, group=group)
+    yield from bps.abs_set(
+        cobra.position, TemperatureControllerPosition.SAFE, group=group
+    )
     yield from bps.wait(group)
