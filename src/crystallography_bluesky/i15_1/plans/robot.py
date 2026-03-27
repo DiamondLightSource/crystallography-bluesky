@@ -23,7 +23,6 @@ def robot_load(
 
 def prepare_beamline_for_robot_load(blower: Blower, cobra: Cobra) -> MsgGenerator[None]:
     group = "safe_position_for_robot_load"
-    # Assuming they can move at the same time with no collision possibility?
     yield from bps.abs_set(blower, TemperatureControllerPosition.SAFE, group=group)
     yield from bps.abs_set(cobra, TemperatureControllerPosition.SAFE, group=group)
     yield from bps.wait(group)
@@ -31,7 +30,6 @@ def prepare_beamline_for_robot_load(blower: Blower, cobra: Cobra) -> MsgGenerato
 
 def move_devices_to_beam_position(blower: Blower, cobra: Cobra) -> MsgGenerator[None]:
     group = "safe_position_for_robot_load"
-    # Assuming they can move at the same time with no collision possibility?
-    yield from bps.abs_set(blower, TemperatureControllerPosition.SAFE, group=group)
-    yield from bps.abs_set(cobra, TemperatureControllerPosition.SAFE, group=group)
+    yield from bps.abs_set(blower, TemperatureControllerPosition.BEAM, group=group)
+    yield from bps.abs_set(cobra, TemperatureControllerPosition.BEAM, group=group)
     yield from bps.wait(group)
