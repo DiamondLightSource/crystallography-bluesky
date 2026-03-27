@@ -16,18 +16,22 @@ def robot_load(
     blower: Blower = inject("blower_y"),
     cobra: Cobra = inject("cobra"),
 ) -> MsgGenerator[None]:
-    yield from prepare_beamlne_for_robot_load(blower, cobra)
+    yield from prepare_beamline_for_robot_load(blower, cobra)
     sample = SampleLocation(puck, position)
     yield from bps.abs_set(robot, sample, wait=True)
 
 
-def prepare_beamlne_for_robot_load(blower: Blower, cobra: Cobra):
+def prepare_beamline_for_robot_load(blower: Blower, cobra: Cobra) -> MsgGenerator[None]:
     group = "safe_position_for_robot_load"
     # Assuming they can move at the same time with no collision possibility?
-    yield from bps.abs_set(
-        blower.position, TemperatureControllerPosition.SAFE, group=group
-    )
-    yield from bps.abs_set(
-        cobra.position, TemperatureControllerPosition.SAFE, group=group
-    )
+    yield from bps.abs_set(blower, TemperatureControllerPosition.SAFE, group=group)
+    yield from bps.abs_set(cobra, TemperatureControllerPosition.SAFE, group=group)
+    yield from bps.wait(group)
+
+
+def move_devices_to_beam_position(blower: Blower, cobra: Cobra) -> MsgGenerator[None]:
+    group = "safe_position_for_robot_load"
+    # Assuming they can move at the same time with no collision possibility?
+    yield from bps.abs_set(blower, TemperatureControllerPosition.SAFE, group=group)
+    yield from bps.abs_set(cobra, TemperatureControllerPosition.SAFE, group=group)
     yield from bps.wait(group)
