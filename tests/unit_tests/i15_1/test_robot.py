@@ -1,6 +1,7 @@
 import pytest
 from bluesky.run_engine import RunEngine
 from dodal.devices.beamlines.i15_1.robot import Robot
+from dodal.devices.hutch_shutter import HutchInterlock
 from ophyd_async.core import init_devices, set_mock_value
 
 from crystallography_bluesky.i15_1.plans import robot_load, robot_unload
@@ -14,20 +15,27 @@ async def robot() -> Robot:
     return robot
 
 
-async def test_plan_loads_robot(robot: Robot):
+@pytest.fixture
+async def hutch_interlock() -> HutchInterlock:
+    async with init_devices(mock=True):
+        hutch_interlock = HutchInterlock("", "")
+    return hutch_interlock
+
+
+async def test_plan_loads_robot(robot: Robot, hutch_interlock: HutchInterlock):
     RE = RunEngine()
-    RE(robot_load(1, 2, robot))
+    RE(robot_load(1, 2, robot, hutch_interlock))
 
     assert await robot.puck_sel.get_value() == 1
     assert await robot.pos_sel.get_value() == 2
 
 
-async def test_plan_unloads_robot(robot: Robot):
+async def test_plan_unloads_robot(robot: Robot, hutch_interlock: HutchInterlock):
     set_mock_value(robot.current_sample.puck, 1)
     set_mock_value(robot.current_sample.position, 2)
 
     RE = RunEngine()
-    RE(robot_unload(robot))
+    RE(robot_unload(robot, hutch_interlock))
 
     assert await robot.current_sample.puck.get_value() == 0
     assert await robot.current_sample.position.get_value() == 0
