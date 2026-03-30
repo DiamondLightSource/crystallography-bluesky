@@ -13,6 +13,8 @@ hutch_interlock = inject("hutch_interlock")
 
 HUTCH_SAFE_FOR_OPERATIONS = 0
 
+robot = inject("robot")
+
 
 def robot_load(
     puck: int,
