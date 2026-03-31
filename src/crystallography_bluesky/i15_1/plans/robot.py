@@ -4,8 +4,8 @@ from dodal.common import inject
 from dodal.devices.beamlines.i15_1.blower import Blower
 from dodal.devices.beamlines.i15_1.cobra import Cobra
 from dodal.devices.beamlines.i15_1.robot import Robot, SampleLocation
-from dodal.devices.beamlines.i15_1.temperature_controller import (
-    TemperatureControllerPosition,
+from dodal.devices.beamlines.i15_1.safe_or_beam_positioner import (
+    SafeOrBeamPosition,
 )
 
 
@@ -13,7 +13,7 @@ def robot_load(
     puck: int,
     position: int,
     robot: Robot = inject("robot"),
-    blower: Blower = inject("blower_y"),
+    blower: Blower = inject("blower_z"),
     cobra: Cobra = inject("cobra"),
 ) -> MsgGenerator[None]:
     yield from prepare_beamline_for_robot_load(blower, cobra)
@@ -23,13 +23,13 @@ def robot_load(
 
 def prepare_beamline_for_robot_load(blower: Blower, cobra: Cobra) -> MsgGenerator[None]:
     group = "safe_position_for_robot_load"
-    yield from bps.abs_set(blower, TemperatureControllerPosition.SAFE, group=group)
-    yield from bps.abs_set(cobra, TemperatureControllerPosition.SAFE, group=group)
+    yield from bps.abs_set(blower, SafeOrBeamPosition.SAFE, group=group)
+    yield from bps.abs_set(cobra, SafeOrBeamPosition.SAFE, group=group)
     yield from bps.wait(group)
 
 
 def move_devices_to_beam_position(blower: Blower, cobra: Cobra) -> MsgGenerator[None]:
     group = "safe_position_for_robot_load"
-    yield from bps.abs_set(blower, TemperatureControllerPosition.BEAM, group=group)
-    yield from bps.abs_set(cobra, TemperatureControllerPosition.BEAM, group=group)
+    yield from bps.abs_set(blower, SafeOrBeamPosition.BEAM, group=group)
+    yield from bps.abs_set(cobra, SafeOrBeamPosition.BEAM, group=group)
     yield from bps.wait(group)
