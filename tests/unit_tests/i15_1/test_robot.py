@@ -39,3 +39,19 @@ async def test_plan_unloads_robot(robot: Robot, hutch_interlock: HutchInterlock)
 
     assert await robot.current_sample.puck.get_value() == 0
     assert await robot.current_sample.position.get_value() == 0
+
+
+@pytest.mark.parametrize(
+    "status, reason",
+    (
+        [2, "Hutch status was not 0, but instead 2."],
+        [7, "Hutch status was not 0, but instead 7."],
+    ),
+)
+async def test_correct_error_is_raised_when_hutch_is_not_safe_to_operate(
+    robot: Robot, hutch_interlock: HutchInterlock, status: int, reason: str
+):
+    set_mock_value(hutch_interlock.status, status)
+    RE = RunEngine()
+    with pytest.raises(AssertionError, match=reason):
+        RE(robot_load(1, 2, robot, hutch_interlock))
