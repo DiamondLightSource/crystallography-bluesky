@@ -45,10 +45,10 @@ async def hexapod() -> XYZStage:
 
 
 @pytest.fixture
-async def hexapod_rot() -> XYZStage:
+async def hexapod_rotation() -> XYZStage:
     async with init_devices(mock=True):
-        hexapod_rot = XYZStage("", "")
-    return hexapod_rot
+        hexapod_rotation = XYZStage("", "")
+    return hexapod_rotation
 
 
 async def test_plan_loads_robot(
@@ -56,10 +56,14 @@ async def test_plan_loads_robot(
     hutch_interlock: HutchInterlock,
     gonio_interlock: GonioInterlock,
     hexapod: XYZStage,
-    hexapod_rot: XYZStage,
+    hexapod_rotation: XYZStage,
 ):
     RE = RunEngine()
-    RE(robot_load(1, 2, robot, hutch_interlock, gonio_interlock, hexapod, hexapod_rot))
+    RE(
+        robot_load(
+            1, 2, robot, hutch_interlock, gonio_interlock, hexapod, hexapod_rotation
+        )
+    )
 
     assert await robot.puck_sel.get_value() == 1
     assert await robot.pos_sel.get_value() == 2
@@ -70,13 +74,13 @@ async def test_plan_unloads_robot(
     hutch_interlock: HutchInterlock,
     gonio_interlock: GonioInterlock,
     hexapod: XYZStage,
-    hexapod_rot: XYZStage,
+    hexapod_rotation: XYZStage,
 ):
     set_mock_value(robot.current_sample.puck, 1)
     set_mock_value(robot.current_sample.position, 2)
 
     RE = RunEngine()
-    RE(robot_unload(robot, hutch_interlock, gonio_interlock, hexapod, hexapod_rot))
+    RE(robot_unload(robot, hutch_interlock, gonio_interlock, hexapod, hexapod_rotation))
 
     assert await robot.current_sample.puck.get_value() == 0
     assert await robot.current_sample.position.get_value() == 0
@@ -140,7 +144,7 @@ async def test_correct_error_is_raised_when_gonio_is_not_safe_to_operate(
 )
 async def test_plan_moves_hexapod_to_home_position(
     hexapod: XYZStage,
-    hexapod_rot: XYZStage,
+    hexapod_rotation: XYZStage,
     x_home: float,
     y_home: float,
     z_home: float,
@@ -152,7 +156,7 @@ async def test_plan_moves_hexapod_to_home_position(
     RE(
         move_hexapod_to_home_position(
             hexapod=hexapod,
-            hexapod_rot=hexapod_rot,
+            hexapod_rotation=hexapod_rotation,
             x_home=x_home,
             y_home=y_home,
             z_home=z_home,
@@ -165,6 +169,6 @@ async def test_plan_moves_hexapod_to_home_position(
     assert await hexapod.x.user_readback.get_value() == x_home
     assert await hexapod.y.user_readback.get_value() == y_home
     assert await hexapod.z.user_readback.get_value() == z_home
-    assert await hexapod_rot.x.user_readback.get_value() == rx_home
-    assert await hexapod_rot.y.user_readback.get_value() == ry_home
-    assert await hexapod_rot.z.user_readback.get_value() == rz_home
+    assert await hexapod_rotation.x.user_readback.get_value() == rx_home
+    assert await hexapod_rotation.y.user_readback.get_value() == ry_home
+    assert await hexapod_rotation.z.user_readback.get_value() == rz_home

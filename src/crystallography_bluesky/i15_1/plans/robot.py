@@ -14,7 +14,7 @@ robot = inject("robot")
 hutch_interlock = inject("hutch_interlock")
 gonio_interlock = inject("gonio_interlock")
 hexapod = inject("hexapod")
-hexapod_rot = inject("hexapod_rot")
+hexapod_rotation = inject("hexapod_rotation")
 
 HUTCH_SAFE_FOR_OPERATIONS = 0
 GONIO_SAFE_FOR_OPERATIONS = 65535  # All 16 bits are true
@@ -27,7 +27,7 @@ def robot_load(
     hutch_interlock: HutchInterlock = hutch_interlock,
     gonio_interlock: GonioInterlock = gonio_interlock,
     hexapod: XYZStage = hexapod,
-    hexapod_rot: XYZStage = hexapod_rot,
+    hexapod_rotation: XYZStage = hexapod_rotation,
 ) -> MsgGenerator[None]:
     gonio_status = yield from bps.rd(gonio_interlock.is_safe)
     assert gonio_status is True, "Goniometer interlock status was not safe to operate."
@@ -37,7 +37,7 @@ def robot_load(
         "Experimental hutch interlock status was not safe to operate."
     )
 
-    yield from move_hexapod_to_home_position(hexapod, hexapod_rot)
+    yield from move_hexapod_to_home_position(hexapod, hexapod_rotation)
 
     sample = SampleLocation(puck, position)
     yield from bps.abs_set(robot, sample, wait=True)
@@ -48,7 +48,7 @@ def robot_unload(
     hutch_interlock: HutchInterlock = hutch_interlock,
     gonio_interlock: GonioInterlock = gonio_interlock,
     hexapod: XYZStage = hexapod,
-    hexapod_rot: XYZStage = hexapod_rot,
+    hexapod_rotation: XYZStage = hexapod_rotation,
 ) -> MsgGenerator[None]:
     gonio_status = yield from bps.rd(gonio_interlock.is_safe)
     assert gonio_status is True, "Goniometer interlock status was not safe to operate."
@@ -58,14 +58,14 @@ def robot_unload(
         "Experimental hutch interlock status was not safe to operate."
     )
 
-    yield from move_hexapod_to_home_position(hexapod, hexapod_rot)
+    yield from move_hexapod_to_home_position(hexapod, hexapod_rotation)
 
     yield from bps.abs_set(robot, SAMPLE_LOCATION_EMPTY, wait=True)
 
 
 def move_hexapod_to_home_position(
     hexapod: XYZStage = hexapod,
-    hexapod_rot: XYZStage = hexapod_rot,
+    hexapod_rotation: XYZStage = hexapod_rotation,
     x_home: float = 0.0,
     y_home: float = 0.0,
     z_home: float = 0.0,
@@ -77,8 +77,8 @@ def move_hexapod_to_home_position(
     yield from bps.abs_set(hexapod.x, x_home, group=group)
     yield from bps.abs_set(hexapod.y, y_home, group=group)
     yield from bps.abs_set(hexapod.z, z_home, group=group)
-    yield from bps.abs_set(hexapod_rot.x, rx_home, group=group)
-    yield from bps.abs_set(hexapod_rot.y, ry_home, group=group)
-    yield from bps.abs_set(hexapod_rot.z, rz_home, group=group)
+    yield from bps.abs_set(hexapod_rotation.x, rx_home, group=group)
+    yield from bps.abs_set(hexapod_rotation.y, ry_home, group=group)
+    yield from bps.abs_set(hexapod_rotation.z, rz_home, group=group)
 
     yield from bps.wait(group=group)
