@@ -37,7 +37,7 @@ def robot_load(
         "Experimental hutch interlock status was not safe to operate."
     )
 
-    yield from move_hexapod_to_home_position(hexapod, hexapod_rot, 0, 0, 0, 0, 0, 0)
+    yield from move_hexapod_to_home_position(hexapod, hexapod_rot)
 
     sample = SampleLocation(puck, position)
     yield from bps.abs_set(robot, sample, wait=True)
@@ -57,6 +57,8 @@ def robot_unload(
     assert hutch_status is True, (
         "Experimental hutch interlock status was not safe to operate."
     )
+
+    yield from move_hexapod_to_home_position(hexapod, hexapod_rot)
 
     yield from bps.abs_set(robot, SAMPLE_LOCATION_EMPTY, wait=True)
 
