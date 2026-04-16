@@ -21,14 +21,18 @@ def robot_load(
     yield from bps.abs_set(robot, sample, wait=True)
 
 
-def prepare_beamline_for_robot_load(blower: Blower, cobra: Cobra) -> MsgGenerator[None]:
+def prepare_beamline_for_robot_load(
+    blower: Blower = inject("blower"), cobra: Cobra = inject("cobra")
+) -> MsgGenerator[None]:
     group = "safe_position_for_robot_load"
     yield from bps.abs_set(blower, SafeOrBeamPosition.SAFE, group=group)
     yield from bps.abs_set(cobra, SafeOrBeamPosition.SAFE, group=group)
     yield from bps.wait(group)
 
 
-def move_devices_to_beam_position(blower: Blower, cobra: Cobra) -> MsgGenerator[None]:
+def move_devices_to_beam_position(
+    blower: Blower = inject("blower"), cobra: Cobra = inject("cobra")
+) -> MsgGenerator[None]:
     group = "safe_position_for_robot_load"
     yield from bps.abs_set(blower, SafeOrBeamPosition.BEAM, group=group)
     yield from bps.abs_set(cobra, SafeOrBeamPosition.BEAM, group=group)
