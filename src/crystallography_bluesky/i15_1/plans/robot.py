@@ -49,15 +49,6 @@ def prepare_beamline_for_robot_load(
     yield from bps.wait(group)
 
 
-def move_devices_to_beam_position(
-    blower: Blower = blower, cobra: Cobra = cobra
-) -> MsgGenerator[None]:
-    group = "safe_position_for_robot_load"
-    yield from bps.abs_set(blower, SafeOrBeamPosition.BEAM, group=group)
-    yield from bps.abs_set(cobra, SafeOrBeamPosition.BEAM, group=group)
-    yield from bps.wait(group)
-
-
 def robot_unload(
     robot: Robot = robot,
     hutch_interlock: HutchInterlock = hutch_interlock,
