@@ -20,6 +20,7 @@ async def robot() -> Robot:
 async def hutch_interlock() -> HutchInterlock:
     async with init_devices(mock=True):
         hutch_interlock = HutchInterlock("", "")
+    set_mock_value(hutch_interlock.status, 0)
     return hutch_interlock
 
 
@@ -27,23 +28,28 @@ async def hutch_interlock() -> HutchInterlock:
 async def gonio_interlock() -> GonioInterlock:
     async with init_devices(mock=True):
         gonio_interlock = GonioInterlock("", "")
+    set_mock_value(gonio_interlock.status, 65535)
     return gonio_interlock
 
 
-async def test_plan_loads_robot(robot: Robot, hutch_interlock: HutchInterlock):
+async def test_plan_loads_robot(
+    robot: Robot, hutch_interlock: HutchInterlock, gonio_interlock: GonioInterlock
+):
     RE = RunEngine()
-    RE(robot_load(1, 2, robot, hutch_interlock))
+    RE(robot_load(1, 2, robot, hutch_interlock, gonio_interlock))
 
     assert await robot.puck_sel.get_value() == 1
     assert await robot.pos_sel.get_value() == 2
 
 
-async def test_plan_unloads_robot(robot: Robot, hutch_interlock: HutchInterlock):
+async def test_plan_unloads_robot(
+    robot: Robot, hutch_interlock: HutchInterlock, gonio_interlock: GonioInterlock
+):
     set_mock_value(robot.current_sample.puck, 1)
     set_mock_value(robot.current_sample.position, 2)
 
     RE = RunEngine()
-    RE(robot_unload(robot, hutch_interlock))
+    RE(robot_unload(robot, hutch_interlock, gonio_interlock))
 
     assert await robot.current_sample.puck.get_value() == 0
     assert await robot.current_sample.position.get_value() == 0
@@ -57,19 +63,23 @@ async def test_plan_unloads_robot(robot: Robot, hutch_interlock: HutchInterlock)
     ),
 )
 async def test_correct_error_is_raised_when_hutch_is_not_safe_to_operate(
-    robot: Robot, hutch_interlock: HutchInterlock, status: int, reason: str
+    robot: Robot,
+    hutch_interlock: HutchInterlock,
+    gonio_interlock: GonioInterlock,
+    status: int,
+    reason: str,
 ):
     set_mock_value(hutch_interlock.status, status)
     RE = RunEngine()
     with pytest.raises(AssertionError, match=reason):
-        RE(robot_load(1, 2, robot, hutch_interlock))
+        RE(robot_load(1, 2, robot, hutch_interlock, gonio_interlock))
 
 
 @pytest.mark.parametrize(
     "status, reason",
     (
-        [65535, "Hutch status was not 0, but instead 2."],
-        [65535, "Hutch status was not 0, but instead 7."],
+        [65439, "Goniometer interlock status was not 65535, but instead 65439."],
+        [65534, "Goniometer interlock status was not 65535, but instead 65534."],
     ),
 )
 async def test_correct_error_is_raised_when_gonio_is_not_safe_to_operate(
@@ -79,7 +89,7 @@ async def test_correct_error_is_raised_when_gonio_is_not_safe_to_operate(
     status: float,
     reason: str,
 ):
-    set_mock_value(gonio_interlock.status, 65535)
+    set_mock_value(gonio_interlock.status, status)
     RE = RunEngine()
     with pytest.raises(AssertionError, match=reason):
-        RE(robot_load(1, 2, robot, hutch_interlock))
+        RE(robot_load(1, 2, robot, hutch_interlock, gonio_interlock))

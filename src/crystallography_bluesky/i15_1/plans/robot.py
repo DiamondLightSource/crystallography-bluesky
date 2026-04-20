@@ -31,8 +31,7 @@ def robot_load(
 
     gonio_status = yield from bps.rd(gonio_interlock.status)
     assert gonio_status == GONIO_SAFE_FOR_OPERATIONS, (
-        f"Goniometer interlock was not {GONIO_SAFE_FOR_OPERATIONS}, \
-            but instead {gonio_status}"
+        f"Goniometer interlock status was not {GONIO_SAFE_FOR_OPERATIONS}, but instead {gonio_status}."  # noqa
     )
 
     sample = SampleLocation(puck, position)
@@ -42,10 +41,16 @@ def robot_load(
 def robot_unload(
     robot: Robot = robot,
     hutch_interlock: HutchInterlock = hutch_interlock,
+    gonio_interlock: GonioInterlock = gonio_interlock,
 ) -> MsgGenerator[None]:
     hutch_status = yield from bps.rd(hutch_interlock.status)
     assert hutch_status == HUTCH_SAFE_FOR_OPERATIONS, (
         f"Hutch status was not 0, but instead {hutch_status}."
+    )
+
+    gonio_status = yield from bps.rd(gonio_interlock.status)
+    assert gonio_status == GONIO_SAFE_FOR_OPERATIONS, (
+        f"Goniometer interlock status was not {GONIO_SAFE_FOR_OPERATIONS}, but instead {gonio_status}."  # noqa
     )
 
     yield from bps.abs_set(robot, SAMPLE_LOCATION_EMPTY, wait=True)
