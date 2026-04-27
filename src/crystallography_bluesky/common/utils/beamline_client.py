@@ -53,7 +53,7 @@ class BlueAPIPythonClient(BlueapiClient):
         # response = self.create_and_start_task(task)
         response = self.run_task(task, on_event=on_event, timeout=None)
         print(response)
-        if response.task_status is not None and not response.task_status.task_failed:
+        if response.result is not None and not response.task_failed:
             print("Plan Succeeded")
-        elif response.task_status is not None and response.task_status.task_failed:
+        elif response.result is not None and response.task_failed:
             print("Plan Failed")
