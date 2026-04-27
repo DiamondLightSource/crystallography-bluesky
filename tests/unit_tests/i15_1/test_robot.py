@@ -58,8 +58,8 @@ async def test_plan_unloads_robot(
 @pytest.mark.parametrize(
     "status, reason",
     (
-        [2, "Interlock status was not 0, but instead 2."],
-        [7, "Interlock status was not 0, but instead 7."],
+        [2, "Experimental hutch interlock status was not safe to operate."],
+        [7, "Experimental hutch interlock status was not safe to operate."],
     ),
 )
 async def test_correct_error_is_raised_when_hutch_is_not_safe_to_operate(
@@ -78,8 +78,8 @@ async def test_correct_error_is_raised_when_hutch_is_not_safe_to_operate(
 @pytest.mark.parametrize(
     "status, reason",
     (
-        [65439, "Interlock status was not 65535, but instead 65439."],
-        [65534, "Interlock status was not 65535, but instead 65534."],
+        [65439, "Goniometer interlock status was not safe to operate."],
+        [65534, "Goniometer interlock status was not safe to operate."],
     ),
 )
 async def test_correct_error_is_raised_when_gonio_is_not_safe_to_operate(
