@@ -98,7 +98,7 @@ async def test_correct_error_is_raised_when_hutch_is_not_safe_to_operate(
     hutch_interlock: HutchInterlock,
     gonio_interlock: GonioInterlock,
     hexapod: XYZStage,
-    hexapod_rot: XYZStage,
+    hexapod_rotation: XYZStage,
     status: int,
     reason: str,
 ):
@@ -107,7 +107,7 @@ async def test_correct_error_is_raised_when_hutch_is_not_safe_to_operate(
     with pytest.raises(AssertionError, match=reason):
         RE(
             robot_load(
-                1, 2, robot, hutch_interlock, gonio_interlock, hexapod, hexapod_rot
+                1, 2, robot, hutch_interlock, gonio_interlock, hexapod, hexapod_rotation
             )
         )
 
@@ -124,7 +124,7 @@ async def test_correct_error_is_raised_when_gonio_is_not_safe_to_operate(
     hutch_interlock: HutchInterlock,
     gonio_interlock: GonioInterlock,
     hexapod: XYZStage,
-    hexapod_rot: XYZStage,
+    hexapod_rotation: XYZStage,
     status: float,
     reason: str,
 ):
@@ -133,7 +133,7 @@ async def test_correct_error_is_raised_when_gonio_is_not_safe_to_operate(
     with pytest.raises(AssertionError, match=reason):
         RE(
             robot_load(
-                1, 2, robot, hutch_interlock, gonio_interlock, hexapod, hexapod_rot
+                1, 2, robot, hutch_interlock, gonio_interlock, hexapod, hexapod_rotation
             )
         )
 
