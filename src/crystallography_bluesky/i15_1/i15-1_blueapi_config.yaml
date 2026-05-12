@@ -1,0 +1,8 @@
+api:
+  url: https://i15-1-blueapi.diamond.ac.uk
+stomp:
+  auth:
+    username: guest
+    password: guest
+  url: tcp://i15-1-rabbitmq-daq.diamond.ac.uk:61613
+  enabled: true

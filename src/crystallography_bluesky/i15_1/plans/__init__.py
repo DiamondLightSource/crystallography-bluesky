@@ -1,5 +1,5 @@
 from .robot import (
-    move_devices_to_beam_position,
+    move_hexapod_to_home_position,
     prepare_beamline_for_robot_load,
     robot_load,
     robot_unload,
@@ -7,7 +7,7 @@ from .robot import (
 
 __all__ = [
     "robot_load",
+    "move_hexapod_to_home_position",
     "prepare_beamline_for_robot_load",
-    "move_devices_to_beam_position",
     "robot_unload",
 ]

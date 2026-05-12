@@ -2,7 +2,6 @@ import os
 
 import bluesky.plan_stubs as bps
 import bluesky.plans as bsp
-import bluesky.preprocessors as bpp
 import numpy as np
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
@@ -13,7 +12,7 @@ from dodal.utils import get_beamline_name
 from ophyd_async.core import DEFAULT_TIMEOUT, TriggerInfo
 from pydantic import NonNegativeFloat, NonNegativeInt, validate_call
 
-BL = get_beamline_name(os.environ.get("BEAMLINE")) #type: ignore
+BL = get_beamline_name(os.environ.get("BEAMLINE"))
 
 DEFAULT_MYTHEN: Mythen3 = inject("mythen3")
 DEFAULT_AXIS: Motor = inject("diff_stage.delta")
@@ -32,6 +31,7 @@ def create_steps(
     step_points = list(step_points)
 
     return step_points
+
 
 @validate_call(config={"arbitrary_types_allowed": True})
 # @bpp.run_decorator()  #    # open/close run
