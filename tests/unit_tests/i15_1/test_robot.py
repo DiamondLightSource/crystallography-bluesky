@@ -1,15 +1,18 @@
 import pytest
 from bluesky.run_engine import RunEngine
+from dodal.devices.beamlines.i15_1.blower import Blower
+from dodal.devices.beamlines.i15_1.cobra import Cobra
 from dodal.devices.beamlines.i15_1.robot import Robot
 from dodal.devices.interlocks import IntPLCInterlock, PSSInterlock
 from dodal.devices.motors import XYZStage
-from ophyd_async.core import init_devices, set_mock_value
+from ophyd_async.core import get_mock_put, init_devices, set_mock_value
 
 from crystallography_bluesky.i15_1.plans import (
     move_hexapod_to_home_position,
     robot_load,
     robot_unload,
 )
+from crystallography_bluesky.i15_1.plans.robot import prepare_beamline_for_robot_load
 
 
 @pytest.fixture
@@ -56,16 +59,60 @@ async def test_plan_loads_robot(
     gonio_interlock: IntPLCInterlock,
     hexapod: XYZStage,
     hexapod_rotation: XYZStage,
+    blower: Blower,
+    cobra: Cobra,
 ):
     RE = RunEngine()
     RE(
         robot_load(
-            1, 2, robot, hutch_interlock, gonio_interlock, hexapod, hexapod_rotation
+            1,
+            2,
+            robot,
+            hutch_interlock,
+            gonio_interlock,
+            hexapod,
+            hexapod_rotation,
+            blower,
+            cobra,
         )
     )
 
     assert await robot.puck_sel.get_value() == 1
     assert await robot.pos_sel.get_value() == 2
+
+
+async def test_prepare_beamline_for_robot_load(blower: Blower, cobra: Cobra):
+    RE = RunEngine()
+    RE(prepare_beamline_for_robot_load(blower, cobra))
+    get_mock_put(blower.motor.user_setpoint).assert_called_once_with(6.0)
+    get_mock_put(cobra.motor.user_setpoint).assert_called_once_with(5.0)
+
+
+async def test_robot_load_plan_moves_cobra_and_blower_into_safe_position(
+    robot: Robot,
+    hutch_interlock: PSSInterlock,
+    gonio_interlock: IntPLCInterlock,
+    hexapod: XYZStage,
+    hexapod_rotation: XYZStage,
+    blower: Blower,
+    cobra: Cobra,
+):
+    RE = RunEngine()
+    RE(
+        robot_load(
+            1,
+            2,
+            robot,
+            hutch_interlock,
+            gonio_interlock,
+            hexapod,
+            hexapod_rotation,
+            blower,
+            cobra,
+        )
+    )
+    get_mock_put(blower.motor.user_setpoint).assert_called_once_with(6.0)
+    get_mock_put(cobra.motor.user_setpoint).assert_called_once_with(5.0)
 
 
 async def test_plan_unloads_robot(
