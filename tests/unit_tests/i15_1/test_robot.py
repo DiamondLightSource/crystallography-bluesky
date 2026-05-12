@@ -1,5 +1,7 @@
 import pytest
 from bluesky.run_engine import RunEngine
+from daq_config_server import ConfigClient
+from daq_config_server.models.i15_1.xpdf_parameters import TemperatureControllerParams
 from dodal.devices.beamlines.i15_1.blower import Blower
 from dodal.devices.beamlines.i15_1.cobra import Cobra
 from dodal.devices.beamlines.i15_1.robot import Robot
@@ -21,6 +23,50 @@ async def robot() -> Robot:
         robot = Robot("", "")
 
     return robot
+
+
+@pytest.fixture
+async def blower() -> Blower:
+    async with init_devices(mock=True):
+        blower = Blower("", ConfigClient(""), "")
+
+    def mock_config():
+        return TemperatureControllerParams(
+            beam_position=40.7,
+            safe_position=6.0,
+            settle_time=0,
+            tolerance=5.0,
+            units="C",
+            ramp_units="/min",
+            use_calibration=True,
+            use_fast_cool=None,
+            calibration_file="blower_cal_10_03_2026.txt",
+        )
+
+    blower.get_config = mock_config
+    return blower
+
+
+@pytest.fixture
+async def cobra() -> Cobra:
+    async with init_devices(mock=True):
+        cobra = Cobra("", ConfigClient(""), "")
+
+    def mock_config():
+        return TemperatureControllerParams(
+            beam_position=400.5,
+            safe_position=5.0,
+            settle_time=600,
+            tolerance=5.0,
+            units="K",
+            ramp_units="/h",
+            use_calibration=True,
+            use_fast_cool=True,
+            calibration_file="cobra_calibration_2025-09-11.txt",
+        )
+
+    cobra.get_config = mock_config
+    return cobra
 
 
 @pytest.fixture
