@@ -1,17 +1,24 @@
 from bluesky import plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
+from dodal.devices.beamlines.i15_1.blower import Blower
+from dodal.devices.beamlines.i15_1.cobra import Cobra
 from dodal.devices.beamlines.i15_1.gonio_interlock import GonioInterlock
 from dodal.devices.beamlines.i15_1.robot import (
     SAMPLE_LOCATION_EMPTY,
     Robot,
     SampleLocation,
 )
+from dodal.devices.beamlines.i15_1.safe_or_beam_positioner import (
+    SafeOrBeamPosition,
+)
 from dodal.devices.hutch_shutter import HutchInterlock
 from dodal.devices.motors import XYZStage
 
 robot = inject("robot")
 hutch_interlock = inject("hutch_interlock")
+blower = inject("blower_z")
+cobra = inject("cobra")
 gonio_interlock = inject("gonio_interlock")
 hexapod = inject("hexapod")
 hexapod_rotation = inject("hexapod_rotation")
@@ -28,6 +35,8 @@ def robot_load(
     gonio_interlock: GonioInterlock = gonio_interlock,
     hexapod: XYZStage = hexapod,
     hexapod_rotation: XYZStage = hexapod_rotation,
+    blower: Blower = blower,
+    cobra: Cobra = cobra,
 ) -> MsgGenerator[None]:
     gonio_status = yield from bps.rd(gonio_interlock.is_safe)
     assert gonio_status is True, "Goniometer interlock status was not safe to operate."
@@ -36,11 +45,21 @@ def robot_load(
     assert hutch_status is True, (
         "Experimental hutch interlock status was not safe to operate."
     )
+    yield from prepare_beamline_for_robot_load(blower, cobra)
 
     yield from move_hexapod_to_home_position(hexapod, hexapod_rotation)
 
     sample = SampleLocation(puck, position)
     yield from bps.abs_set(robot, sample, wait=True)
+
+
+def prepare_beamline_for_robot_load(
+    blower: Blower = blower, cobra: Cobra = cobra
+) -> MsgGenerator[None]:
+    group = "safe_position_for_robot_load"
+    yield from bps.abs_set(blower, SafeOrBeamPosition.SAFE, group=group)
+    yield from bps.abs_set(cobra, SafeOrBeamPosition.SAFE, group=group)
+    yield from bps.wait(group)
 
 
 def robot_unload(
