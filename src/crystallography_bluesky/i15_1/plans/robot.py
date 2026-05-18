@@ -3,7 +3,6 @@ from bluesky.utils import MsgGenerator
 from dodal.common import inject
 from dodal.devices.beamlines.i15_1.blower import Blower
 from dodal.devices.beamlines.i15_1.cobra import Cobra
-from dodal.devices.beamlines.i15_1.gonio_interlock import GonioInterlock
 from dodal.devices.beamlines.i15_1.robot import (
     SAMPLE_LOCATION_EMPTY,
     Robot,
@@ -12,7 +11,7 @@ from dodal.devices.beamlines.i15_1.robot import (
 from dodal.devices.beamlines.i15_1.safe_or_beam_positioner import (
     SafeOrBeamPosition,
 )
-from dodal.devices.hutch_shutter import HutchInterlock
+from dodal.devices.interlocks import IntPLCInterlock, PSSInterlock
 from dodal.devices.motors import XYZStage
 
 robot = inject("robot")
@@ -31,8 +30,8 @@ def robot_load(
     puck: int,
     position: int,
     robot: Robot = robot,
-    hutch_interlock: HutchInterlock = hutch_interlock,
-    gonio_interlock: GonioInterlock = gonio_interlock,
+    hutch_interlock: PSSInterlock = hutch_interlock,
+    gonio_interlock: IntPLCInterlock = gonio_interlock,
     hexapod: XYZStage = hexapod,
     hexapod_rotation: XYZStage = hexapod_rotation,
     blower: Blower = blower,
@@ -64,8 +63,8 @@ def prepare_beamline_for_robot_load(
 
 def robot_unload(
     robot: Robot = robot,
-    hutch_interlock: HutchInterlock = hutch_interlock,
-    gonio_interlock: GonioInterlock = gonio_interlock,
+    hutch_interlock: PSSInterlock = hutch_interlock,
+    gonio_interlock: IntPLCInterlock = gonio_interlock,
     hexapod: XYZStage = hexapod,
     hexapod_rotation: XYZStage = hexapod_rotation,
 ) -> MsgGenerator[None]:
