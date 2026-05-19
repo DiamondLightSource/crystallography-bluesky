@@ -5,6 +5,7 @@ from .robot import (
     robot_unload,
 )
 from .take_eiger_data import take_eiger_data
+from .take_i0_data import take_i0_data
 
 __all__ = [
     "robot_load",
@@ -12,4 +13,5 @@ __all__ = [
     "prepare_beamline_for_robot_load",
     "robot_unload",
     "take_eiger_data",
+    "take_i0_data",
 ]
