@@ -25,33 +25,33 @@ def take_eiger_data(
     @bpp.baseline_decorator(baseline_devices or [])
     @bpp.run_decorator()
     def inner_run():
-        yield from bps.prepare(eiger, trigger_info, wait=True)
         LOGGER.info("Preparing Eiger")
+        yield from bps.prepare(eiger, trigger_info, wait=True)
 
         yield from bps.declare_stream(eiger, name="primary", collect=True)
 
-        yield from bps.kickoff(eiger, wait=True)
         LOGGER.info("Kickoff Eiger")
+        yield from bps.kickoff(eiger, wait=True)
 
-        yield from bps.trigger(eiger.detector.trigger, wait=True)
         LOGGER.info("Triggering Eiger")
+        yield from bps.trigger(eiger.detector.trigger, wait=True)
 
-        yield from bps.complete(eiger, wait=True)
         LOGGER.info("Completing Capture")
+        yield from bps.complete(eiger, wait=True)
 
-        yield from bps.collect(eiger, return_payload=False, name="primary")
         LOGGER.info("Collecting")
+        yield from bps.collect(eiger, return_payload=False, name="primary")
 
-    yield from bps.unstage(eiger, wait=True)
     LOGGER.info("Unstaging Eiger-Odin")
+    yield from bps.unstage(eiger, wait=True)
 
-    yield from bps.stage(eiger, wait=True)
     LOGGER.info("Staging Eiger-Odin")
+    yield from bps.stage(eiger, wait=True)
 
-    yield from bps.abs_set(eiger.od.fp.data_chunks_0, 1, wait=True)
     LOGGER.info("Setting # of Frame Chunks")
+    yield from bps.abs_set(eiger.od.fp.data_chunks_0, 1, wait=True)
 
     yield from inner_run()
 
-    yield from bps.unstage(eiger, wait=True)
     LOGGER.info("Disarming Eiger")
+    yield from bps.unstage(eiger, wait=True)
