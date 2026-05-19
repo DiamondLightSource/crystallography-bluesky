@@ -48,9 +48,6 @@ def take_eiger_data(
     LOGGER.info("Staging Eiger-Odin")
     yield from bps.stage(eiger, wait=True)
 
-    LOGGER.info("Setting # of Frame Chunks")
-    yield from bps.abs_set(eiger.od.fp.data_chunks_0, 1, wait=True)
-
     yield from inner_run()
 
     LOGGER.info("Disarming Eiger")
