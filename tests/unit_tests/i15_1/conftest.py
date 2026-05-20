@@ -6,6 +6,7 @@ from dodal.devices.tetramm import TetrammDetector
 from dodal.devices.zebra.zebra import Zebra, ZebraMapping
 from ophyd_async.core import StaticFilenameProvider, StaticPathProvider, init_devices
 from ophyd_async.epics.motor import Motor
+from ophyd_async.fastcs.eiger import EigerDetector
 
 
 @pytest.fixture
@@ -49,3 +50,14 @@ async def tth() -> Motor:
         tth = Motor("", "")
 
     return tth
+
+
+@pytest.fixture
+async def eiger(path_provider: StaticPathProvider) -> EigerDetector:
+    async with init_devices(mock=True):
+        eiger = EigerDetector(
+            name="fastcs-eiger",
+            prefix="",
+            path_provider=path_provider,
+        )
+    return eiger
