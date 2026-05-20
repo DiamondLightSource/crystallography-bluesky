@@ -5,8 +5,7 @@ from dodal.common import inject
 from dodal.devices.tetramm import TetrammDetector
 from dodal.devices.zebra.zebra import Zebra
 from dodal.log import LOGGER
-from ophyd_async.core import StandardReadable
-from ophyd_async.core._detector import DetectorTrigger, TriggerInfo
+from ophyd_async.core import DetectorTrigger, StandardReadable, TriggerInfo
 
 i0 = inject("i0")
 zebra = inject("zebra")
