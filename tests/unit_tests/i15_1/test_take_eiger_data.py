@@ -34,10 +34,6 @@ def test_take_eiger_data_makes_expected_calls(eiger: EigerDetector):
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        predicate=lambda msg: msg.command == "wait",
-    )
-    msgs = assert_message_and_return_remaining(
-        msgs,
         predicate=lambda msg: msg.command == "open_run",
     )
     msgs = assert_message_and_return_remaining(
