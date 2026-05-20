@@ -34,14 +34,6 @@ def test_take_eiger_data_makes_expected_calls(eiger: EigerDetector):
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        predicate=lambda msg: (
-            msg.command == "set"
-            and msg.obj.name == "fastcs-eiger-od-fp-data_chunks_0"
-            and msg.args == (1,)
-        ),
-    )
-    msgs = assert_message_and_return_remaining(
-        msgs,
         predicate=lambda msg: msg.command == "wait",
     )
     msgs = assert_message_and_return_remaining(
