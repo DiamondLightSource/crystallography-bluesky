@@ -4,7 +4,7 @@ from .robot import (
     robot_load,
     robot_unload,
 )
-from .take_eiger_data import take_eiger_data
+from .take_eiger_data import take_eiger_and_i0_data, take_eiger_data
 from .take_i0_data import take_i0_data
 
 __all__ = [
@@ -14,4 +14,5 @@ __all__ = [
     "robot_unload",
     "take_eiger_data",
     "take_i0_data",
+    "take_eiger_and_i0_data",
 ]
