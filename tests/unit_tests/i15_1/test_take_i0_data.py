@@ -1,34 +1,8 @@
-from pathlib import Path
-
-import pytest
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.devices.tetramm import TetrammDetector
-from dodal.devices.zebra.zebra import Zebra, ZebraMapping
-from ophyd_async.core import StaticFilenameProvider, StaticPathProvider, init_devices
+from dodal.devices.zebra.zebra import Zebra
 
 from crystallography_bluesky.i15_1.plans.take_i0_data import take_i0_data
-
-
-@pytest.fixture
-async def i0() -> TetrammDetector:
-    async with init_devices(mock=True):
-        i0 = TetrammDetector(
-            "",
-            StaticPathProvider(StaticFilenameProvider(""), Path("")),
-            name="i0",
-        )
-    return i0
-
-
-@pytest.fixture
-async def zebra() -> Zebra:
-    async with init_devices(mock=True):
-        zebra = Zebra(
-            ZebraMapping(),
-            "",
-            "zebra",
-        )
-    return zebra
 
 
 def test_take_i0_data_makes_expected_calls(i0: TetrammDetector, zebra: Zebra):

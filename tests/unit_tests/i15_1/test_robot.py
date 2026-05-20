@@ -18,14 +18,6 @@ from crystallography_bluesky.i15_1.plans.robot import prepare_beamline_for_robot
 
 
 @pytest.fixture
-async def robot() -> Robot:
-    async with init_devices(mock=True):
-        robot = Robot("", "")
-
-    return robot
-
-
-@pytest.fixture
 async def blower() -> Blower:
     async with init_devices(mock=True):
         blower = Blower("", ConfigClient(""), "")

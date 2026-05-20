@@ -96,7 +96,7 @@ def take_eiger_and_i0_data(
     LOGGER.info(f"Baseline devices: {baseline_devices}")
 
     @bpp.baseline_decorator(baseline_devices)
-    @bpp.stage_decorator([i0, eiger])
+    @bpp.stage_decorator([eiger, i0])
     @bpp.run_decorator()
     def inner_run():
         LOGGER.info("Preparing eiger and i0")
