@@ -42,6 +42,20 @@ def test_take_eiger_and_i0_data_makes_expected_calls(
     msgs = assert_message_and_return_remaining(
         msgs,
         predicate=lambda msg: (
+            msg.command == "declare_stream" and msg.kwargs["name"] == "baseline"
+        ),
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        predicate=lambda msg: msg.command == "read" and msg.obj.name == "robot-spinner",
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        predicate=lambda msg: msg.command == "read" and msg.obj.name == "tth",
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        predicate=lambda msg: (
             msg.command == "prepare" and msg.obj.name == "fastcs-eiger"
         ),
     )
@@ -51,7 +65,9 @@ def test_take_eiger_and_i0_data_makes_expected_calls(
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        predicate=lambda msg: msg.command == "declare_stream",
+        predicate=lambda msg: (
+            msg.command == "declare_stream" and msg.kwargs["name"] == "primary"
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
@@ -94,6 +110,14 @@ def test_take_eiger_and_i0_data_makes_expected_calls(
     msgs = assert_message_and_return_remaining(
         msgs,
         predicate=lambda msg: msg.command == "collect",
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        predicate=lambda msg: msg.command == "read" and msg.obj.name == "robot-spinner",
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        predicate=lambda msg: msg.command == "read" and msg.obj.name == "tth",
     )
     msgs = assert_message_and_return_remaining(
         msgs,
