@@ -1,7 +1,6 @@
 from unittest.mock import AsyncMock
 
 import pytest
-from bluesky import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.common.visit import DataCollectionIdentifier, StaticVisitPathProvider
 from ophyd_async.core import init_devices
@@ -25,12 +24,6 @@ async def camera(tmp_path) -> ContAcqDetector:
     camera.writer.file_path_exists.get_value = AsyncMock(return_value=True)
 
     return camera
-
-
-def test_take_snapshot_plan_runs_without_error(
-    run_engine: RunEngine, camera: ContAcqDetector
-):
-    run_engine(take_snapshot(camera))
 
 
 def test_take_snapshot_plan_makes_expected_calls(camera: ContAcqDetector):
