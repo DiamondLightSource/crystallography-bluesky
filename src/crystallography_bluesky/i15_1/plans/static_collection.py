@@ -31,6 +31,7 @@ def static_collection_plan(
     TIME_BETWEEN_FRAMES = 0.1
     I0_DEADTIME = 0.0001
 
+    # See https://github.com/DiamondLightSource/crystallography-bluesky/issues/56
     assert exposure_time < TIME_BETWEEN_FRAMES, (
         "This test does not work with long frames"
     )
@@ -50,11 +51,12 @@ def static_collection_plan(
         deadtime=I0_DEADTIME,
     )
 
+    detectors = [eiger, i0]
     baseline_devices = DEFAULT_BASELINE_DEVICES + (baseline_devices or [])
     LOGGER.info(f"Baseline devices: {baseline_devices}")
 
     @bpp.baseline_decorator(baseline_devices)
-    @bpp.stage_decorator([eiger, i0])
+    @bpp.stage_decorator(detectors)
     @bpp.run_decorator()
     def inner_run():
         LOGGER.info("Preparing eiger and i0")
@@ -62,12 +64,10 @@ def static_collection_plan(
         yield from bps.prepare(i0, i0_trigger_info, group="prepare")
         yield from bps.wait("prepare")
 
-        yield from bps.declare_stream(eiger, i0, name="primary", collect=True)
+        yield from bps.declare_stream(*detectors, name="primary", collect=True)
 
         LOGGER.info("Kickoff eiger and i0")
-        yield from bps.kickoff(eiger, group="kickoff")
-        yield from bps.kickoff(i0, group="kickoff")
-        yield from bps.wait("kickoff")
+        yield from bps.kickoff_all(*detectors, wait=True)
 
         LOGGER.info(f"Triggering i0 and eiger {frames} times")
         for i in range(frames):
@@ -78,16 +78,12 @@ def static_collection_plan(
             yield from bps.abs_set(zebra.inputs.soft_in_1, 0, wait=True)
 
         LOGGER.info("Completing Capture")
-        yield from bps.complete(eiger, group="complete")
-        yield from bps.complete(i0, group="complete")
-        yield from bps.wait("complete")
+        yield from bps.complete_all(*detectors, wait=True)
 
         LOGGER.info("Collecting")
-        yield from bps.collect(eiger, i0, return_payload=False, name="primary")
+        yield from bps.collect(*detectors, return_payload=False, name="primary")
 
     LOGGER.info("Unstaging eiger and i0")
-    yield from bps.unstage(eiger, group="unstage")
-    yield from bps.unstage(i0, group="unstage")
-    yield from bps.wait("unstage")
+    yield from bps.unstage_all(*detectors)
 
     yield from inner_run()
