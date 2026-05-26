@@ -28,7 +28,7 @@ dependencies = [
     "ophyd-async[ca,pva]>=v0.17a4",
     "bluesky >= 1.13.1",
     "daq-config-server>=1.3.1",
-    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@cryst_bluesky_20_add_i15_cams",
+    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@main",
 ]
 
 dynamic = ["version"]
