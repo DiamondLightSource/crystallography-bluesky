@@ -1,12 +1,18 @@
 from pathlib import Path
 
 import pytest
+from bluesky import RunEngine
 from dodal.devices.beamlines.i15_1.robot import Robot
 from dodal.devices.tetramm import TetrammDetector
 from dodal.devices.zebra.zebra import Zebra, ZebraMapping
 from ophyd_async.core import StaticFilenameProvider, StaticPathProvider, init_devices
 from ophyd_async.epics.motor import Motor
 from ophyd_async.fastcs.eiger import EigerDetector
+
+
+@pytest.fixture
+def run_engine():
+    return RunEngine()
 
 
 @pytest.fixture
