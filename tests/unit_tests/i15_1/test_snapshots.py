@@ -1,6 +1,8 @@
+from unittest.mock import AsyncMock
+
 import pytest
 from bluesky import RunEngine
-from dodal.beamlines.i15_1 import cam_1
+from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.common.visit import DataCollectionIdentifier, StaticVisitPathProvider
 from ophyd_async.core import init_devices
 from ophyd_async.epics.adcore import ADImageMode, ContAcqDetector
@@ -10,19 +12,55 @@ from crystallography_bluesky.i15_1.plans.snapshots import take_snapshot
 
 @pytest.fixture
 async def camera(tmp_path) -> ContAcqDetector:
-    assert tmp_path.exists()
     path_provider = StaticVisitPathProvider("i15_1", tmp_path)
     path_provider._filename_provider.collectionId = DataCollectionIdentifier(
         collectionNumber=0
     )
     async with init_devices(mock=True):
-        camera = cam_1(path_provider)
+        camera = ContAcqDetector("", path_provider, name="cam_1")
 
     await camera.driver.image_mode.set(ADImageMode.CONTINUOUS)
     await camera.driver.acquire.set(True)
 
+    camera.writer.file_path_exists.get_value = AsyncMock(return_value=True)
+
     return camera
 
 
-def test_take_snapshot_plan(run_engine: RunEngine, camera: ContAcqDetector):
+def test_take_snapshot_plan_runs_without_error(
+    run_engine: RunEngine, camera: ContAcqDetector
+):
     run_engine(take_snapshot(camera))
+
+
+def test_take_snapshot_plan_makes_expected_calls(camera: ContAcqDetector):
+    run_engine = RunEngineSimulator()
+
+    msgs = run_engine.simulate_plan(take_snapshot(camera))
+
+    msgs = assert_message_and_return_remaining(
+        msgs, predicate=lambda msg: msg.command == "open_run"
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        predicate=lambda msg: msg.command == "stage" and msg.obj.name == "cam_1",
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        predicate=lambda msg: msg.command == "prepare" and msg.obj.name == "cam_1",
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        predicate=lambda msg: msg.command == "trigger" and msg.obj.name == "cam_1",
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        predicate=lambda msg: msg.command == "read" and msg.obj.name == "cam_1",
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        predicate=lambda msg: msg.command == "unstage" and msg.obj.name == "cam_1",
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs, predicate=lambda msg: msg.command == "close_run"
+    )
