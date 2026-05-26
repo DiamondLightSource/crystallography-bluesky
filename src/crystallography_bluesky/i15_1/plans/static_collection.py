@@ -27,6 +27,21 @@ def static_collection_plan(
     tth: Motor = tth,
     baseline_devices: list[StandardReadable] | None = None,
 ) -> MsgGenerator:
+    """Take a static collection with the eiger and i0 detectors. Currently the i0 is
+    triggered by the zebra and the eiger is triggered manually. Metadata from the robot
+    spinner, tth, and any other baseline devices will be added to the nexus file.
+
+    Args:
+        frames (int): Number of frames to capture
+        exposure_time (float): Exposure time of each frame
+        eiger (EigerDetector, optional): FastCS eiger device.
+        i0 (TetrammDetector, optional): i0 device.
+        zebra (Zebra, optional): Zebra device.
+        robot (Robot, optional): Robot device, needed for spinner metadata.
+        tth (Motor, optional): Two theta device, needed for eiger angle metadata.
+        baseline_devices (list[StandardReadable] | None, optional): Any other devices to
+        record metadata from. Defaults to None.
+    """
     DEFAULT_BASELINE_DEVICES = [robot.spinner, tth]
     TIME_BETWEEN_FRAMES = 0.1
     I0_DEADTIME = 0.0001
