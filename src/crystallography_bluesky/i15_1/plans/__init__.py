@@ -5,7 +5,10 @@ from .robot import (
     robot_unload,
 )
 from .snapshots import take_snapshot
-from .static_collection import static_collection_plan
+from .static_collection import (
+    static_collect_and_trigger_analysis,
+    static_collection_plan,
+)
 
 __all__ = [
     "robot_load",
@@ -14,4 +17,5 @@ __all__ = [
     "robot_unload",
     "take_snapshot",
     "static_collection_plan",
+    "static_collect_and_trigger_analysis",
 ]
