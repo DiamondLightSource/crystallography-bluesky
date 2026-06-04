@@ -11,6 +11,7 @@ from ophyd_async.epics.motor import Motor
 from ophyd_async.fastcs.eiger import EigerDetector
 
 from crystallography_bluesky.i15_1.callbacks.analysis_callback import (
+    I15_1_ANALYSIS_URL,
     TriggerAnalysisCallback,
 )
 
@@ -119,7 +120,7 @@ def static_collect_and_trigger_analysis(
 ) -> MsgGenerator:
 
     analysis_callback = TriggerAnalysisCallback(
-        "https://i15-1-analysis.diamond.ac.uk",
+        I15_1_ANALYSIS_URL,
         "read_number_of_frames_from_nxs",
         datapath=f"/entry/instrument/{eiger.name}/{eiger.name}",
     )

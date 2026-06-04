@@ -5,6 +5,8 @@ from dodal.log import LOGGER
 from event_model.documents import RunStart, RunStop
 from heliotrapi.client import AnalysisClient
 
+I15_1_ANALYSIS_URL = "https://i15-1-analysis.diamond.ac.uk"
+
 
 class TriggerAnalysisCallback(CallbackBase):
     """A callback that will pass the nexus file location to analysis on a plan end."""
