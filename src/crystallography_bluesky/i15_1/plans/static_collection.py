@@ -10,6 +10,11 @@ from ophyd_async.core import DetectorTrigger, StandardReadable, TriggerInfo
 from ophyd_async.epics.motor import Motor
 from ophyd_async.fastcs.eiger import EigerDetector
 
+from crystallography_bluesky.i15_1.callbacks.analysis_callback import (
+    I15_1_ANALYSIS_URL,
+    TriggerAnalysisCallback,
+)
+
 eiger = inject("fastcs_eiger")
 i0 = inject("i0")
 zebra = inject("zebra")
@@ -102,3 +107,29 @@ def static_collection_plan(
     yield from bps.unstage_all(*detectors)
 
     yield from inner_run()
+
+
+def static_collect_and_trigger_analysis(
+    frames: int,
+    exposure_time: float,
+    eiger: EigerDetector = eiger,
+    i0: TetrammDetector = i0,
+    zebra: Zebra = zebra,
+    robot: Robot = robot,
+    tth: Motor = tth,
+) -> MsgGenerator:
+
+    analysis_callback = TriggerAnalysisCallback(
+        I15_1_ANALYSIS_URL,
+        "read_number_of_frames_from_nxs",
+        datapath=f"/entry/instrument/{eiger.name}/{eiger.name}",
+    )
+
+    yield from bpp.subs_wrapper(
+        static_collection_plan(frames, exposure_time, eiger, i0, zebra, robot, tth),
+        analysis_callback,
+    )
+
+    assert analysis_callback.wait_on_and_retrieve_result() == frames, (
+        "Analysis did not read correct number of frames"
+    )
