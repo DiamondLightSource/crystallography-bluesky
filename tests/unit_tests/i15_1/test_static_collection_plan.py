@@ -1,3 +1,4 @@
+import pytest
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.devices.beamlines.i15_1.robot import Robot
 from dodal.devices.tetramm import TetrammDetector
@@ -128,6 +129,9 @@ def test_take_eiger_and_i0_data_makes_expected_calls(
     )
 
 
+@pytest.skip(
+    "Needs https://github.com/DiamondLightSource/crystallography-bluesky/issues/78"
+)
 def test_if_plan_fails_during_trigger_then_soft_in_cleaned_up(
     eiger: EigerDetector, i0: TetrammDetector, zebra: Zebra, robot: Robot, tth: Motor
 ):
