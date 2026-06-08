@@ -75,6 +75,12 @@ def static_collection_plan(
     baseline_devices = DEFAULT_BASELINE_DEVICES + (baseline_devices or [])
     LOGGER.info(f"Baseline devices: {baseline_devices}")
 
+    def cleanup():
+        # If we fail whilst the soft in is high we will end up immediately triggering
+        # the detector on the next run
+        yield from bps.abs_set(zebra.inputs.soft_in_1, 0, wait=True)
+
+    @bpp.contingency_decorator(except_plan=cleanup)
     @bpp.baseline_decorator(baseline_devices)
     @bpp.stage_decorator(detectors)
     @bpp.run_decorator()
