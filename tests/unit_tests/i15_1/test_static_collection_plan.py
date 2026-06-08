@@ -129,7 +129,7 @@ def test_take_eiger_and_i0_data_makes_expected_calls(
     )
 
 
-@pytest.skip(
+@pytest.mark.skip(
     "Needs https://github.com/DiamondLightSource/crystallography-bluesky/issues/78"
 )
 def test_if_plan_fails_during_trigger_then_soft_in_cleaned_up(
