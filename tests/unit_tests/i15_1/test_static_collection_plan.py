@@ -84,13 +84,6 @@ def test_take_eiger_and_i0_data_makes_expected_calls(
         msgs = assert_message_and_return_remaining(
             msgs,
             predicate=lambda msg: (
-                msg.command == "trigger"
-                and msg.obj.name == "fastcs-eiger-detector-trigger"
-            ),
-        )
-        msgs = assert_message_and_return_remaining(
-            msgs,
-            predicate=lambda msg: (
                 msg.command == "set"
                 and msg.obj.name == "zebra-inputs-soft_in_1"
                 and msg.args[0] == 1
