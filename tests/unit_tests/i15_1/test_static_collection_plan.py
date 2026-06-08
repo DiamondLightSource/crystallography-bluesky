@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
 import pytest
 from bluesky.run_engine import RunEngine
@@ -202,7 +202,7 @@ def test_shutter_closed_after_complete(
     )
 
 
-@pytest.skip(
+@pytest.mark.skip(
     "Needs https://github.com/DiamondLightSource/crystallography-bluesky/issues/78"
 )
 async def test_given_plan_throws_exception_then_shutters_closed(
