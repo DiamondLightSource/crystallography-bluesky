@@ -36,10 +36,11 @@ def centre_sample(
         end_z (float): The end of the scan.
         steps (int): The number of steps to scan across.
         exposure_time (float): Exposure time of each frame.
-        devices (GenericCollectionDevices, optional): The standard devices needed for the collection.
+        devices (GenericCollectionDevices, optional): The standard devices needed for
+                the collection.
         hexapod (XYZStage, optional): The hexapod that is used to scan the sample.
         baseline_devices (list[StandardReadable] | None, optional): Any other devices to
-        record metadata from. Defaults to None.
+                record metadata from. Defaults to None.
     """
     eiger = generic_collection_devices.fastcs_eiger
 
@@ -68,6 +69,8 @@ def centre_sample(
     )
 
     analysis_result = analysis_callback.wait_on_and_retrieve_result()
+    # TODO: This needs to call the real plan and get the data back.
+    # See https://github.com/DiamondLightSource/crystallography-bluesky/issues/80
     LOGGER.info(f"Got {analysis_result} from analysis but moving to guessed centre")
 
     yield from bps.mv(hexapod.z, (end_z - start_z) / 2)

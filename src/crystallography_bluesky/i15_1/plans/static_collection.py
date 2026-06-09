@@ -24,9 +24,10 @@ def static_collection(
         frames (int): Number of frames to capture
         exposure_time (float): Exposure time of each frame
         time_between_frames (float): The time between each frame
-        devices (GenericCollectionDevices, optional): The standard devices needed for the collection.
+        devices (GenericCollectionDevices, optional): The standard devices needed for
+                the collection.
         baseline_devices (list[StandardReadable] | None, optional): Any other devices to
-        record metadata from. Defaults to None.
+                record metadata from. Defaults to None.
     """
     yield from generic_collection(
         frames,

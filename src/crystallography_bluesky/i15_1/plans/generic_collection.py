@@ -41,9 +41,10 @@ def generic_collection(
         frames (int): Number of frames to capture
         exposure_time (float): Exposure time of each frame
         per_step (Callable[[], MsgGenerator]): The plan to run on each frame
-        devices (GenericCollectionDevices): The standard devices needed for the collection
+        devices (GenericCollectionDevices): The standard devices needed for the
+                collection
         baseline_devices (list[StandardReadable] | None, optional): Any other devices to
-        record metadata from. Defaults to None.
+                record metadata from. Defaults to None.
     """
     DEFAULT_BASELINE_DEVICES = [devices.robot.spinner, devices.tth]
     TIME_BETWEEN_FRAMES = 0.1
