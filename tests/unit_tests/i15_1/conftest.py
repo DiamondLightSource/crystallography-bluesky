@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 from bluesky import RunEngine
 from dodal.devices.beamlines.i15_1.robot import Robot
+from dodal.devices.motors import XYZStage
 from dodal.devices.tetramm import TetrammDetector
 from dodal.devices.zebra.zebra import Zebra, ZebraMapping
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraFastShutter
@@ -75,3 +76,10 @@ async def fast_shutter() -> ZebraFastShutter:
     async with init_devices(mock=True):
         zebra_fast_shutter = ZebraFastShutter("", "", "fast_shutter")
     return zebra_fast_shutter
+
+
+@pytest.fixture
+async def hexapod() -> XYZStage:
+    async with init_devices(mock=True):
+        hexapod = XYZStage("")
+    return hexapod
