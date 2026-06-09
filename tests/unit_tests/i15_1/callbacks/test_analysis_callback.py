@@ -124,3 +124,21 @@ def test_submit_not_called_until_end_of_plan(mock_client_cls, blueapi_run_engine
     blueapi_run_engine(my_plan())
 
     mock_client.submit.assert_called_once()
+
+
+@patch("crystallography_bluesky.i15_1.callbacks.analysis_callback.AnalysisClient")
+def test_submit_not_called_if_plan_fails(mock_client_cls, blueapi_run_engine):
+    mock_client = mock_client_cls.return_value
+
+    callback = TriggerAnalysisCallback("url", "analysis")
+
+    @bpp.subs_decorator(callback)
+    @bpp.run_decorator()
+    def my_plan():
+        raise ValueError()
+        yield from bps.null()
+
+    with pytest.raises(ValueError):
+        blueapi_run_engine(my_plan())
+
+    mock_client.submit.assert_not_called()
