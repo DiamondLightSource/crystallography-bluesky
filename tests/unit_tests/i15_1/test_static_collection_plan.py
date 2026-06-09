@@ -105,13 +105,6 @@ def test_static_collection_plan_makes_expected_calls(
         msgs = assert_message_and_return_remaining(
             msgs,
             predicate=lambda msg: (
-                msg.command == "trigger"
-                and msg.obj.name == "fastcs-eiger-detector-trigger"
-            ),
-        )
-        msgs = assert_message_and_return_remaining(
-            msgs,
-            predicate=lambda msg: (
                 msg.command == "set"
                 and msg.obj.name == "zebra-inputs-soft_in_1"
                 and msg.args[0] == 1
@@ -235,3 +228,30 @@ async def test_given_plan_throws_exception_then_shutters_closed(
 
     get_mock_put(fast_shutter._set_pv).assert_called()
     assert (await fast_shutter.shutter_state.get_value()) == OpenClose.CLOSE
+
+
+@pytest.mark.skip(
+    "Needs https://github.com/DiamondLightSource/crystallography-bluesky/issues/78"
+)
+def test_if_plan_fails_during_trigger_then_soft_in_cleaned_up(
+    eiger: EigerDetector, i0: TetrammDetector, zebra: Zebra, robot: Robot, tth: Motor
+):
+    run_engine = RunEngineSimulator()
+
+    def raise_exception():
+        raise ValueError()
+
+    run_engine.add_handler("sleep", lambda msg: raise_exception())
+
+    msgs = run_engine.simulate_plan(
+        static_collection_plan(10, 0.01, eiger, i0, zebra, robot, tth)
+    )
+
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        predicate=lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "zebra-inputs-soft_in_1"
+            and msg.args[0] == 0
+        ),
+    )

@@ -66,7 +66,7 @@ def static_collection_plan(
     eiger_trigger_info = TriggerInfo(
         collections_per_event=1,
         number_of_events=1,
-        trigger=DetectorTrigger.INTERNAL,
+        trigger=DetectorTrigger.EXTERNAL_EDGE,
         livetime=exposure_time,
     )
 
@@ -85,6 +85,9 @@ def static_collection_plan(
     def cleanup():
         # Close the shutter
         yield from bps.mv(fast_shutter, OpenClose.CLOSE)
+        # If we fail whilst the soft in is high we will end up immediately triggering
+        # the detector on the next run
+        yield from bps.abs_set(zebra.inputs.soft_in_1, 0, wait=True)
 
     @bpp.baseline_decorator(baseline_devices)
     @bpp.stage_decorator(detectors)
@@ -105,7 +108,6 @@ def static_collection_plan(
 
         LOGGER.info(f"Triggering i0 and eiger {frames} times")
         for i in range(frames):
-            yield from bps.trigger(eiger.detector.trigger, group=f"trigger_{i}")
             yield from bps.abs_set(zebra.inputs.soft_in_1, 1, group=f"trigger_{i}")
             yield from bps.wait(f"trigger_{i}")
             yield from bps.sleep(TIME_BETWEEN_FRAMES)
