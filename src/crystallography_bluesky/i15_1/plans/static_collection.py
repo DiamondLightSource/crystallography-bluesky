@@ -21,7 +21,7 @@ i0 = inject("i0")
 zebra = inject("zebra")
 robot = inject("robot")
 tth = inject("tth")
-fast_shutter = inject("tth")
+fast_shutter = inject("fast_shutter")
 
 
 def static_collection_plan(
