@@ -16,7 +16,7 @@ from crystallography_bluesky.i15_1.plans.static_collection import (
 )
 
 
-def test_take_eiger_and_i0_data_makes_expected_calls(
+def test_static_collection_plan_makes_expected_calls(
     eiger: EigerDetector,
     i0: TetrammDetector,
     zebra: Zebra,
@@ -28,6 +28,16 @@ def test_take_eiger_and_i0_data_makes_expected_calls(
     msgs = run_engine.simulate_plan(
         static_collection_plan(10, 0.01, eiger, i0, zebra, robot, tth, fast_shutter)
     )
+
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        predicate=lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "fastcs-eiger-detector-ntrigger"
+            and msg.args[0] == 10
+        ),
+    )
+
     msgs = assert_message_and_return_remaining(
         msgs,
         predicate=lambda msg: (

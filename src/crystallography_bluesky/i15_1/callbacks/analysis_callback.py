@@ -28,6 +28,9 @@ class TriggerAnalysisCallback(CallbackBase):
         self._file = doc.get("scan_file")
 
     def stop(self, doc: RunStop) -> RunStop | None:
+        if doc["exit_status"] != "success":
+            return doc
+
         if not self._directory or not self._file:
             LOGGER.warning(
                 "Not triggering analysis as nexus information could not be found"

@@ -55,6 +55,9 @@ def static_collection_plan(
     TIME_BETWEEN_FRAMES = 0.1
     I0_DEADTIME = 0.0001
 
+    # Workaround for https://github.com/bluesky/ophyd-async/issues/1288 for now
+    yield from bps.abs_set(eiger.detector.ntrigger, frames, wait=True)
+
     # See https://github.com/DiamondLightSource/crystallography-bluesky/issues/56
     assert exposure_time < TIME_BETWEEN_FRAMES, (
         "This test does not work with long frames"
