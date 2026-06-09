@@ -5,6 +5,7 @@ from bluesky import RunEngine
 from dodal.devices.beamlines.i15_1.robot import Robot
 from dodal.devices.tetramm import TetrammDetector
 from dodal.devices.zebra.zebra import Zebra, ZebraMapping
+from dodal.devices.zebra.zebra_controlled_shutter import ZebraFastShutter
 from ophyd_async.core import StaticFilenameProvider, StaticPathProvider, init_devices
 from ophyd_async.epics.motor import Motor
 from ophyd_async.fastcs.eiger import EigerDetector
@@ -67,3 +68,10 @@ async def eiger(path_provider: StaticPathProvider) -> EigerDetector:
             path_provider=path_provider,
         )
     return eiger
+
+
+@pytest.fixture
+async def fast_shutter() -> ZebraFastShutter:
+    async with init_devices(mock=True):
+        zebra_fast_shutter = ZebraFastShutter("", "", "fast_shutter")
+    return zebra_fast_shutter

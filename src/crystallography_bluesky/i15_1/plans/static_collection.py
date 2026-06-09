@@ -5,6 +5,7 @@ from dodal.common import inject
 from dodal.devices.beamlines.i15_1.robot import Robot
 from dodal.devices.tetramm import TetrammDetector
 from dodal.devices.zebra.zebra import Zebra
+from dodal.devices.zebra.zebra_controlled_shutter import OpenClose, ZebraFastShutter
 from dodal.log import LOGGER
 from ophyd_async.core import DetectorTrigger, StandardReadable, TriggerInfo
 from ophyd_async.epics.motor import Motor
@@ -20,6 +21,7 @@ i0 = inject("i0")
 zebra = inject("zebra")
 robot = inject("robot")
 tth = inject("tth")
+fast_shutter = inject("fast_shutter")
 
 
 def static_collection_plan(
@@ -30,6 +32,7 @@ def static_collection_plan(
     zebra: Zebra = zebra,
     robot: Robot = robot,
     tth: Motor = tth,
+    fast_shutter: ZebraFastShutter = fast_shutter,
     baseline_devices: list[StandardReadable] | None = None,
 ) -> MsgGenerator:
     """Take a static collection with the eiger and i0 detectors. Currently the i0 is
@@ -44,6 +47,7 @@ def static_collection_plan(
         zebra (Zebra, optional): Zebra device.
         robot (Robot, optional): Robot device, needed for spinner metadata.
         tth (Motor, optional): Two theta device, needed for eiger angle metadata.
+        fast_shutter (ZebraFastShutter, optional): The shutter to open during collection
         baseline_devices (list[StandardReadable] | None, optional): Any other devices to
         record metadata from. Defaults to None.
     """
@@ -79,14 +83,16 @@ def static_collection_plan(
     LOGGER.info(f"Baseline devices: {baseline_devices}")
 
     def cleanup():
+        # Close the shutter
+        yield from bps.mv(fast_shutter, OpenClose.CLOSE)
         # If we fail whilst the soft in is high we will end up immediately triggering
         # the detector on the next run
         yield from bps.abs_set(zebra.inputs.soft_in_1, 0, wait=True)
 
-    @bpp.contingency_decorator(except_plan=cleanup)
     @bpp.baseline_decorator(baseline_devices)
     @bpp.stage_decorator(detectors)
     @bpp.run_decorator()
+    @bpp.contingency_decorator(final_plan=cleanup)
     def inner_run():
         LOGGER.info("Preparing eiger and i0")
         yield from bps.prepare(eiger, eiger_trigger_info, group="prepare")
@@ -94,6 +100,8 @@ def static_collection_plan(
         yield from bps.wait("prepare")
 
         yield from bps.declare_stream(*detectors, name="primary", collect=True)
+
+        yield from bps.mv(fast_shutter, OpenClose.OPEN)
 
         LOGGER.info("Kickoff eiger and i0")
         yield from bps.kickoff_all(*detectors, wait=True)
