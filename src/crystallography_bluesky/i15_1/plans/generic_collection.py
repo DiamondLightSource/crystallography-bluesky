@@ -8,6 +8,7 @@ from dodal.common import inject
 from dodal.devices.beamlines.i15_1.robot import Robot
 from dodal.devices.tetramm import TetrammDetector
 from dodal.devices.zebra.zebra import Zebra
+from dodal.devices.zebra.zebra_controlled_shutter import OpenClose, ZebraFastShutter
 from dodal.log import LOGGER
 from ophyd_async.core import DetectorTrigger, StandardReadable, TriggerInfo
 from ophyd_async.epics.motor import Motor
@@ -23,6 +24,7 @@ class GenericCollectionDevices:
     zebra: Zebra
     robot: Robot
     tth: Motor
+    fast_shutter: ZebraFastShutter
 
 
 def generic_collection(
@@ -52,6 +54,7 @@ def generic_collection(
         "This test does not work with long frames"
     )
 
+    #  Workaround for https://github.com/bluesky/ophyd-async/issues/1288 for now
     yield from bps.abs_set(devices.fastcs_eiger.detector.ntrigger, frames, wait=True)
 
     eiger_trigger_info = TriggerInfo(
@@ -73,9 +76,17 @@ def generic_collection(
     baseline_devices = DEFAULT_BASELINE_DEVICES + (baseline_devices or [])
     LOGGER.info(f"Baseline devices: {baseline_devices}")
 
+    def cleanup(*_):
+        # Close the shutter
+        yield from bps.mv(devices.fast_shutter, OpenClose.CLOSE)
+        # If we fail whilst the soft in is high we will end up immediately triggering
+        # the detector on the next run
+        yield from bps.abs_set(devices.zebra.inputs.soft_in_1, 0, wait=True)
+
     @bpp.stage_decorator(detectors)
     @bpp.baseline_decorator(baseline_devices)
     @bpp.run_decorator()
+    @bpp.contingency_decorator(final_plan=cleanup)
     def inner_run():
         LOGGER.info("Preparing eiger and i0")
         yield from bps.prepare(
@@ -85,6 +96,8 @@ def generic_collection(
         yield from bps.wait("prepare")
 
         yield from bps.declare_stream(*detectors, name="primary", collect=True)
+
+        yield from bps.mv(devices.fast_shutter, OpenClose.OPEN)
 
         LOGGER.info("Kickoff eiger and i0")
         yield from bps.kickoff_all(*detectors, wait=True)
