@@ -3,12 +3,17 @@ from pathlib import Path
 import pytest
 from bluesky import RunEngine
 from dodal.devices.beamlines.i15_1.robot import Robot
+from dodal.devices.motors import XYZStage
 from dodal.devices.tetramm import TetrammDetector
 from dodal.devices.zebra.zebra import Zebra, ZebraMapping
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraFastShutter
 from ophyd_async.core import StaticFilenameProvider, StaticPathProvider, init_devices
 from ophyd_async.epics.motor import Motor
 from ophyd_async.fastcs.eiger import EigerDetector
+
+from crystallography_bluesky.i15_1.plans.generic_collection import (
+    GenericCollectionDevices,
+)
 
 
 @pytest.fixture
@@ -75,3 +80,22 @@ async def fast_shutter() -> ZebraFastShutter:
     async with init_devices(mock=True):
         zebra_fast_shutter = ZebraFastShutter("", "", "fast_shutter")
     return zebra_fast_shutter
+
+
+@pytest.fixture
+async def hexapod() -> XYZStage:
+    async with init_devices(mock=True):
+        hexapod = XYZStage("")
+    return hexapod
+
+
+@pytest.fixture
+async def common_collection_devices(
+    eiger: EigerDetector,
+    i0: TetrammDetector,
+    zebra: Zebra,
+    robot: Robot,
+    tth: Motor,
+    fast_shutter: ZebraFastShutter,
+) -> GenericCollectionDevices:
+    return GenericCollectionDevices(eiger, i0, zebra, robot, tth, fast_shutter)

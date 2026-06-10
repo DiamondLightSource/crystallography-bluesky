@@ -11,22 +11,20 @@ from ophyd_async.core import get_mock_put
 from ophyd_async.epics.motor import Motor
 from ophyd_async.fastcs.eiger import EigerDetector
 
+from crystallography_bluesky.i15_1.plans.generic_collection import (
+    GenericCollectionDevices,
+)
 from crystallography_bluesky.i15_1.plans.static_collection import (
-    static_collection_plan,
+    static_collection,
 )
 
 
 def test_static_collection_plan_makes_expected_calls(
-    eiger: EigerDetector,
-    i0: TetrammDetector,
-    zebra: Zebra,
-    robot: Robot,
-    tth: Motor,
-    fast_shutter: ZebraFastShutter,
+    common_collection_devices: GenericCollectionDevices,
 ):
     run_engine = RunEngineSimulator()
     msgs = run_engine.simulate_plan(
-        static_collection_plan(10, 0.01, eiger, i0, zebra, robot, tth, fast_shutter)
+        static_collection(10, 0.01, devices=common_collection_devices)
     )
 
     msgs = assert_message_and_return_remaining(
@@ -38,16 +36,6 @@ def test_static_collection_plan_makes_expected_calls(
         ),
     )
 
-    msgs = assert_message_and_return_remaining(
-        msgs,
-        predicate=lambda msg: (
-            msg.command == "unstage" and msg.obj.name == "fastcs-eiger"
-        ),
-    )
-    msgs = assert_message_and_return_remaining(
-        msgs,
-        predicate=lambda msg: msg.command == "unstage" and msg.obj.name == "i0",
-    )
     msgs = assert_message_and_return_remaining(
         msgs,
         predicate=lambda msg: msg.command == "stage" and msg.obj.name == "fastcs-eiger",
@@ -150,16 +138,11 @@ def test_static_collection_plan_makes_expected_calls(
 
 
 def test_shutter_opened_before_detectors_kicked_off(
-    eiger: EigerDetector,
-    i0: TetrammDetector,
-    zebra: Zebra,
-    robot: Robot,
-    tth: Motor,
-    fast_shutter: ZebraFastShutter,
+    common_collection_devices: GenericCollectionDevices,
 ):
     run_engine = RunEngineSimulator()
     msgs = run_engine.simulate_plan(
-        static_collection_plan(10, 0.01, eiger, i0, zebra, robot, tth, fast_shutter)
+        static_collection(10, 0.01, devices=common_collection_devices)
     )
 
     msgs = assert_message_and_return_remaining(
@@ -179,16 +162,11 @@ def test_shutter_opened_before_detectors_kicked_off(
 
 
 def test_shutter_closed_after_complete(
-    eiger: EigerDetector,
-    i0: TetrammDetector,
-    zebra: Zebra,
-    robot: Robot,
-    tth: Motor,
-    fast_shutter: ZebraFastShutter,
+    common_collection_devices: GenericCollectionDevices,
 ):
     run_engine = RunEngineSimulator()
     msgs = run_engine.simulate_plan(
-        static_collection_plan(10, 0.01, eiger, i0, zebra, robot, tth, fast_shutter)
+        static_collection(10, 0.01, devices=common_collection_devices)
     )
 
     msgs = assert_message_and_return_remaining(
@@ -217,14 +195,13 @@ async def test_given_plan_throws_exception_then_shutters_closed(
     fast_shutter: ZebraFastShutter,
     run_engine: RunEngine,
 ):
+    devices = GenericCollectionDevices(eiger, i0, zebra, robot, tth, fast_shutter)
     run_engine = RunEngine()
 
     zebra.inputs.soft_in_1.set = AsyncMock(ValueError)
 
     with pytest.raises(ValueError):
-        run_engine(
-            static_collection_plan(10, 0.01, eiger, i0, zebra, robot, tth, fast_shutter)
-        )
+        run_engine(static_collection(10, 0.01, devices=devices))
 
     get_mock_put(fast_shutter._set_pv).assert_called()
     assert (await fast_shutter.shutter_state.get_value()) == OpenClose.CLOSE
@@ -234,8 +211,15 @@ async def test_given_plan_throws_exception_then_shutters_closed(
     "Needs https://github.com/DiamondLightSource/crystallography-bluesky/issues/78"
 )
 def test_if_plan_fails_during_trigger_then_soft_in_cleaned_up(
-    eiger: EigerDetector, i0: TetrammDetector, zebra: Zebra, robot: Robot, tth: Motor
+    eiger: EigerDetector,
+    i0: TetrammDetector,
+    zebra: Zebra,
+    robot: Robot,
+    tth: Motor,
+    fast_shutter: ZebraFastShutter,
 ):
+    devices = GenericCollectionDevices(eiger, i0, zebra, robot, tth, fast_shutter)
+
     run_engine = RunEngineSimulator()
 
     def raise_exception():
@@ -243,9 +227,7 @@ def test_if_plan_fails_during_trigger_then_soft_in_cleaned_up(
 
     run_engine.add_handler("sleep", lambda msg: raise_exception())
 
-    msgs = run_engine.simulate_plan(
-        static_collection_plan(10, 0.01, eiger, i0, zebra, robot, tth)
-    )
+    msgs = run_engine.simulate_plan(static_collection(10, 0.01, devices=devices))
 
     msgs = assert_message_and_return_remaining(
         msgs,
