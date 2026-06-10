@@ -20,17 +20,13 @@ from crystallography_bluesky.i15_1.plans.generic_collection import (
 
 
 def test_centre_sample_plan_makes_expected_calls(
-    eiger: EigerDetector,
-    i0: TetrammDetector,
-    zebra: Zebra,
-    robot: Robot,
-    tth: Motor,
-    fast_shutter: ZebraFastShutter,
+    common_collection_devices: GenericCollectionDevices,
     hexapod: XYZStage,
 ):
-    devices = GenericCollectionDevices(eiger, i0, zebra, robot, tth, fast_shutter)
     run_engine = RunEngineSimulator()
-    msgs = run_engine.simulate_plan(centre_sample(10, 20, 10, 0.01, devices, hexapod))
+    msgs = run_engine.simulate_plan(
+        centre_sample(10, 20, 10, 0.01, common_collection_devices, hexapod)
+    )
 
     msgs = assert_message_and_return_remaining(
         msgs,
@@ -153,17 +149,13 @@ def test_centre_sample_plan_makes_expected_calls(
 
 
 def test_centre_sample_moved_to_start_before_stage(
-    eiger: EigerDetector,
-    i0: TetrammDetector,
-    zebra: Zebra,
-    robot: Robot,
-    tth: Motor,
-    fast_shutter: ZebraFastShutter,
+    common_collection_devices: GenericCollectionDevices,
     hexapod: XYZStage,
 ):
-    devices = GenericCollectionDevices(eiger, i0, zebra, robot, tth, fast_shutter)
     run_engine = RunEngineSimulator()
-    msgs = run_engine.simulate_plan(centre_sample(10, 20, 10, 0.01, devices, hexapod))
+    msgs = run_engine.simulate_plan(
+        centre_sample(10, 20, 10, 0.01, common_collection_devices, hexapod)
+    )
 
     msgs = assert_message_and_return_remaining(
         msgs,

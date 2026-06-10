@@ -11,6 +11,10 @@ from ophyd_async.core import StaticFilenameProvider, StaticPathProvider, init_de
 from ophyd_async.epics.motor import Motor
 from ophyd_async.fastcs.eiger import EigerDetector
 
+from crystallography_bluesky.i15_1.plans.generic_collection import (
+    GenericCollectionDevices,
+)
+
 
 @pytest.fixture
 def run_engine():
@@ -83,3 +87,15 @@ async def hexapod() -> XYZStage:
     async with init_devices(mock=True):
         hexapod = XYZStage("")
     return hexapod
+
+
+@pytest.fixture
+async def common_collection_devices(
+    eiger: EigerDetector,
+    i0: TetrammDetector,
+    zebra: Zebra,
+    robot: Robot,
+    tth: Motor,
+    fast_shutter: ZebraFastShutter,
+) -> GenericCollectionDevices:
+    return GenericCollectionDevices(eiger, i0, zebra, robot, tth, fast_shutter)

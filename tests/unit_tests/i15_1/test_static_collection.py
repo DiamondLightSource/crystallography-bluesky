@@ -20,16 +20,12 @@ from crystallography_bluesky.i15_1.plans.static_collection import (
 
 
 def test_static_collection_plan_makes_expected_calls(
-    eiger: EigerDetector,
-    i0: TetrammDetector,
-    zebra: Zebra,
-    robot: Robot,
-    tth: Motor,
-    fast_shutter: ZebraFastShutter,
+    common_collection_devices: GenericCollectionDevices,
 ):
-    devices = GenericCollectionDevices(eiger, i0, zebra, robot, tth, fast_shutter)
     run_engine = RunEngineSimulator()
-    msgs = run_engine.simulate_plan(static_collection(10, 0.01, devices=devices))
+    msgs = run_engine.simulate_plan(
+        static_collection(10, 0.01, devices=common_collection_devices)
+    )
 
     msgs = assert_message_and_return_remaining(
         msgs,
@@ -142,16 +138,12 @@ def test_static_collection_plan_makes_expected_calls(
 
 
 def test_shutter_opened_before_detectors_kicked_off(
-    eiger: EigerDetector,
-    i0: TetrammDetector,
-    zebra: Zebra,
-    robot: Robot,
-    tth: Motor,
-    fast_shutter: ZebraFastShutter,
+    common_collection_devices: GenericCollectionDevices,
 ):
-    devices = GenericCollectionDevices(eiger, i0, zebra, robot, tth, fast_shutter)
     run_engine = RunEngineSimulator()
-    msgs = run_engine.simulate_plan(static_collection(10, 0.01, devices=devices))
+    msgs = run_engine.simulate_plan(
+        static_collection(10, 0.01, devices=common_collection_devices)
+    )
 
     msgs = assert_message_and_return_remaining(
         msgs,
@@ -170,16 +162,12 @@ def test_shutter_opened_before_detectors_kicked_off(
 
 
 def test_shutter_closed_after_complete(
-    eiger: EigerDetector,
-    i0: TetrammDetector,
-    zebra: Zebra,
-    robot: Robot,
-    tth: Motor,
-    fast_shutter: ZebraFastShutter,
+    common_collection_devices: GenericCollectionDevices,
 ):
-    devices = GenericCollectionDevices(eiger, i0, zebra, robot, tth, fast_shutter)
     run_engine = RunEngineSimulator()
-    msgs = run_engine.simulate_plan(static_collection(10, 0.01, devices=devices))
+    msgs = run_engine.simulate_plan(
+        static_collection(10, 0.01, devices=common_collection_devices)
+    )
 
     msgs = assert_message_and_return_remaining(
         msgs,
