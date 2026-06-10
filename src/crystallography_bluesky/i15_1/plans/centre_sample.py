@@ -69,7 +69,7 @@ def centre_sample(
     )
 
     analysis_result = analysis_callback.wait_on_and_retrieve_result()
-    # TODO: This needs to call the real plan and get the data back.
+    # TODO: This needs to call the real analysis and get the data back.
     # See https://github.com/DiamondLightSource/crystallography-bluesky/issues/80
     LOGGER.info(f"Got {analysis_result} from analysis but moving to guessed centre")
 
