@@ -46,6 +46,8 @@ def centre_sample(
 
     analysis_callback = TriggerAnalysisCallback(
         I15_1_ANALYSIS_URL,
+        # This should be the real analysis workflow once we are getting real data
+        # Currently returns the midpoint of the scan
         "fake_sample_alignment_i15_1",
         datapath=f"/entry/instrument/{eiger.name}/{eiger.name}",
     )
@@ -68,7 +70,6 @@ def centre_sample(
         analysis_callback,
     )
 
-    # This will be the midpoint of the scan
     analysis_result = analysis_callback.wait_on_and_retrieve_result()
     LOGGER.info(f"Got {analysis_result} from analysis, moving there now")
 
