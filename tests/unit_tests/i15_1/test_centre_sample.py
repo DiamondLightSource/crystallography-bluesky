@@ -5,13 +5,7 @@ import bluesky.preprocessors as bpp
 import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
-from dodal.devices.beamlines.i15_1.robot import Robot
 from dodal.devices.motors import XYZStage
-from dodal.devices.tetramm import TetrammDetector
-from dodal.devices.zebra.zebra import Zebra
-from dodal.devices.zebra.zebra_controlled_shutter import ZebraFastShutter
-from ophyd_async.epics.motor import Motor
-from ophyd_async.fastcs.eiger import EigerDetector
 
 from crystallography_bluesky.i15_1.plans.centre_sample import centre_sample
 from crystallography_bluesky.i15_1.plans.generic_collection import (
