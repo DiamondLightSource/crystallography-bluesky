@@ -5,6 +5,7 @@ import bluesky.preprocessors as bpp
 import pydantic
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
+from dodal.devices.beamlines.i15_1.laue import LaueMonochrometer
 from dodal.devices.beamlines.i15_1.robot import Robot
 from dodal.devices.tetramm import TetrammDetector
 from dodal.devices.zebra.zebra import Zebra
@@ -25,6 +26,7 @@ class GenericCollectionDevices:
     robot: Robot
     tth: Motor
     fast_shutter: ZebraFastShutter
+    xtal: LaueMonochrometer
 
 
 def generic_collection(
@@ -46,7 +48,7 @@ def generic_collection(
         baseline_devices (list[StandardReadable] | None, optional): Any other devices to
                 record metadata from. Defaults to None.
     """
-    DEFAULT_BASELINE_DEVICES = [devices.robot.spinner, devices.tth]
+    DEFAULT_BASELINE_DEVICES = [devices.robot.spinner, devices.tth, devices.xtal]
     TIME_BETWEEN_FRAMES = 0.1
     I0_DEADTIME = 0.0001
 
