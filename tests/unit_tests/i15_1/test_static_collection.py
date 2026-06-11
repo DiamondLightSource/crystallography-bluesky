@@ -3,6 +3,7 @@ from unittest.mock import AsyncMock
 import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
+from dodal.devices.beamlines.i15_1.laue import LaueMonochrometer
 from dodal.devices.beamlines.i15_1.robot import Robot
 from dodal.devices.tetramm import TetrammDetector
 from dodal.devices.zebra.zebra import Zebra
@@ -64,6 +65,10 @@ def test_static_collection_plan_makes_expected_calls(
     )
     msgs = assert_message_and_return_remaining(
         msgs,
+        predicate=lambda msg: msg.command == "read" and msg.obj.name == "xtal",
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
         predicate=lambda msg: (
             msg.command == "prepare" and msg.obj.name == "fastcs-eiger"
         ),
@@ -120,6 +125,10 @@ def test_static_collection_plan_makes_expected_calls(
     msgs = assert_message_and_return_remaining(
         msgs,
         predicate=lambda msg: msg.command == "read" and msg.obj.name == "tth",
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        predicate=lambda msg: msg.command == "read" and msg.obj.name == "xtal",
     )
     msgs = assert_message_and_return_remaining(
         msgs,
@@ -194,8 +203,9 @@ async def test_given_plan_throws_exception_then_shutters_closed(
     tth: Motor,
     fast_shutter: ZebraFastShutter,
     run_engine: RunEngine,
+    xtal: LaueMonochrometer,
 ):
-    devices = GenericCollectionDevices(eiger, i0, zebra, robot, tth, fast_shutter)
+    devices = GenericCollectionDevices(eiger, i0, zebra, robot, tth, fast_shutter, xtal)
     run_engine = RunEngine()
 
     zebra.inputs.soft_in_1.set = AsyncMock(ValueError)
@@ -217,8 +227,9 @@ def test_if_plan_fails_during_trigger_then_soft_in_cleaned_up(
     robot: Robot,
     tth: Motor,
     fast_shutter: ZebraFastShutter,
+    xtal: LaueMonochrometer,
 ):
-    devices = GenericCollectionDevices(eiger, i0, zebra, robot, tth, fast_shutter)
+    devices = GenericCollectionDevices(eiger, i0, zebra, robot, tth, fast_shutter, xtal)
 
     run_engine = RunEngineSimulator()
 

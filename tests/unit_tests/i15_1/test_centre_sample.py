@@ -59,6 +59,10 @@ def test_centre_sample_plan_makes_expected_calls(
     )
     msgs = assert_message_and_return_remaining(
         msgs,
+        predicate=lambda msg: msg.command == "read" and msg.obj.name == "xtal",
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
         predicate=lambda msg: (
             msg.command == "prepare" and msg.obj.name == "fastcs-eiger"
         ),
@@ -125,6 +129,10 @@ def test_centre_sample_plan_makes_expected_calls(
     msgs = assert_message_and_return_remaining(
         msgs,
         predicate=lambda msg: msg.command == "read" and msg.obj.name == "tth",
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        predicate=lambda msg: msg.command == "read" and msg.obj.name == "xtal",
     )
     msgs = assert_message_and_return_remaining(
         msgs,
