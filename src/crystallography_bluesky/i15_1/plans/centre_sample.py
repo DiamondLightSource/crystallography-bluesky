@@ -46,7 +46,9 @@ def centre_sample(
 
     analysis_callback = TriggerAnalysisCallback(
         I15_1_ANALYSIS_URL,
-        "read_number_of_frames_from_nxs",
+        # This should be the real analysis workflow once we are getting real data
+        # Currently returns the midpoint of the scan
+        "fake_sample_alignment_i15_1",
         datapath=f"/entry/instrument/{eiger.name}/{eiger.name}",
     )
 
@@ -69,8 +71,11 @@ def centre_sample(
     )
 
     analysis_result = analysis_callback.wait_on_and_retrieve_result()
-    # TODO: This needs to call the real analysis and get the data back.
-    # See https://github.com/DiamondLightSource/crystallography-bluesky/issues/80
-    LOGGER.info(f"Got {analysis_result} from analysis but moving to guessed centre")
+    centre = analysis_result["position"]
+    assert (start_z < centre < end_z) or (start_z > centre > end_z), (
+        f"Analysis result {centre} is not within the bounds of the scan: "
+        + f"({start_z, end_z})"
+    )
+    LOGGER.info(f"Got {centre} from analysis, moving there now")
 
-    yield from bps.mv(hexapod.z, (end_z - start_z) / 2)
+    yield from bps.mv(hexapod.z, centre)

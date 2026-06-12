@@ -1,3 +1,4 @@
+from datetime import datetime
 from unittest.mock import MagicMock, patch
 
 import bluesky.plan_stubs as bps
@@ -6,6 +7,8 @@ import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.devices.motors import XYZStage
+from heliotrapi.models import AnalysisResult
+from ophyd_async.core import get_mock_put
 
 from crystallography_bluesky.i15_1.plans.centre_sample import centre_sample
 from crystallography_bluesky.i15_1.plans.generic_collection import (
@@ -13,7 +16,43 @@ from crystallography_bluesky.i15_1.plans.generic_collection import (
 )
 
 
+@pytest.fixture
+def blueapi_run_engine():
+    # This adds the info the blueapi will add in prod
+    RE = RunEngine()
+    RE.md["data_session_directory"] = "/dls/i15-1/data/2026/cm44163-3"
+    RE.md["scan_file"] = "i15-1-95557"
+    return RE
+
+
+@pytest.fixture
+def mock_analysis_callback():
+    with patch(
+        "crystallography_bluesky.i15_1.plans.centre_sample.TriggerAnalysisCallback"
+    ) as patch_analysis_callback:
+        instance = patch_analysis_callback.return_value
+        instance.wait_on_and_retrieve_result.return_value = {"position": 15}
+        yield patch_analysis_callback
+
+
+@pytest.fixture
+def mock_analysis_client():
+    with patch(
+        "crystallography_bluesky.i15_1.callbacks.analysis_callback.AnalysisClient"
+    ) as mock_analysis_client_cls:
+        mock_analysis_client_cls.return_value = (mock_client := MagicMock())
+        mock_client.get_result.return_value = AnalysisResult(
+            analysis_name="fake_sample_alignment_i15_1",
+            result={"position": 17},
+            status="completed",
+            created_at=datetime.now(),
+        )
+
+        yield mock_client
+
+
 def test_centre_sample_plan_makes_expected_calls(
+    mock_analysis_callback: MagicMock,
     common_collection_devices: GenericCollectionDevices,
     hexapod: XYZStage,
 ):
@@ -143,6 +182,7 @@ def test_centre_sample_plan_makes_expected_calls(
 
 
 def test_centre_sample_moved_to_start_before_stage(
+    mock_analysis_callback: MagicMock,
     common_collection_devices: GenericCollectionDevices,
     hexapod: XYZStage,
 ):
@@ -164,24 +204,13 @@ def test_centre_sample_moved_to_start_before_stage(
     )
 
 
-@pytest.fixture
-def blueapi_run_engine():
-    # This adds the info the blueapi will add in prod
-    RE = RunEngine()
-    RE.md["data_session_directory"] = "/dls/i15-1/data/2026/cm44163-3"
-    RE.md["scan_file"] = "i15-1-95557"
-    return RE
-
-
-@patch("crystallography_bluesky.i15_1.callbacks.analysis_callback.AnalysisClient")
 @patch("crystallography_bluesky.i15_1.plans.centre_sample.generic_collection")
 def test_centre_sample_calls_analysis_and_retrieves_result(
     mock_generic_collection: MagicMock,
-    mock_analysis_client_cls: MagicMock,
+    mock_analysis_client: MagicMock,
     hexapod: XYZStage,
     blueapi_run_engine: RunEngine,
 ):
-    mock_analysis_client_cls.return_value = (mock_client := MagicMock())
 
     @bpp.run_decorator()
     def my_plan(*_):
@@ -190,5 +219,40 @@ def test_centre_sample_calls_analysis_and_retrieves_result(
     mock_generic_collection.side_effect = my_plan
     blueapi_run_engine(centre_sample(10, 20, 10, 0.01, MagicMock(), hexapod))
 
-    mock_client.submit.assert_called_once()
-    mock_client.get_result.assert_called_once()
+    mock_analysis_client.submit.assert_called_once()
+    mock_analysis_client.get_result.assert_called_once()
+
+
+@patch("crystallography_bluesky.i15_1.plans.centre_sample.generic_collection")
+def test_centre_sample_moves_to_analysis_result(
+    mock_generic_collection: MagicMock,
+    mock_analysis_client: MagicMock,
+    hexapod: XYZStage,
+    blueapi_run_engine: RunEngine,
+):
+    @bpp.run_decorator()
+    def my_plan(*_):
+        yield from bps.null()
+
+    mock_generic_collection.side_effect = my_plan
+    blueapi_run_engine(centre_sample(10, 20, 10, 0.01, MagicMock(), hexapod))
+
+    get_mock_put(hexapod.z.user_setpoint).assert_awaited_with(17)
+
+
+@patch("crystallography_bluesky.i15_1.plans.centre_sample.generic_collection")
+def test_centre_sample_throws_error_if_result_out_of_bounds_of_scan(
+    mock_generic_collection: MagicMock,
+    mock_analysis_client: MagicMock,
+    hexapod: XYZStage,
+    blueapi_run_engine: RunEngine,
+):
+    mock_analysis_client.get_result.return_value.result["position"] = 21
+
+    @bpp.run_decorator()
+    def my_plan(*_):
+        yield from bps.null()
+
+    mock_generic_collection.side_effect = my_plan
+    with pytest.raises(AssertionError):
+        blueapi_run_engine(centre_sample(10, 20, 10, 0.01, MagicMock(), hexapod))
