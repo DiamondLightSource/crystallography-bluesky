@@ -4,7 +4,7 @@ import pytest
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.common.visit import DataCollectionIdentifier, StaticVisitPathProvider
 from ophyd_async.core import init_devices
-from ophyd_async.epics.adcore import ADImageMode, ContAcqDetector
+from ophyd_async.epics.adcore import ADImageMode, ADWriterFactory, ContAcqDetector
 
 from crystallography_bluesky.i15_1.plans.snapshots import take_snapshot
 
@@ -16,12 +16,12 @@ async def camera(tmp_path) -> ContAcqDetector:
         collectionNumber=0
     )
     async with init_devices(mock=True):
-        camera = ContAcqDetector("", path_provider, name="cam_1")
+        camera = ContAcqDetector("", ADWriterFactory.jpeg(path_provider), name="cam_1")
 
     await camera.driver.image_mode.set(ADImageMode.CONTINUOUS)
     await camera.driver.acquire.set(True)
 
-    camera.writer.file_path_exists.get_value = AsyncMock(return_value=True)
+    camera.jpeg.file_path_exists.get_value = AsyncMock(return_value=True)  # type: ignore
 
     return camera
 
