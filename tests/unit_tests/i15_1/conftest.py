@@ -2,6 +2,8 @@ from pathlib import Path
 
 import pytest
 from bluesky import RunEngine
+from daq_config_server import ConfigClient
+from dodal.devices.beamlines.i15_1.laue import LaueMonochrometer
 from dodal.devices.beamlines.i15_1.robot import Robot
 from dodal.devices.motors import XYZStage
 from dodal.devices.tetramm import TetrammDetector
@@ -90,6 +92,13 @@ async def hexapod() -> XYZStage:
 
 
 @pytest.fixture
+async def xtal() -> LaueMonochrometer:
+    async with init_devices(mock=True):
+        xtal = LaueMonochrometer("", ConfigClient(""), "")
+    return xtal
+
+
+@pytest.fixture
 async def common_collection_devices(
     eiger: EigerDetector,
     i0: TetrammDetector,
@@ -97,5 +106,6 @@ async def common_collection_devices(
     robot: Robot,
     tth: Motor,
     fast_shutter: ZebraFastShutter,
+    xtal: LaueMonochrometer,
 ) -> GenericCollectionDevices:
-    return GenericCollectionDevices(eiger, i0, zebra, robot, tth, fast_shutter)
+    return GenericCollectionDevices(eiger, i0, zebra, robot, tth, fast_shutter, xtal)
