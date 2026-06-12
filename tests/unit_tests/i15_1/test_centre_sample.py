@@ -1,3 +1,4 @@
+from datetime import datetime
 from unittest.mock import MagicMock, patch
 
 import bluesky.plan_stubs as bps
@@ -6,6 +7,7 @@ import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.devices.motors import XYZStage
+from heliotrapi.models import AnalysisResult
 
 from crystallography_bluesky.i15_1.plans.centre_sample import centre_sample
 from crystallography_bluesky.i15_1.plans.generic_collection import (
@@ -13,7 +15,18 @@ from crystallography_bluesky.i15_1.plans.generic_collection import (
 )
 
 
+@pytest.fixture
+def mock_analysis_callback():
+    with patch(
+        "crystallography_bluesky.i15_1.plans.centre_sample.TriggerAnalysisCallback"
+    ) as patch_analysis_callback:
+        instance = patch_analysis_callback.return_value
+        instance.wait_on_and_retrieve_result.return_value = {"position": 15}
+        yield patch_analysis_callback
+
+
 def test_centre_sample_plan_makes_expected_calls(
+    mock_analysis_callback: MagicMock,
     common_collection_devices: GenericCollectionDevices,
     hexapod: XYZStage,
 ):
@@ -143,6 +156,7 @@ def test_centre_sample_plan_makes_expected_calls(
 
 
 def test_centre_sample_moved_to_start_before_stage(
+    mock_analysis_callback: MagicMock,
     common_collection_devices: GenericCollectionDevices,
     hexapod: XYZStage,
 ):
@@ -182,6 +196,12 @@ def test_centre_sample_calls_analysis_and_retrieves_result(
     blueapi_run_engine: RunEngine,
 ):
     mock_analysis_client_cls.return_value = (mock_client := MagicMock())
+    mock_client.get_result.return_value = AnalysisResult(
+        analysis_name="fake_sample_alignment_i15_1",
+        result={"position": 15},
+        status="completed",
+        created_at=datetime.now(),
+    )
 
     @bpp.run_decorator()
     def my_plan(*_):

@@ -71,10 +71,11 @@ def centre_sample(
     )
 
     analysis_result = analysis_callback.wait_on_and_retrieve_result()
-    assert (start_z < analysis_result < end_z) or (start_z > analysis_result > end_z), (
-        f"Analysis result {analysis_result} is not within the bounds of the scan: "
+    centre = analysis_result["position"]
+    assert (start_z < centre < end_z) or (start_z > centre > end_z), (
+        f"Analysis result {centre} is not within the bounds of the scan: "
         + f"({start_z, end_z})"
     )
-    LOGGER.info(f"Got {analysis_result} from analysis, moving there now")
+    LOGGER.info(f"Got {centre} from analysis, moving there now")
 
-    yield from bps.mv(hexapod.z, analysis_result)
+    yield from bps.mv(hexapod.z, centre)
