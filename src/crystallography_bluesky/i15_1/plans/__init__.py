@@ -1,3 +1,4 @@
+from .centre_sample import centre_sample
 from .robot import (
     move_hexapod_to_home_position,
     prepare_beamline_for_robot_load,
@@ -14,4 +15,5 @@ __all__ = [
     "robot_unload",
     "take_snapshot",
     "static_collection",
+    "centre_sample",
 ]
