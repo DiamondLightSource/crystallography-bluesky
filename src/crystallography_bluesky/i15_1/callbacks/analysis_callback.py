@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 from bluesky.callbacks import CallbackBase
@@ -41,11 +42,11 @@ class TriggerAnalysisCallback(CallbackBase):
 
         self._client.submit(
             self._analysis_name,
-            nexus_filepath=full_nexuspath,
+            filepath=full_nexuspath,
             **self._kwargs,
         )
 
     def wait_on_and_retrieve_result(self):
         result = self._client.get_result()
         LOGGER.info(f"Received result from analysis {result}")
-        return result.result
+        return json.loads(result.result)
