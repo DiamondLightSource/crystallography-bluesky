@@ -1,3 +1,5 @@
+from typing import Any
+
 import bluesky.plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
@@ -17,6 +19,7 @@ def static_collection(
     time_between_frames: float = 0.1,
     devices: GenericCollectionDevices = devices,
     baseline_devices: list[StandardReadable] | None = None,
+    metadata: dict[str, Any] | None = None,
 ) -> MsgGenerator:
     """Take a static collection with the eiger and i0 detectors.
 
@@ -35,4 +38,5 @@ def static_collection(
         lambda: bps.sleep(time_between_frames - exposure_time),
         devices,
         baseline_devices,
+        metadata=metadata,
     )
