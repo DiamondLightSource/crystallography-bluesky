@@ -25,7 +25,9 @@ def test_static_collection_plan_makes_expected_calls(
 ):
     run_engine = RunEngineSimulator()
     msgs = run_engine.simulate_plan(
-        static_collection(10, 0.01, devices=common_collection_devices)
+        static_collection(
+            10, 0.01, devices=common_collection_devices, metadata={"some": "metadata"}
+        )
     )
 
     msgs = assert_message_and_return_remaining(
@@ -47,7 +49,9 @@ def test_static_collection_plan_makes_expected_calls(
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        predicate=lambda msg: msg.command == "open_run",
+        predicate=lambda msg: (
+            msg.command == "open_run" and msg.kwargs == {"some": "metadata"}
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,

@@ -58,7 +58,15 @@ def test_centre_sample_plan_makes_expected_calls(
 ):
     run_engine = RunEngineSimulator()
     msgs = run_engine.simulate_plan(
-        centre_sample(10, 20, 10, 0.01, common_collection_devices, hexapod)
+        centre_sample(
+            10,
+            20,
+            10,
+            0.01,
+            common_collection_devices,
+            hexapod,
+            metadata={"some": "metadata"},
+        )
     )
 
     msgs = assert_message_and_return_remaining(
@@ -80,7 +88,9 @@ def test_centre_sample_plan_makes_expected_calls(
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        predicate=lambda msg: msg.command == "open_run",
+        predicate=lambda msg: (
+            msg.command == "open_run" and msg.kwargs == {"some": "metadata"}
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
