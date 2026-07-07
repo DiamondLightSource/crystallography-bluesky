@@ -16,7 +16,7 @@ from dodal.devices.motors import XYZStage
 
 robot = inject("robot")
 hutch_interlock = inject("hutch_interlock")
-blower = inject("blower_z")
+blower = inject("blower")
 cobra = inject("cobra")
 gonio_interlock = inject("gonio_interlock")
 hexapod = inject("hexapod")
