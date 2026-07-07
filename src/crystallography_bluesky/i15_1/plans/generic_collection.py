@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from typing import Any
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -35,6 +36,7 @@ def generic_collection(
     per_step: Callable[[], MsgGenerator],
     devices: GenericCollectionDevices,
     baseline_devices: list[StandardReadable] | None = None,
+    metadata: dict[str, Any] | None = None,
 ) -> MsgGenerator:
     """Take a collection with the eiger and i0 detectors. Metadata from the robot
     spinner, tth, and any other baseline devices will be added to the nexus file.
@@ -88,7 +90,7 @@ def generic_collection(
 
     @bpp.stage_decorator(detectors)
     @bpp.baseline_decorator(baseline_devices)
-    @bpp.run_decorator()
+    @bpp.run_decorator(md=metadata)
     @bpp.contingency_decorator(final_plan=cleanup)
     def inner_run():
         LOGGER.info("Preparing eiger and i0")

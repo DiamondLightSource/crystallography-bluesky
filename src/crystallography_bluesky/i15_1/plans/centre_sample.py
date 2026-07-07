@@ -1,3 +1,5 @@
+from typing import Any
+
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 from bluesky.utils import MsgGenerator
@@ -27,6 +29,7 @@ def centre_sample(
     generic_collection_devices: GenericCollectionDevices = devices,
     hexapod: XYZStage = hexapod,
     baseline_devices: list[StandardReadable] | None = None,
+    metadata: dict[str, Any] | None = None,
 ) -> MsgGenerator:
     """Run a step scan in hexapod z, trigger analysis to find the centre and
     move to the centre that is returned.
@@ -65,7 +68,12 @@ def centre_sample(
 
     yield from bpp.subs_wrapper(
         generic_collection(
-            steps, exposure_time, per_step, generic_collection_devices, baseline_devices
+            steps,
+            exposure_time,
+            per_step,
+            generic_collection_devices,
+            baseline_devices,
+            metadata=metadata,
         ),
         analysis_callback,
     )

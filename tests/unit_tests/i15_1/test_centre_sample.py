@@ -58,7 +58,15 @@ def test_centre_sample_plan_makes_expected_calls(
 ):
     run_engine = RunEngineSimulator()
     msgs = run_engine.simulate_plan(
-        centre_sample(10, 20, 10, 0.01, common_collection_devices, hexapod)
+        centre_sample(
+            10,
+            20,
+            10,
+            0.01,
+            common_collection_devices,
+            hexapod,
+            metadata={"some": "metadata"},
+        )
     )
 
     msgs = assert_message_and_return_remaining(
@@ -80,7 +88,9 @@ def test_centre_sample_plan_makes_expected_calls(
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        predicate=lambda msg: msg.command == "open_run",
+        predicate=lambda msg: (
+            msg.command == "open_run" and msg.kwargs == {"some": "metadata"}
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
@@ -221,7 +231,7 @@ def test_centre_sample_calls_analysis_and_retrieves_result(
 ):
 
     @bpp.run_decorator()
-    def my_plan(*_):
+    def my_plan(*_, **__):
         yield from bps.null()
 
     mock_generic_collection.side_effect = my_plan
@@ -239,7 +249,7 @@ def test_centre_sample_moves_to_analysis_result(
     blueapi_run_engine: RunEngine,
 ):
     @bpp.run_decorator()
-    def my_plan(*_):
+    def my_plan(*_, **__):
         yield from bps.null()
 
     mock_generic_collection.side_effect = my_plan
@@ -258,7 +268,7 @@ def test_centre_sample_throws_error_if_result_out_of_bounds_of_scan(
     mock_analysis_client.get_result.return_value.result["position"] = 21
 
     @bpp.run_decorator()
-    def my_plan(*_):
+    def my_plan(*_, **__):
         yield from bps.null()
 
     mock_generic_collection.side_effect = my_plan
