@@ -58,6 +58,10 @@ def robot_load(
         yield from robot_unload(
             robot, hutch_interlock, gonio_interlock, hexapod, hexapod_rotation
         )
+    elif current_position == 0 or current_puck == 0:
+        raise ValueError(
+            f"Robot state is invalid with a current puck/position of {current_puck}/{current_position}"
+        )
 
     sample = SampleLocation(puck, position)
     yield from bps.abs_set(robot, sample, wait=True)
