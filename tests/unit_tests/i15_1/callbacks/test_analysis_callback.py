@@ -100,12 +100,13 @@ def test_wait_on_and_retrieve_result(mock_client_cls):
 
     mock_result = MagicMock()
     mock_result.result = 42
-    mock_client.get_result.return_value = mock_result
+    mock_client.get_request_id_result.return_value = mock_result
 
     callback = TriggerAnalysisCallback("url", "analysis")
+    callback.request_id = MagicMock()
 
     assert callback.wait_on_and_retrieve_result() == 42
-    mock_client.get_result.assert_called_once()
+    mock_client.get_request_id_result.assert_called_once()
 
 
 @patch("crystallography_bluesky.i15_1.callbacks.analysis_callback.AnalysisClient")
