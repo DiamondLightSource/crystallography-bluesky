@@ -20,7 +20,7 @@ from crystallography_bluesky.i15_1.plans.robot import prepare_beamline_for_robot
 @pytest.fixture
 async def blower() -> Blower:
     async with init_devices(mock=True):
-        blower = Blower("", ConfigClient(""), "")
+        blower = Blower("", "", "", ConfigClient(""), "")
 
     def mock_config():
         return TemperatureControllerParams(
