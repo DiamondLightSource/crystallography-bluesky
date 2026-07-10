@@ -57,7 +57,7 @@ def test_submit_called_with_correct_path(mock_client_cls, blueapi_run_engine):
 
     mock_client.submit.assert_called_once_with(
         "my_analysis",
-        nexus_filepath=Path("/dls/i15-1/data/2026/cm44163-3/i15-1-95557.nxs"),
+        filepath=Path("/dls/i15-1/data/2026/cm44163-3/i15-1-95557.nxs"),
         extra_kw="value",
     )
 
