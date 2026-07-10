@@ -79,7 +79,8 @@ def centre_sample(
     )
 
     analysis_result = analysis_callback.wait_on_and_retrieve_result()
-    centre = analysis_result["position"]
+    LOGGER.info(f"analysis result: {analysis_result}")
+    centre = analysis_result["centre"]
     assert (start_z < centre < end_z) or (start_z > centre > end_z), (
         f"Analysis result {centre} is not within the bounds of the scan: "
         + f"({start_z, end_z})"
