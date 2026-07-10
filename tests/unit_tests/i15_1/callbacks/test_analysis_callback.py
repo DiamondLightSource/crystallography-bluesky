@@ -35,7 +35,7 @@ def test_system_against_prod(blueapi_run_engine: RunEngine):
     callback = TriggerAnalysisCallback(
         "https://i15-1-analysis.diamond.ac.uk",
         "read_number_of_frames_from_nxs",
-        datapath="/entry/instrument/fastcs_eiger/fastcs_eiger",
+        dataset_path="/entry/instrument/fastcs_eiger/fastcs_eiger",
     )
 
     _run_plan_with_callback(blueapi_run_engine, callback)
