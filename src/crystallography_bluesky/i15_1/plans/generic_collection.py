@@ -35,6 +35,7 @@ def generic_collection(
     exposure_time: float,
     per_step: Callable[[], MsgGenerator],
     devices: GenericCollectionDevices,
+    collection: Callable[[], MsgGenerator] | None = None,
     baseline_devices: list[StandardReadable] | None = None,
     metadata: dict[str, Any] | None = None,
 ) -> MsgGenerator:
@@ -50,14 +51,26 @@ def generic_collection(
         baseline_devices (list[StandardReadable] | None, optional): Any other devices to
                 record metadata from. Defaults to None.
     """
-    DEFAULT_BASELINE_DEVICES = [devices.robot.spinner, devices.tth, devices.xtal]
+    DEFAULT_BASELINE_DEVICES = [devices.robot.spinner, devices.xtal]  # , devices.tth]
     TIME_BETWEEN_FRAMES = 0.1
     I0_DEADTIME = 0.0001
 
+    if not collection:
+
+        def default_collection():
+            LOGGER.info(f"Triggering i0 and eiger {frames} times")
+            for _ in range(frames):
+                yield from bps.abs_set(devices.zebra.inputs.soft_in_1, 1, wait=True)
+                yield from bps.sleep(exposure_time)
+                yield from bps.abs_set(devices.zebra.inputs.soft_in_1, 0, wait=True)
+                yield from per_step()
+
+        collection = default_collection
+
     # See https://github.com/DiamondLightSource/crystallography-bluesky/issues/56
-    assert exposure_time < TIME_BETWEEN_FRAMES, (
-        "This test does not work with long frames"
-    )
+    # assert exposure_time < TIME_BETWEEN_FRAMES, (
+    #     "This test does not work with long frames"
+    # )
 
     #  Workaround for https://github.com/bluesky/ophyd-async/issues/1288 for now
     yield from bps.abs_set(devices.fastcs_eiger.detector.ntrigger, frames, wait=True)
@@ -83,36 +96,47 @@ def generic_collection(
 
     def cleanup(*_):
         # Close the shutter
-        yield from bps.mv(devices.fast_shutter, OpenClose.CLOSE)
+        # yield from bps.mv(devices.fast_shutter, OpenClose.CLOSE)
         # If we fail whilst the soft in is high we will end up immediately triggering
         # the detector on the next run
         yield from bps.abs_set(devices.zebra.inputs.soft_in_1, 0, wait=True)
 
-    @bpp.stage_decorator(detectors)
+    LOGGER.info(f"METADATA: {metadata}")
+    metadata["sample_info"] = metadata["sample"]
+    del metadata["sample"]
+
+    LOGGER.info(f"METADATA: {metadata}")
+
+    # @bpp.stage_decorator(detectors)
+    @bpp.stage_decorator([devices.i0])
     @bpp.baseline_decorator(baseline_devices)
     @bpp.run_decorator(md=metadata)
     @bpp.contingency_decorator(final_plan=cleanup)
     def inner_run():
+
+        yield from bps.stage(devices.fastcs_eiger, wait=True)
         LOGGER.info("Preparing eiger and i0")
-        yield from bps.prepare(
-            devices.fastcs_eiger, eiger_trigger_info, group="prepare"
-        )
+        # try:
+        yield from bps.prepare(devices.fastcs_eiger, eiger_trigger_info, wait=True)
+        # except Exception as e:
+        #     LOGGER.warning("Failed to prepare eiger", exc_info=True)
+        #     yield from bps.unstage(devices.fastcs_eiger, wait=True)
+        #     yield from bps.stage(devices.fastcs_eiger, wait=True)
+        #     yield from bps.prepare(
+        #         devices.fastcs_eiger, eiger_trigger_info, wait=True
+        #     )
+
         yield from bps.prepare(devices.i0, i0_trigger_info, group="prepare")
         yield from bps.wait("prepare")
 
         yield from bps.declare_stream(*detectors, name="primary", collect=True)
 
-        yield from bps.mv(devices.fast_shutter, OpenClose.OPEN)
+        # yield from bps.mv(devices.fast_shutter, OpenClose.OPEN)
 
         LOGGER.info("Kickoff eiger and i0")
         yield from bps.kickoff_all(*detectors, wait=True)
 
-        LOGGER.info(f"Triggering i0 and eiger {frames} times")
-        for _ in range(frames):
-            yield from bps.abs_set(devices.zebra.inputs.soft_in_1, 1, wait=True)
-            yield from bps.sleep(exposure_time)
-            yield from bps.abs_set(devices.zebra.inputs.soft_in_1, 0, wait=True)
-            yield from per_step()
+        yield from collection()
 
         LOGGER.info("Completing Capture")
         yield from bps.complete_all(*detectors, wait=True)
