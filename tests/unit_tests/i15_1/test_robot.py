@@ -1,5 +1,3 @@
-from unittest.mock import MagicMock, patch
-
 import pytest
 from bluesky.run_engine import RunEngine
 from daq_config_server import ConfigClient
