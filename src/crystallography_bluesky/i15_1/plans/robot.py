@@ -13,7 +13,6 @@ from dodal.devices.beamlines.i15_1.safe_or_beam_positioner import (
 )
 from dodal.devices.interlocks import IntPLCInterlock, PSSInterlock
 from dodal.devices.motors import XYZStage
-from dodal.log import LOGGER
 
 robot = inject("robot")
 hutch_interlock = inject("hutch_interlock")
@@ -48,20 +47,6 @@ def robot_load(
     yield from prepare_beamline_for_robot_load(blower, cobra)
 
     yield from move_hexapod_to_home_position(hexapod, hexapod_rotation)
-
-    current_puck = yield from bps.rd(robot.current_sample.puck)
-    current_position = yield from bps.rd(robot.current_sample.position)
-    if current_position != 0 and current_puck != 0:
-        LOGGER.info(
-            f"Position {current_position} from puck {current_puck} already loaded, unloading first."
-        )
-        yield from robot_unload(
-            robot, hutch_interlock, gonio_interlock, hexapod, hexapod_rotation
-        )
-    elif current_position == 0 or current_puck == 0:
-        raise ValueError(
-            f"Robot state is invalid with a current puck/position of {current_puck}/{current_position}"
-        )
 
     sample = SampleLocation(puck, position)
     yield from bps.abs_set(robot, sample, wait=True)
