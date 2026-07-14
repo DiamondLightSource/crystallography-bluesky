@@ -7,7 +7,6 @@ from dodal.devices.beamlines.i15_1.cobra import Cobra
 from dodal.devices.beamlines.i15_1.hexapod import Hexapod
 from dodal.devices.beamlines.i15_1.robot import Robot
 from dodal.devices.interlocks import IntPLCInterlock, PSSInterlock
-from dodal.devices.motors import XYZStage
 from ophyd_async.core import get_mock_put, init_devices, set_mock_value
 
 from crystallography_bluesky.i15_1.plans import (
