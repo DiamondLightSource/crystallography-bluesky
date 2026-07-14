@@ -4,6 +4,7 @@ from daq_config_server import ConfigClient
 from daq_config_server.models.i15_1.xpdf_parameters import TemperatureControllerParams
 from dodal.devices.beamlines.i15_1.blower import Blower
 from dodal.devices.beamlines.i15_1.cobra import Cobra
+from dodal.devices.beamlines.i15_1.hexapod import Hexapod
 from dodal.devices.beamlines.i15_1.robot import Robot
 from dodal.devices.interlocks import IntPLCInterlock, PSSInterlock
 from dodal.devices.motors import XYZStage
@@ -78,25 +79,17 @@ async def gonio_interlock() -> IntPLCInterlock:
 
 
 @pytest.fixture
-async def hexapod() -> XYZStage:
+async def hexapod() -> Hexapod:
     async with init_devices(mock=True):
-        hexapod = XYZStage("", "")
+        hexapod = Hexapod("", "")
     return hexapod
-
-
-@pytest.fixture
-async def hexapod_rotation() -> XYZStage:
-    async with init_devices(mock=True):
-        hexapod_rotation = XYZStage("", "")
-    return hexapod_rotation
 
 
 async def test_plan_loads_robot(
     robot: Robot,
     hutch_interlock: PSSInterlock,
     gonio_interlock: IntPLCInterlock,
-    hexapod: XYZStage,
-    hexapod_rotation: XYZStage,
+    hexapod: Hexapod,
     blower: Blower,
     cobra: Cobra,
 ):
@@ -109,7 +102,6 @@ async def test_plan_loads_robot(
             hutch_interlock,
             gonio_interlock,
             hexapod,
-            hexapod_rotation,
             blower,
             cobra,
         )
@@ -130,8 +122,7 @@ async def test_robot_load_plan_moves_cobra_and_blower_into_safe_position(
     robot: Robot,
     hutch_interlock: PSSInterlock,
     gonio_interlock: IntPLCInterlock,
-    hexapod: XYZStage,
-    hexapod_rotation: XYZStage,
+    hexapod: Hexapod,
     blower: Blower,
     cobra: Cobra,
 ):
@@ -144,7 +135,6 @@ async def test_robot_load_plan_moves_cobra_and_blower_into_safe_position(
             hutch_interlock,
             gonio_interlock,
             hexapod,
-            hexapod_rotation,
             blower,
             cobra,
         )
@@ -157,14 +147,13 @@ async def test_plan_unloads_robot(
     robot: Robot,
     hutch_interlock: PSSInterlock,
     gonio_interlock: IntPLCInterlock,
-    hexapod: XYZStage,
-    hexapod_rotation: XYZStage,
+    hexapod: Hexapod,
 ):
     set_mock_value(robot.current_sample.puck, 1)
     set_mock_value(robot.current_sample.position, 2)
 
     RE = RunEngine()
-    RE(robot_unload(robot, hutch_interlock, gonio_interlock, hexapod, hexapod_rotation))
+    RE(robot_unload(robot, hutch_interlock, gonio_interlock, hexapod))
 
     assert await robot.current_sample.puck.get_value() == 0
     assert await robot.current_sample.position.get_value() == 0
@@ -181,19 +170,14 @@ async def test_correct_error_is_raised_when_hutch_is_not_safe_to_operate(
     robot: Robot,
     hutch_interlock: PSSInterlock,
     gonio_interlock: IntPLCInterlock,
-    hexapod: XYZStage,
-    hexapod_rotation: XYZStage,
+    hexapod: Hexapod,
     status: int,
     reason: str,
 ):
     set_mock_value(hutch_interlock.status, status)
     RE = RunEngine()
     with pytest.raises(AssertionError, match=reason):
-        RE(
-            robot_load(
-                1, 2, robot, hutch_interlock, gonio_interlock, hexapod, hexapod_rotation
-            )
-        )
+        RE(robot_load(1, 2, robot, hutch_interlock, gonio_interlock, hexapod))
 
 
 @pytest.mark.parametrize(
@@ -207,19 +191,14 @@ async def test_correct_error_is_raised_when_gonio_is_not_safe_to_operate(
     robot: Robot,
     hutch_interlock: PSSInterlock,
     gonio_interlock: IntPLCInterlock,
-    hexapod: XYZStage,
-    hexapod_rotation: XYZStage,
+    hexapod: Hexapod,
     status: float,
     reason: str,
 ):
     set_mock_value(gonio_interlock.status, status)
     RE = RunEngine()
     with pytest.raises(AssertionError, match=reason):
-        RE(
-            robot_load(
-                1, 2, robot, hutch_interlock, gonio_interlock, hexapod, hexapod_rotation
-            )
-        )
+        RE(robot_load(1, 2, robot, hutch_interlock, gonio_interlock, hexapod))
 
 
 @pytest.mark.parametrize(
@@ -227,8 +206,7 @@ async def test_correct_error_is_raised_when_gonio_is_not_safe_to_operate(
     ([1, 2, 3, 4, 5, 6], [0, 0, 0, 0, 0, 0]),
 )
 async def test_plan_moves_hexapod_to_home_position(
-    hexapod: XYZStage,
-    hexapod_rotation: XYZStage,
+    hexapod: Hexapod,
     x_home: float,
     y_home: float,
     z_home: float,
@@ -240,7 +218,6 @@ async def test_plan_moves_hexapod_to_home_position(
     RE(
         move_hexapod_to_home_position(
             hexapod=hexapod,
-            hexapod_rotation=hexapod_rotation,
             x_home=x_home,
             y_home=y_home,
             z_home=z_home,
@@ -253,6 +230,6 @@ async def test_plan_moves_hexapod_to_home_position(
     assert await hexapod.x.user_readback.get_value() == x_home
     assert await hexapod.y.user_readback.get_value() == y_home
     assert await hexapod.z.user_readback.get_value() == z_home
-    assert await hexapod_rotation.x.user_readback.get_value() == rx_home
-    assert await hexapod_rotation.y.user_readback.get_value() == ry_home
-    assert await hexapod_rotation.z.user_readback.get_value() == rz_home
+    assert await hexapod.rx.user_readback.get_value() == rx_home
+    assert await hexapod.ry.user_readback.get_value() == ry_home
+    assert await hexapod.rz.user_readback.get_value() == rz_home
