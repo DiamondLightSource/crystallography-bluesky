@@ -39,13 +39,15 @@ class TriggerAnalysisCallback(CallbackBase):
 
         full_nexuspath = Path(self._directory) / Path(f"{self._file}.nxs")
 
-        self._client.submit(
+        self._last_request_id = self._client.submit(
             self._analysis_name,
             filepath=full_nexuspath,
             **self._kwargs,
         )
 
     def wait_on_and_retrieve_result(self):
-        result = self._client.get_result()
+        result = self._client.get_request_id_result(
+            request_id=self._last_request_id, timeout=90
+        )
         LOGGER.info(f"Received result from analysis {result}")
         return result.result
