@@ -60,7 +60,7 @@ def test_data_collection_calls_setup_with_expected_arguments(
             full_collection_time=2,
             exposure_time_per_frame=0.01,
             generic_collection_devices=common_collection_devices,
-            baseline_devices=baseline_devices,
+            baseline_devices=baseline_devices,  # type:ignore
         )
     )
 
@@ -84,7 +84,9 @@ def test_data_collection_calls_setup_with_expected_arguments(
     )
 
     assert (
-        asyncio.run(common_collection_devices.tth.movable_logic.calculate_timeout())
+        asyncio.run(
+            common_collection_devices.tth.movable_logic.calculate_timeout(None, None)
+        )
         == 60
     )
 
