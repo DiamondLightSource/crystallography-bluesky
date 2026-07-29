@@ -7,7 +7,7 @@ from ophyd_async.core import StandardReadable
 
 from crystallography_bluesky.i15_1.plans.generic_collection import (
     GenericCollectionDevices,
-    generic_collection,
+    generic_per_step_collection,
 )
 
 devices = inject("")
@@ -32,7 +32,7 @@ def static_collection(
         baseline_devices (list[StandardReadable] | None, optional): Any other devices to
                 record metadata from. Defaults to None.
     """
-    yield from generic_collection(
+    yield from generic_per_step_collection(
         frames,
         exposure_time,
         lambda: bps.sleep(time_between_frames - exposure_time),

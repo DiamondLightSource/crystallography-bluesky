@@ -104,11 +104,11 @@ def test_centre_sample_plan_makes_expected_calls(
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        predicate=lambda msg: msg.command == "read" and msg.obj.name == "tth",
+        predicate=lambda msg: msg.command == "read" and msg.obj.name == "xtal",
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        predicate=lambda msg: msg.command == "read" and msg.obj.name == "xtal",
+        predicate=lambda msg: msg.command == "read" and msg.obj.name == "tth",
     )
     msgs = assert_message_and_return_remaining(
         msgs,
@@ -177,11 +177,11 @@ def test_centre_sample_plan_makes_expected_calls(
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        predicate=lambda msg: msg.command == "read" and msg.obj.name == "tth",
+        predicate=lambda msg: msg.command == "read" and msg.obj.name == "xtal",
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        predicate=lambda msg: msg.command == "read" and msg.obj.name == "xtal",
+        predicate=lambda msg: msg.command == "read" and msg.obj.name == "tth",
     )
     msgs = assert_message_and_return_remaining(
         msgs,
@@ -222,7 +222,7 @@ def test_centre_sample_moved_to_start_before_stage(
     )
 
 
-@patch("crystallography_bluesky.i15_1.plans.centre_sample.generic_collection")
+@patch("crystallography_bluesky.i15_1.plans.centre_sample.generic_per_step_collection")
 def test_centre_sample_calls_analysis_and_retrieves_result(
     mock_generic_collection: MagicMock,
     mock_analysis_client: MagicMock,
@@ -241,7 +241,7 @@ def test_centre_sample_calls_analysis_and_retrieves_result(
     mock_analysis_client.get_result.assert_called_once()
 
 
-@patch("crystallography_bluesky.i15_1.plans.centre_sample.generic_collection")
+@patch("crystallography_bluesky.i15_1.plans.centre_sample.generic_per_step_collection")
 def test_centre_sample_moves_to_analysis_result(
     mock_generic_collection: MagicMock,
     mock_analysis_client: MagicMock,
@@ -258,7 +258,7 @@ def test_centre_sample_moves_to_analysis_result(
     get_mock_put(hexapod.z.user_setpoint).assert_awaited_with(17)
 
 
-@patch("crystallography_bluesky.i15_1.plans.centre_sample.generic_collection")
+@patch("crystallography_bluesky.i15_1.plans.centre_sample.generic_per_step_collection")
 def test_centre_sample_throws_error_if_result_out_of_bounds_of_scan(
     mock_generic_collection: MagicMock,
     mock_analysis_client: MagicMock,

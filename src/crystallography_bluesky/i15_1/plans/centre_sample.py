@@ -14,7 +14,7 @@ from crystallography_bluesky.i15_1.callbacks.analysis_callback import (
 )
 from crystallography_bluesky.i15_1.plans.generic_collection import (
     GenericCollectionDevices,
-    generic_collection,
+    generic_per_step_collection,
 )
 
 devices = inject("")
@@ -67,7 +67,7 @@ def centre_sample(
         yield from bps.mvr(hexapod.z, step_size)
 
     yield from bpp.subs_wrapper(
-        generic_collection(
+        generic_per_step_collection(
             steps,
             exposure_time,
             per_step,

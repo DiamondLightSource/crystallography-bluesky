@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 from bluesky import RunEngine
-from daq_config_server import ConfigClient
+from daq_config_server.client import ConfigClient
 from dodal.devices.beamlines.i15_1.laue import LaueMonochrometer
 from dodal.devices.beamlines.i15_1.robot import Robot
 from dodal.devices.motors import XYZStage
