@@ -13,6 +13,8 @@ from crystallography_bluesky.i15_1.plans.generic_collection import (
 
 devices = inject("")
 
+# See https://github.com/DiamondLightSource/crystallography-bluesky/issues/111 for a
+# cleaner solution to this
 positions_to_percentage: dict[float, float] = {
     10: 0.05,
     20: 0.05,
@@ -20,7 +22,7 @@ positions_to_percentage: dict[float, float] = {
     40: 0.2,
     50: 0.3,
     60: 0.3,
-}  # Need to asser adds to <= 1
+}  #
 
 
 def _calculate_number_of_frames(
@@ -33,7 +35,8 @@ def _calculate_number_of_frames(
     )
     if frames < 1:
         LOGGER.warning(
-            f"Requested collection time ({full_collection_time}) will lead to no frames being taken at some angles, taking one fram instead"
+            f"Requested collection time ({full_collection_time}) will lead to no frames"
+            f" being taken at some angles, taking one frame instead"
         )
         frames = 1
     return frames
@@ -79,7 +82,8 @@ def data_collection(
         )
 
     LOGGER.info(
-        f"Total exposure time will be {total_frames * exposure_time_per_frame} compared to user specified {full_collection_time}"
+        f"Total exposure time will be {total_frames * exposure_time_per_frame} compared"
+        f" to user specified {full_collection_time}"
     )
 
     yield from setup_and_teardown_collection(
