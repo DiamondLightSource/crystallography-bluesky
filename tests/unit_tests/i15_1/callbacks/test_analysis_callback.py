@@ -35,7 +35,7 @@ def test_system_against_prod(blueapi_run_engine: RunEngine):
     callback = TriggerAnalysisCallback(
         "https://i15-1-analysis.diamond.ac.uk",
         "read_number_of_frames_from_nxs",
-        datapath="/entry/instrument/fastcs_eiger/fastcs_eiger",
+        dataset_path="/entry/instrument/fastcs_eiger/fastcs_eiger",
     )
 
     _run_plan_with_callback(blueapi_run_engine, callback)
@@ -57,7 +57,7 @@ def test_submit_called_with_correct_path(mock_client_cls, blueapi_run_engine):
 
     mock_client.submit.assert_called_once_with(
         "my_analysis",
-        nexus_filepath=Path("/dls/i15-1/data/2026/cm44163-3/i15-1-95557.nxs"),
+        filepath=Path("/dls/i15-1/data/2026/cm44163-3/i15-1-95557.nxs"),
         extra_kw="value",
     )
 

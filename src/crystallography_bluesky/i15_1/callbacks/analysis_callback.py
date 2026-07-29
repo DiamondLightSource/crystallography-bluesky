@@ -41,7 +41,7 @@ class TriggerAnalysisCallback(CallbackBase):
 
         self._client.submit(
             self._analysis_name,
-            nexus_filepath=full_nexuspath,
+            filepath=full_nexuspath,
             **self._kwargs,
         )
 

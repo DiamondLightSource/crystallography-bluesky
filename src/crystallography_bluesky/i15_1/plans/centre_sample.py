@@ -52,7 +52,7 @@ def centre_sample(
         # This should be the real analysis workflow once we are getting real data
         # Currently returns the midpoint of the scan
         "fake_sample_alignment_i15_1",
-        datapath=f"/entry/instrument/{eiger.name}/{eiger.name}",
+        dataset_path=f"/entry/instrument/{eiger.name}/{eiger.name}",
     )
 
     yield from bps.mv(hexapod.z, start_z)
