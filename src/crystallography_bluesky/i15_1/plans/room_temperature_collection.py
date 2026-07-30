@@ -15,7 +15,7 @@ devices = inject("")
 
 # See https://github.com/DiamondLightSource/crystallography-bluesky/issues/111 for a
 # cleaner solution to this
-positions_to_percentage: dict[float, float] = {
+positions_to_fraction: dict[float, float] = {
     10: 0.05,
     20: 0.05,
     30: 0.1,
@@ -26,20 +26,11 @@ positions_to_percentage: dict[float, float] = {
 
 
 def _calculate_number_of_frames(
-    percentage_of_time: float,
+    fraction_of_time: float,
     full_collection_time: float,
     exposure_time_per_frame: float,
 ) -> int:
-    frames = ceil(
-        (percentage_of_time * full_collection_time) // exposure_time_per_frame
-    )
-    if frames < 1:
-        LOGGER.warning(
-            f"Requested collection time ({full_collection_time}) will lead to no frames"
-            f" being taken at some angles, taking one frame instead"
-        )
-        frames = 1
-    return frames
+    return ceil((fraction_of_time * full_collection_time) / exposure_time_per_frame)
 
 
 def data_collection(
@@ -55,14 +46,25 @@ def data_collection(
     # tth is currently very slow, speed will be improved for run
     generic_collection_devices.tth.movable_logic.calculate_timeout = calc_timeout
 
+    frames_per_angle = {}
+    total_frames = 0
+    for angle, fraction in positions_to_fraction.items():
+        frames = _calculate_number_of_frames(
+            fraction, full_collection_time, exposure_time_per_frame
+        )
+        frames_per_angle[angle] = frames
+        total_frames += frames
+
+    LOGGER.info(
+        f"Total exposure time will be {total_frames * exposure_time_per_frame} compared"
+        f" to user specified {full_collection_time}"
+    )
+
     def collection():
-        for position, percentage in positions_to_percentage.items():
+        for position, frames in frames_per_angle.items():
             tth = generic_collection_devices.tth
             yield from bps.mv(tth, position)
             current_tth = yield from bps.rd(tth)
-            frames = _calculate_number_of_frames(
-                percentage, full_collection_time, exposure_time_per_frame
-            )
             LOGGER.info(
                 f"Triggering i0 and eiger {frames} times at tth of {current_tth}"
             )
@@ -74,17 +76,6 @@ def data_collection(
                 yield from bps.abs_set(detector_trigger, 1, wait=True)
                 yield from bps.sleep(exposure_time_per_frame)
                 yield from bps.abs_set(detector_trigger, 0, wait=True)
-
-    total_frames = 0
-    for _, percentage in positions_to_percentage.items():
-        total_frames += _calculate_number_of_frames(
-            percentage, full_collection_time, exposure_time_per_frame
-        )
-
-    LOGGER.info(
-        f"Total exposure time will be {total_frames * exposure_time_per_frame} compared"
-        f" to user specified {full_collection_time}"
-    )
 
     yield from setup_and_teardown_collection(
         int(total_frames),

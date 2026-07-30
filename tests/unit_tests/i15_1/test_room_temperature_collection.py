@@ -11,13 +11,13 @@ from crystallography_bluesky.i15_1.plans.generic_collection import (
 from crystallography_bluesky.i15_1.plans.room_temperature_collection import (
     _calculate_number_of_frames,
     data_collection,
-    positions_to_percentage,
+    positions_to_fraction,
 )
 
 
 def test_calculate_number_of_frames_calculates_expected_frame_count():
     frames = _calculate_number_of_frames(
-        percentage_of_time=0.2,
+        fraction_of_time=0.2,
         full_collection_time=10,
         exposure_time_per_frame=0.5,
     )
@@ -25,19 +25,14 @@ def test_calculate_number_of_frames_calculates_expected_frame_count():
     assert frames == 4
 
 
-@patch("crystallography_bluesky.i15_1.plans.room_temperature_collection.LOGGER")
-def test_calculate_number_of_frames_returns_one_and_warns_when_no_frames(
-    logger: MagicMock,
-):
+def test_calculate_number_of_frames_returns_one_if_calculation_would_be_zero():
     frames = _calculate_number_of_frames(
-        percentage_of_time=0.05,
+        fraction_of_time=0.05,
         full_collection_time=0.01,
         exposure_time_per_frame=1,
     )
 
     assert frames == 1
-    logger.warning.assert_called_once()
-    assert "no frames" in logger.warning.call_args.args[0]
 
 
 @patch(
@@ -65,8 +60,8 @@ def test_data_collection_calls_setup_with_expected_arguments(
     )
 
     expected_total_frames = sum(
-        _calculate_number_of_frames(percentage, 2, 0.01)
-        for percentage in positions_to_percentage.values()
+        _calculate_number_of_frames(fraction, 2, 0.01)
+        for fraction in positions_to_fraction.values()
     )
 
     setup_call_args = mock_setup.call_args.args
@@ -106,7 +101,7 @@ def test_data_collection_takes_one_frame_per_position_for_short_collection(
     tth_positions = [
         msg.args[0] for msg in msgs if msg.command == "set" and msg.obj.name == "tth"
     ]
-    assert tth_positions == list(positions_to_percentage.keys())
+    assert tth_positions == list(positions_to_fraction.keys())
 
     detector_high_triggers = [
         msg
@@ -115,11 +110,11 @@ def test_data_collection_takes_one_frame_per_position_for_short_collection(
         and msg.obj.name == "zebra-inputs-soft_in_1"
         and msg.args[0] == 1
     ]
-    assert len(detector_high_triggers) == len(positions_to_percentage)
+    assert len(detector_high_triggers) == len(positions_to_fraction)
 
     tth_stream_creates = [
         msg
         for msg in msgs
         if msg.command == "create" and msg.kwargs.get("name") == "tth"
     ]
-    assert len(tth_stream_creates) == len(positions_to_percentage)
+    assert len(tth_stream_creates) == len(positions_to_fraction)
