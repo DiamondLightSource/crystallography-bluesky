@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 from bluesky import RunEngine
-from daq_config_server import ConfigClient
+from daq_config_server.client import ConfigClient
 from dodal.devices.beamlines.i15_1.laue import LaueMonochrometer
 from dodal.devices.beamlines.i15_1.robot import Robot
 from dodal.devices.motors import XYZStage
@@ -94,7 +94,7 @@ async def hexapod() -> XYZStage:
 @pytest.fixture
 async def xtal() -> LaueMonochrometer:
     async with init_devices(mock=True):
-        xtal = LaueMonochrometer("", ConfigClient(""), "")
+        xtal = LaueMonochrometer("", ConfigClient.from_url(""), "")
     return xtal
 
 
