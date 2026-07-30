@@ -1,6 +1,6 @@
 import pytest
 from bluesky.run_engine import RunEngine
-from daq_config_server import ConfigClient
+from daq_config_server.client import ConfigClient
 from daq_config_server.models.i15_1.xpdf_parameters import TemperatureControllerParams
 from dodal.devices.beamlines.i15_1.blower import Blower
 from dodal.devices.beamlines.i15_1.cobra import Cobra
@@ -20,7 +20,7 @@ from crystallography_bluesky.i15_1.plans.robot import prepare_beamline_for_robot
 @pytest.fixture
 async def blower() -> Blower:
     async with init_devices(mock=True):
-        blower = Blower("", "", "", ConfigClient(""), "")
+        blower = Blower("", "", "", ConfigClient.from_url(""), "")
 
     def mock_config():
         return TemperatureControllerParams(
@@ -42,7 +42,7 @@ async def blower() -> Blower:
 @pytest.fixture
 async def cobra() -> Cobra:
     async with init_devices(mock=True):
-        cobra = Cobra("", ConfigClient(""), "")
+        cobra = Cobra("", ConfigClient.from_url(""), "")
 
     def mock_config():
         return TemperatureControllerParams(
