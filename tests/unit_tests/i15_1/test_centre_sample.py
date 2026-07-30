@@ -41,7 +41,7 @@ def mock_analysis_client():
         "crystallography_bluesky.i15_1.callbacks.analysis_callback.AnalysisClient"
     ) as mock_analysis_client_cls:
         mock_analysis_client_cls.return_value = (mock_client := MagicMock())
-        mock_client.get_result.return_value = AnalysisResult(
+        mock_client.get_request_id_result.return_value = AnalysisResult(
             analysis_name="fake_sample_alignment_i15_1",
             result='{"centre": 17}',
             status="completed",
@@ -238,7 +238,7 @@ def test_centre_sample_calls_analysis_and_retrieves_result(
     blueapi_run_engine(centre_sample(10, 20, 10, 0.01, MagicMock(), hexapod))
 
     mock_analysis_client.submit.assert_called_once()
-    mock_analysis_client.get_result.assert_called_once()
+    mock_analysis_client.get_request_id_result.assert_called_once()
 
 
 @patch("crystallography_bluesky.i15_1.plans.centre_sample.generic_collection")
@@ -265,7 +265,7 @@ def test_centre_sample_throws_error_if_result_out_of_bounds_of_scan(
     hexapod: XYZStage,
     blueapi_run_engine: RunEngine,
 ):
-    mock_analysis_client.get_result.return_value.result = '{"centre": 21}'
+    mock_analysis_client.get_request_id_result.return_value.result = '{"centre": 21}'
 
     @bpp.run_decorator()
     def my_plan(*_, **__):

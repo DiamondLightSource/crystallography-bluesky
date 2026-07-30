@@ -100,12 +100,13 @@ def test_wait_on_and_retrieve_result(mock_client_cls):
 
     mock_result = MagicMock()
     mock_result.result = "42"
-    mock_client.get_result.return_value = mock_result
+    mock_client.get_request_id_result.return_value = mock_result
 
     callback = TriggerAnalysisCallback("url", "analysis")
+    callback.request_id = MagicMock()
 
     assert callback.wait_on_and_retrieve_result() == 42
-    mock_client.get_result.assert_called_once()
+    mock_client.get_request_id_result.assert_called_once()
 
 
 @patch("crystallography_bluesky.i15_1.callbacks.analysis_callback.AnalysisClient")
@@ -145,13 +146,48 @@ def test_submit_not_called_if_plan_fails(mock_client_cls, blueapi_run_engine):
 
 
 @patch("crystallography_bluesky.i15_1.callbacks.analysis_callback.AnalysisClient")
+def test_given_no_request_id_then_retrieving_analysis_result_fails(mock_client_cls):
+    mock_client = mock_client_cls.return_value
+
+    callback = TriggerAnalysisCallback("url", "analysis")
+
+    with pytest.raises(ValueError):
+        assert callback.wait_on_and_retrieve_result() == 42
+    mock_client.get_request_id_result.assert_not_called()
+
+
+@patch("crystallography_bluesky.i15_1.callbacks.analysis_callback.AnalysisClient")
+@patch("crystallography_bluesky.i15_1.callbacks.analysis_callback.json.loads")
+def test_given_request_id_returned_by_analysis_then_this_result_is_requested(
+    mock_json_loads, mock_client_cls, blueapi_run_engine
+):
+    mock_client = mock_client_cls.return_value
+    mock_request_id = MagicMock()
+
+    mock_client.submit.return_value = mock_request_id
+
+    callback = TriggerAnalysisCallback(
+        "http://fake-url",
+        "my_analysis",
+        extra_kw="value",
+    )
+
+    _run_plan_with_callback(blueapi_run_engine, callback)
+
+    callback.wait_on_and_retrieve_result()
+
+    mock_client.get_request_id_result.assert_called_once_with(mock_request_id)
+
+
+@patch("crystallography_bluesky.i15_1.callbacks.analysis_callback.AnalysisClient")
 def test_wait_on_and_retrieve_result_serialises_result(mock_client_cls):
     mock_client = mock_client_cls.return_value
 
     mock_result = MagicMock()
     mock_result.result = '{"centre": 42}'
-    mock_client.get_result.return_value = mock_result
+    mock_client.get_request_id_result.return_value = mock_result
 
     callback = TriggerAnalysisCallback("url", "analysis")
+    callback.request_id = MagicMock()
 
     assert callback.wait_on_and_retrieve_result() == {"centre": 42}

@@ -23,6 +23,7 @@ class TriggerAnalysisCallback(CallbackBase):
         self._client = AnalysisClient(analysis_url)
         self._analysis_name = analysis_name
         self._kwargs = kwargs
+        self.request_id = None
 
     def start(self, doc: RunStart) -> RunStart | None:
         self._directory = doc.get("data_session_directory")
@@ -40,14 +41,17 @@ class TriggerAnalysisCallback(CallbackBase):
 
         full_nexuspath = Path(self._directory) / Path(f"{self._file}.nxs")
 
-        self._client.submit(
+        self.request_id = self._client.submit(
             self._analysis_name,
             filepath=full_nexuspath,
             **self._kwargs,
         )
+        LOGGER.info(f"Submitted analysis request {self.request_id}")
 
     def wait_on_and_retrieve_result(self):
-        result = self._client.get_result()
-        LOGGER.info(f"Received result from analysis {result}")
+        if not self.request_id:
+            raise ValueError("Results requested but analysis has not been triggered")
+        result = self._client.get_request_id_result(self.request_id)
+        LOGGER.info(f"Received result from analysis {result} for {self.request_id}")
         # Needed until https://github.com/DiamondLightSource/heliotrapi/issues/35 done
         return json.loads(result.result)
