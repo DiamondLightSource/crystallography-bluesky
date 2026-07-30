@@ -94,7 +94,7 @@ async def hexapod() -> XYZStage:
 @pytest.fixture
 async def xtal() -> LaueMonochrometer:
     async with init_devices(mock=True):
-        xtal = LaueMonochrometer("", ConfigClient.from_url(), "")
+        xtal = LaueMonochrometer("", ConfigClient.from_url(""), "")
     return xtal
 
 
