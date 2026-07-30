@@ -99,7 +99,7 @@ def test_wait_on_and_retrieve_result(mock_client_cls):
     mock_client = mock_client_cls.return_value
 
     mock_result = MagicMock()
-    mock_result.result = 42
+    mock_result.result = "42"
     mock_client.get_result.return_value = mock_result
 
     callback = TriggerAnalysisCallback("url", "analysis")
@@ -142,3 +142,16 @@ def test_submit_not_called_if_plan_fails(mock_client_cls, blueapi_run_engine):
         blueapi_run_engine(my_plan())
 
     mock_client.submit.assert_not_called()
+
+
+@patch("crystallography_bluesky.i15_1.callbacks.analysis_callback.AnalysisClient")
+def test_wait_on_and_retrieve_result_serialises_result(mock_client_cls):
+    mock_client = mock_client_cls.return_value
+
+    mock_result = MagicMock()
+    mock_result.result = '{"centre": 42}'
+    mock_client.get_result.return_value = mock_result
+
+    callback = TriggerAnalysisCallback("url", "analysis")
+
+    assert callback.wait_on_and_retrieve_result() == {"centre": 42}
