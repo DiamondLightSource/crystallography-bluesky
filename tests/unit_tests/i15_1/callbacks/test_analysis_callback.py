@@ -35,7 +35,7 @@ def test_system_against_prod(blueapi_run_engine: RunEngine):
     callback = TriggerAnalysisCallback(
         "https://i15-1-analysis.diamond.ac.uk",
         "read_number_of_frames_from_nxs",
-        datapath="/entry/instrument/fastcs_eiger/fastcs_eiger",
+        dataset_path="/entry/instrument/fastcs_eiger/fastcs_eiger",
     )
 
     _run_plan_with_callback(blueapi_run_engine, callback)
@@ -57,7 +57,7 @@ def test_submit_called_with_correct_path(mock_client_cls, blueapi_run_engine):
 
     mock_client.submit.assert_called_once_with(
         "my_analysis",
-        nexus_filepath=Path("/dls/i15-1/data/2026/cm44163-3/i15-1-95557.nxs"),
+        filepath=Path("/dls/i15-1/data/2026/cm44163-3/i15-1-95557.nxs"),
         extra_kw="value",
     )
 
@@ -99,7 +99,7 @@ def test_wait_on_and_retrieve_result(mock_client_cls):
     mock_client = mock_client_cls.return_value
 
     mock_result = MagicMock()
-    mock_result.result = 42
+    mock_result.result = "42"
     mock_client.get_request_id_result.return_value = mock_result
 
     callback = TriggerAnalysisCallback("url", "analysis")
@@ -157,8 +157,9 @@ def test_given_no_request_id_then_retrieving_analysis_result_fails(mock_client_c
 
 
 @patch("crystallography_bluesky.i15_1.callbacks.analysis_callback.AnalysisClient")
+@patch("crystallography_bluesky.i15_1.callbacks.analysis_callback.json.loads")
 def test_given_request_id_returned_by_analysis_then_this_result_is_requested(
-    mock_client_cls, blueapi_run_engine
+    mock_json_loads, mock_client_cls, blueapi_run_engine
 ):
     mock_client = mock_client_cls.return_value
     mock_request_id = MagicMock()
@@ -176,3 +177,17 @@ def test_given_request_id_returned_by_analysis_then_this_result_is_requested(
     callback.wait_on_and_retrieve_result()
 
     mock_client.get_request_id_result.assert_called_once_with(mock_request_id)
+
+
+@patch("crystallography_bluesky.i15_1.callbacks.analysis_callback.AnalysisClient")
+def test_wait_on_and_retrieve_result_serialises_result(mock_client_cls):
+    mock_client = mock_client_cls.return_value
+
+    mock_result = MagicMock()
+    mock_result.result = '{"centre": 42}'
+    mock_client.get_request_id_result.return_value = mock_result
+
+    callback = TriggerAnalysisCallback("url", "analysis")
+    callback.request_id = MagicMock()
+
+    assert callback.wait_on_and_retrieve_result() == {"centre": 42}

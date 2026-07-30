@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 from bluesky.callbacks import CallbackBase
@@ -42,7 +43,7 @@ class TriggerAnalysisCallback(CallbackBase):
 
         self.request_id = self._client.submit(
             self._analysis_name,
-            nexus_filepath=full_nexuspath,
+            filepath=full_nexuspath,
             **self._kwargs,
         )
         LOGGER.info(f"Submitted analysis request {self.request_id}")
@@ -52,4 +53,5 @@ class TriggerAnalysisCallback(CallbackBase):
             raise ValueError("Results requested but analysis has not been triggered")
         result = self._client.get_request_id_result(self.request_id)
         LOGGER.info(f"Received result from analysis {result} for {self.request_id}")
-        return result.result
+        # Needed until https://github.com/DiamondLightSource/heliotrapi/issues/35 done
+        return json.loads(result.result)

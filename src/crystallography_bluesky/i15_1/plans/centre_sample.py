@@ -52,7 +52,7 @@ def centre_sample(
         # This should be the real analysis workflow once we are getting real data
         # Currently returns the midpoint of the scan
         "fake_sample_alignment_i15_1",
-        datapath=f"/entry/instrument/{eiger.name}/{eiger.name}",
+        dataset_path=f"/entry/instrument/{eiger.name}/{eiger.name}",
     )
 
     yield from bps.mv(hexapod.z, start_z)
@@ -79,7 +79,7 @@ def centre_sample(
     )
 
     analysis_result = analysis_callback.wait_on_and_retrieve_result()
-    centre = analysis_result["position"]
+    centre = analysis_result["centre"]
     assert (start_z < centre < end_z) or (start_z > centre > end_z), (
         f"Analysis result {centre} is not within the bounds of the scan: "
         + f"({start_z, end_z})"
