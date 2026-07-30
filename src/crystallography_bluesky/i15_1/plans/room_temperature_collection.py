@@ -22,7 +22,7 @@ positions_to_percentage: dict[float, float] = {
     40: 0.2,
     50: 0.3,
     60: 0.3,
-}  #
+}
 
 
 def _calculate_number_of_frames(
