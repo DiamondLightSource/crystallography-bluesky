@@ -30,27 +30,28 @@ class GenericCollectionDevices:
     xtal: LaueMonochrometer
 
 
-def generic_collection(
+def setup_and_teardown_collection(
     frames: int,
     exposure_time: float,
-    per_step: Callable[[], MsgGenerator],
     devices: GenericCollectionDevices,
+    collection: Callable[[], MsgGenerator],
     baseline_devices: list[StandardReadable] | None = None,
     metadata: dict[str, Any] | None = None,
 ) -> MsgGenerator:
-    """Take a collection with the eiger and i0 detectors. Metadata from the robot
-    spinner, tth, and any other baseline devices will be added to the nexus file.
+    """Setup and tear down the eiger and i0 detectors for a collection. The specific
+    collection performed (including triggering the detectors through the zebra) should
+    be specified in the provided `collection`.
 
     Args:
         frames (int): Number of frames to capture
         exposure_time (float): Exposure time of each frame
-        per_step (Callable[[], MsgGenerator]): The plan to run on each frame
         devices (GenericCollectionDevices): The standard devices needed for the
                 collection
+        collection (Callable[[], MsgGenerator]): The collection logic, including
+                triggering the detetcors
         baseline_devices (list[StandardReadable] | None, optional): Any other devices to
                 record metadata from. Defaults to None.
     """
-    DEFAULT_BASELINE_DEVICES = [devices.robot.spinner, devices.tth, devices.xtal]
     TIME_BETWEEN_FRAMES = 0.1
     I0_DEADTIME = 0.0001
 
@@ -78,7 +79,7 @@ def generic_collection(
     )
 
     detectors = [devices.fastcs_eiger, devices.i0]
-    baseline_devices = DEFAULT_BASELINE_DEVICES + (baseline_devices or [])
+    baseline_devices = baseline_devices or []
     LOGGER.info(f"Baseline devices: {baseline_devices}")
 
     def cleanup(*_):
@@ -93,6 +94,7 @@ def generic_collection(
     @bpp.run_decorator(md=metadata)
     @bpp.contingency_decorator(final_plan=cleanup)
     def inner_run():
+
         LOGGER.info("Preparing eiger and i0")
         yield from bps.prepare(
             devices.fastcs_eiger, eiger_trigger_info, group="prepare"
@@ -107,12 +109,7 @@ def generic_collection(
         LOGGER.info("Kickoff eiger and i0")
         yield from bps.kickoff_all(*detectors, wait=True)
 
-        LOGGER.info(f"Triggering i0 and eiger {frames} times")
-        for _ in range(frames):
-            yield from bps.abs_set(devices.zebra.inputs.soft_in_1, 1, wait=True)
-            yield from bps.sleep(exposure_time)
-            yield from bps.abs_set(devices.zebra.inputs.soft_in_1, 0, wait=True)
-            yield from per_step()
+        yield from collection()
 
         LOGGER.info("Completing Capture")
         yield from bps.complete_all(*detectors, wait=True)
@@ -121,3 +118,47 @@ def generic_collection(
         yield from bps.collect(*detectors, return_payload=False, name="primary")
 
     yield from inner_run()
+
+
+def generic_per_step_collection(
+    frames: int,
+    exposure_time: float,
+    per_step: Callable[[], MsgGenerator],
+    devices: GenericCollectionDevices,
+    baseline_devices: list[StandardReadable] | None = None,
+    metadata: dict[str, Any] | None = None,
+) -> MsgGenerator:
+    """Take a collection with the eiger and i0 detectors. Metadata from the robot
+    spinner, tth, and any other baseline devices will be added to the nexus file.
+    The plan provided in `per_step` is what will be run for each scan point, after
+    the detector has been triggered.
+
+    Args:
+        frames (int): Number of frames to capture
+        exposure_time (float): Exposure time of each frame
+        per_step (Callable[[], MsgGenerator]): The plan to run after each frame has been
+                taken.
+        devices (GenericCollectionDevices): The standard devices needed for the
+                collection
+        baseline_devices (list[StandardReadable] | None, optional): Any other devices to
+                record metadata from. Defaults to None.
+    """
+
+    def default_collection():
+        LOGGER.info(f"Triggering i0 and eiger {frames} times")
+        for _ in range(frames):
+            yield from bps.abs_set(devices.zebra.inputs.soft_in_1, 1, wait=True)
+            yield from bps.sleep(exposure_time)
+            yield from bps.abs_set(devices.zebra.inputs.soft_in_1, 0, wait=True)
+            yield from per_step()
+
+    DEFAULT_BASELINE_DEVICES = [devices.robot.spinner, devices.xtal, devices.tth]
+
+    yield from setup_and_teardown_collection(
+        frames,
+        exposure_time,
+        devices,
+        default_collection,
+        DEFAULT_BASELINE_DEVICES + (baseline_devices or []),
+        metadata,
+    )
