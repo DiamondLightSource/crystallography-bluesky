@@ -26,7 +26,7 @@ dependencies = [
     "deepdiff",
     "heliotrapi",
     "blueapi >= 1.0.0",
-    "ophyd-async[ca,pva] >= v0.19.1",
+    "ophyd-async[ca,pva]",
     "bluesky >= 1.13.1",
     "daq-config-server",
     "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@main",
