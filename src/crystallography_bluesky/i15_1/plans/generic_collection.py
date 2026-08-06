@@ -9,7 +9,7 @@ from dodal.common import inject
 from dodal.devices.beamlines.i15_1.laue import LaueMonochrometer
 from dodal.devices.beamlines.i15_1.robot import Robot
 from dodal.devices.tetramm import TetrammDetector
-from dodal.devices.zebra.zebra import ArmDemand, Zebra
+from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import OpenClose, ZebraFastShutter
 from dodal.log import LOGGER
 from ophyd_async.core import DetectorTrigger, StandardReadable, TriggerInfo
@@ -17,7 +17,6 @@ from ophyd_async.epics.motor import Motor
 from ophyd_async.fastcs.eiger import EigerDetector
 
 from crystallography_bluesky.i15_1.plans.setup_zebra import (
-    setup_zebra_for_hardware_triggering,
     setup_zebra_for_software_triggering,
 )
 
@@ -174,13 +173,3 @@ def generic_per_step_collection(
         baseline_devices=DEFAULT_BASELINE_DEVICES + (baseline_devices or []),
         metadata=metadata,
     )
-
-
-def hardware_triggered_collection(
-    zebra: Zebra, frames: int, time_between_frames: float
-) -> MsgGenerator:
-    yield from setup_zebra_for_hardware_triggering(
-        zebra=zebra, frames=frames, time_between_frames=time_between_frames
-    )
-    yield from bps.abs_set(zebra.pc.arm, ArmDemand.ARM, wait=True)
-    yield from bps.sleep(frames * time_between_frames)

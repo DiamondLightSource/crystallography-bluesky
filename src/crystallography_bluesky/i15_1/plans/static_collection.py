@@ -1,15 +1,17 @@
-from functools import partial
 from typing import Any
 
+import bluesky.plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
+from dodal.devices.zebra.zebra import ArmDemand
 from ophyd_async.core import StandardReadable
 
 from crystallography_bluesky.i15_1.plans.generic_collection import (
-    TIME_BETWEEN_FRAMES,
     GenericCollectionDevices,
-    hardware_triggered_collection,
     setup_and_teardown_collection,
+)
+from crystallography_bluesky.i15_1.plans.setup_zebra import (
+    setup_zebra_for_hardware_triggering,
 )
 
 devices = inject("")
@@ -35,12 +37,15 @@ def static_collection(
                 record metadata from. Defaults to None.
     """
     DEFAULT_BASELINE_DEVICES = [devices.robot.spinner, devices.xtal, devices.tth]
-    collection = partial(
-        hardware_triggered_collection,
-        zebra=devices.zebra,
-        frames=frames,
-        time_between_frames=TIME_BETWEEN_FRAMES,
+
+    yield from setup_zebra_for_hardware_triggering(
+        devices.zebra, frames, time_between_frames
     )
+
+    def collection():
+        yield from bps.abs_set(devices.zebra.pc.arm, ArmDemand.ARM, wait=True)
+        yield from bps.sleep(frames * time_between_frames)
+
     yield from setup_and_teardown_collection(
         frames=frames,
         exposure_time=exposure_time,
