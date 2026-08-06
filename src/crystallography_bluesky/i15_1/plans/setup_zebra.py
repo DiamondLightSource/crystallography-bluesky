@@ -4,14 +4,19 @@ from dodal.devices.zebra.zebra import TrigSource, Zebra
 
 
 def setup_zebra_for_hardware_triggering(
-    zebra: Zebra, frames: int, time_between_frames: float
+    zebra: Zebra,
+    frames: int,
+    time_between_frames: float,
+    pulse_width: float | None = None,
 ) -> MsgGenerator:
     group = "zebra_setup"
+
+    pulse_width = pulse_width if pulse_width is not None else time_between_frames / 2
 
     yield from bps.abs_set(zebra.pc.pulse_max, frames, group=group)
     yield from bps.abs_set(zebra.pc.pulse_source, TrigSource.TIME, group=group)
     yield from bps.abs_set(zebra.pc.pulse_start, 0.0, group=group)
-    yield from bps.abs_set(zebra.pc.pulse_width, time_between_frames / 2, group=group)
+    yield from bps.abs_set(zebra.pc.pulse_width, pulse_width, group=group)
     yield from bps.abs_set(zebra.pc.pulse_step, time_between_frames, group=group)
     yield from bps.abs_set(
         zebra.pc.gate_width, frames * time_between_frames, group=group
