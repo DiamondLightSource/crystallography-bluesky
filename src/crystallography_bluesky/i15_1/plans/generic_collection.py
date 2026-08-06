@@ -17,7 +17,7 @@ from ophyd_async.epics.motor import Motor
 from ophyd_async.fastcs.eiger import EigerDetector
 
 from crystallography_bluesky.i15_1.plans.setup_zebra import (
-    setup_zebra_for_external_edge_triggering,
+    setup_zebra_for_hardware_triggering,
     setup_zebra_for_software_triggering,
 )
 
@@ -41,6 +41,7 @@ def setup_and_teardown_collection(
     devices: GenericCollectionDevices,
     collection: Callable[[], MsgGenerator],
     baseline_devices: list[StandardReadable] | None = None,
+    monitor_devices: list[StandardReadable] | None = None,
     metadata: dict[str, Any] | None = None,
 ) -> MsgGenerator:
     """Setup and tear down the eiger and i0 detectors for a collection. The specific
@@ -57,11 +58,12 @@ def setup_and_teardown_collection(
         baseline_devices (list[StandardReadable] | None, optional): Any other devices to
                 record metadata from. Defaults to None.
     """
-    TIME_BETWEEN_FRAMES = 0.1
+
+    MAX_TIME_BETWEEN_FRAMES = 0.1
     I0_DEADTIME = 0.0001
 
     # See https://github.com/DiamondLightSource/crystallography-bluesky/issues/56
-    assert exposure_time < TIME_BETWEEN_FRAMES, (
+    assert exposure_time < MAX_TIME_BETWEEN_FRAMES, (
         "This test does not work with long frames"
     )
 
@@ -85,7 +87,9 @@ def setup_and_teardown_collection(
 
     detectors = [devices.fastcs_eiger, devices.i0]
     baseline_devices = baseline_devices or []
+    monitor_devices = monitor_devices or []
     LOGGER.info(f"Baseline devices: {baseline_devices}")
+    LOGGER.info(f"Monitored devices: {monitor_devices}")
 
     def cleanup(*_):
         # Close the shutter
@@ -96,6 +100,7 @@ def setup_and_teardown_collection(
 
     @bpp.stage_decorator(detectors)
     @bpp.baseline_decorator(baseline_devices)
+    @bpp.monitor_during_decorator(monitor_devices)
     @bpp.run_decorator(md=metadata)
     @bpp.contingency_decorator(final_plan=cleanup)
     def inner_run():
@@ -123,34 +128,6 @@ def setup_and_teardown_collection(
         yield from bps.collect(*detectors, return_payload=False, name="primary")
 
     yield from inner_run()
-
-
-def hardware_triggered_collection(
-    frames: int,
-    exposure_time: float,
-    time_between_frames: float,
-    devices: GenericCollectionDevices,
-    baseline_devices: list[StandardReadable] | None = None,
-    metadata: dict[str, Any] | None = None,
-):
-    DEFAULT_BASELINE_DEVICES = [devices.robot.spinner, devices.xtal, devices.tth]
-
-    yield from setup_zebra_for_external_edge_triggering(
-        devices.zebra, frames, time_between_frames
-    )
-
-    def collection():
-        yield from bps.abs_set(devices.zebra.pc.arm, ArmDemand.ARM, wait=True)
-        yield from bps.sleep(frames * time_between_frames)
-
-    yield from setup_and_teardown_collection(
-        frames,
-        exposure_time,
-        devices,
-        collection,
-        DEFAULT_BASELINE_DEVICES + (baseline_devices or []),
-        metadata,
-    )
 
 
 def generic_per_step_collection(
@@ -190,10 +167,20 @@ def generic_per_step_collection(
     DEFAULT_BASELINE_DEVICES = [devices.robot.spinner, devices.xtal, devices.tth]
 
     yield from setup_and_teardown_collection(
-        frames,
-        exposure_time,
-        devices,
-        software_triggered_collection,
-        DEFAULT_BASELINE_DEVICES + (baseline_devices or []),
-        metadata,
+        frames=frames,
+        exposure_time=exposure_time,
+        devices=devices,
+        collection=software_triggered_collection,
+        baseline_devices=DEFAULT_BASELINE_DEVICES + (baseline_devices or []),
+        metadata=metadata,
     )
+
+
+def hardware_triggered_collection(
+    zebra: Zebra, frames: int, time_between_frames: float
+) -> MsgGenerator:
+    yield from setup_zebra_for_hardware_triggering(
+        zebra=zebra, frames=frames, time_between_frames=time_between_frames
+    )
+    yield from bps.abs_set(zebra.pc.arm, ArmDemand.ARM, wait=True)
+    yield from bps.sleep(frames * time_between_frames)

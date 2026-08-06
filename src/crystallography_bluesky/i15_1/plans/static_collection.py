@@ -1,3 +1,4 @@
+from functools import partial
 from typing import Any
 
 from bluesky.utils import MsgGenerator
@@ -5,8 +6,10 @@ from dodal.common import inject
 from ophyd_async.core import StandardReadable
 
 from crystallography_bluesky.i15_1.plans.generic_collection import (
+    TIME_BETWEEN_FRAMES,
     GenericCollectionDevices,
     hardware_triggered_collection,
+    setup_and_teardown_collection,
 )
 
 devices = inject("")
@@ -31,11 +34,18 @@ def static_collection(
         baseline_devices (list[StandardReadable] | None, optional): Any other devices to
                 record metadata from. Defaults to None.
     """
-    yield from hardware_triggered_collection(
-        frames,
-        exposure_time,
-        time_between_frames,
-        devices,
-        baseline_devices,
+    DEFAULT_BASELINE_DEVICES = [devices.robot.spinner, devices.xtal, devices.tth]
+    collection = partial(
+        hardware_triggered_collection,
+        zebra=devices.zebra,
+        frames=frames,
+        time_between_frames=TIME_BETWEEN_FRAMES,
+    )
+    yield from setup_and_teardown_collection(
+        frames=frames,
+        exposure_time=exposure_time,
+        devices=devices,
+        collection=collection,
+        baseline_devices=DEFAULT_BASELINE_DEVICES + (baseline_devices or []),
         metadata=metadata,
     )
