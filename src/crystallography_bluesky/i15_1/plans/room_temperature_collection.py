@@ -1,4 +1,5 @@
 from math import ceil
+from typing import Any
 
 import bluesky.plan_stubs as bps
 from bluesky.utils import MsgGenerator
@@ -38,6 +39,7 @@ def data_collection(
     exposure_time_per_frame: float,
     generic_collection_devices: GenericCollectionDevices = devices,
     baseline_devices: list[StandardReadable] | None = None,
+    metadata: dict[str, Any] | None = None,
 ) -> MsgGenerator:
 
     async def calc_timeout(*_, **__):
@@ -84,4 +86,5 @@ def data_collection(
         collection,
         [generic_collection_devices.robot.spinner, generic_collection_devices.xtal]
         + (baseline_devices or []),
+        metadata=metadata,
     )
