@@ -1,3 +1,4 @@
+import pytest
 from bluesky import RunEngine
 from dodal.devices.zebra.zebra import TrigSource, Zebra
 from ophyd_async.core import get_mock_put
@@ -25,6 +26,13 @@ def test_setup_zebra_for_hardware_triggering_sets_expected_pvs(
     get_mock_put(
         zebra.output.out_pvs[zebra.mapping.outputs.TTL_I0]
     ).assert_called_once_with(31)
+
+
+def test_setup_zebra_for_hardware_raises_error_if_pulse_width_less_than_frame_time(
+    run_engine: RunEngine, zebra: Zebra
+):
+    with pytest.raises(AssertionError):
+        run_engine(setup_zebra_for_hardware_triggering(zebra, 100, 0.1, 0.2))
 
 
 def test_setup_zebra_for_software_triggering_sets_expected_pvs(

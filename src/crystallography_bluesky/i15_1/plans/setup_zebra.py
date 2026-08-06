@@ -13,6 +13,11 @@ def setup_zebra_for_hardware_triggering(
 
     pulse_width = pulse_width if pulse_width is not None else time_between_frames / 2
 
+    assert pulse_width < time_between_frames, (
+        f"Cannot have a pulse width ({pulse_width}) "
+        + f"less than time between frames ({time_between_frames})"
+    )
+
     yield from bps.abs_set(zebra.pc.pulse_max, frames, group=group)
     yield from bps.abs_set(zebra.pc.pulse_source, TrigSource.TIME, group=group)
     yield from bps.abs_set(zebra.pc.pulse_start, 0.0, group=group)
