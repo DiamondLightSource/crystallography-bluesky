@@ -34,6 +34,33 @@ def test_static_collection_plan_makes_expected_calls(
         msgs,
         predicate=lambda msg: (
             msg.command == "set"
+            and msg.obj.name == "zebra-pc-pulse_max"
+            and msg.args[0] == 10
+        ),
+    )
+
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        predicate=lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "zebra-output-out_pvs-3"  # Eiger
+            and msg.args[0] == 31  # PC_PULSE
+        ),
+    )
+
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        predicate=lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "zebra-output-out_pvs-2"  # I0
+            and msg.args[0] == 31  # PC_PULSE
+        ),
+    )
+
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        predicate=lambda msg: (
+            msg.command == "set"
             and msg.obj.name == "fastcs-eiger-detector-ntrigger"
             and msg.args[0] == 10
         ),
