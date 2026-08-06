@@ -6,7 +6,7 @@ from bluesky.simulators import RunEngineSimulator, assert_message_and_return_rem
 from dodal.devices.beamlines.i15_1.laue import LaueMonochrometer
 from dodal.devices.beamlines.i15_1.robot import Robot
 from dodal.devices.tetramm import TetrammDetector
-from dodal.devices.zebra.zebra import Zebra
+from dodal.devices.zebra.zebra import ArmDemand, Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import OpenClose, ZebraFastShutter
 from ophyd_async.core import get_mock_put
 from ophyd_async.epics.motor import Motor
@@ -98,15 +98,14 @@ def test_static_collection_plan_makes_expected_calls(
         predicate=lambda msg: msg.command == "kickoff" and msg.obj.name == "i0",
     )
 
-    for _ in range(10):
-        msgs = assert_message_and_return_remaining(
-            msgs,
-            predicate=lambda msg: (
-                msg.command == "set"
-                and msg.obj.name == "zebra-inputs-soft_in_1"
-                and msg.args[0] == 1
-            ),
-        )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        predicate=lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "zebra-pc-arm"
+            and msg.args[0] == ArmDemand.ARM
+        ),
+    )
 
     msgs = assert_message_and_return_remaining(
         msgs,

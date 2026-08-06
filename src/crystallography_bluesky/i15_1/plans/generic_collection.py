@@ -9,12 +9,17 @@ from dodal.common import inject
 from dodal.devices.beamlines.i15_1.laue import LaueMonochrometer
 from dodal.devices.beamlines.i15_1.robot import Robot
 from dodal.devices.tetramm import TetrammDetector
-from dodal.devices.zebra.zebra import Zebra
+from dodal.devices.zebra.zebra import ArmDemand, Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import OpenClose, ZebraFastShutter
 from dodal.log import LOGGER
 from ophyd_async.core import DetectorTrigger, StandardReadable, TriggerInfo
 from ophyd_async.epics.motor import Motor
 from ophyd_async.fastcs.eiger import EigerDetector
+
+from crystallography_bluesky.i15_1.plans.setup_zebra import (
+    setup_zebra_for_external_edge_triggering,
+    setup_zebra_for_software_triggering,
+)
 
 devices = inject("")
 
@@ -120,6 +125,34 @@ def setup_and_teardown_collection(
     yield from inner_run()
 
 
+def hardware_triggered_collection(
+    frames: int,
+    exposure_time: float,
+    time_between_frames: float,
+    devices: GenericCollectionDevices,
+    baseline_devices: list[StandardReadable] | None = None,
+    metadata: dict[str, Any] | None = None,
+):
+    DEFAULT_BASELINE_DEVICES = [devices.robot.spinner, devices.xtal, devices.tth]
+
+    yield from setup_zebra_for_external_edge_triggering(
+        devices.zebra, frames, time_between_frames
+    )
+
+    def collection():
+        yield from bps.abs_set(devices.zebra.pc.arm, ArmDemand.ARM, wait=True)
+        yield from bps.sleep(frames * time_between_frames)
+
+    yield from setup_and_teardown_collection(
+        frames,
+        exposure_time,
+        devices,
+        collection,
+        DEFAULT_BASELINE_DEVICES + (baseline_devices or []),
+        metadata,
+    )
+
+
 def generic_per_step_collection(
     frames: int,
     exposure_time: float,
@@ -144,7 +177,9 @@ def generic_per_step_collection(
                 record metadata from. Defaults to None.
     """
 
-    def default_collection():
+    yield from setup_zebra_for_software_triggering(devices.zebra)
+
+    def software_triggered_collection():
         LOGGER.info(f"Triggering i0 and eiger {frames} times")
         for _ in range(frames):
             yield from bps.abs_set(devices.zebra.inputs.soft_in_1, 1, wait=True)
@@ -158,7 +193,7 @@ def generic_per_step_collection(
         frames,
         exposure_time,
         devices,
-        default_collection,
+        software_triggered_collection,
         DEFAULT_BASELINE_DEVICES + (baseline_devices or []),
         metadata,
     )

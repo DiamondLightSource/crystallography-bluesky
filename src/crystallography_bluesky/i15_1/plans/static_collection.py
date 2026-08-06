@@ -1,13 +1,12 @@
 from typing import Any
 
-import bluesky.plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
 from ophyd_async.core import StandardReadable
 
 from crystallography_bluesky.i15_1.plans.generic_collection import (
     GenericCollectionDevices,
-    generic_per_step_collection,
+    hardware_triggered_collection,
 )
 
 devices = inject("")
@@ -21,7 +20,7 @@ def static_collection(
     baseline_devices: list[StandardReadable] | None = None,
     metadata: dict[str, Any] | None = None,
 ) -> MsgGenerator:
-    """Take a static collection with the eiger and i0 detectors.
+    """Take a hardware-triggered static collection with the eiger and i0 detectors.
 
     Args:
         frames (int): Number of frames to capture
@@ -32,10 +31,10 @@ def static_collection(
         baseline_devices (list[StandardReadable] | None, optional): Any other devices to
                 record metadata from. Defaults to None.
     """
-    yield from generic_per_step_collection(
+    yield from hardware_triggered_collection(
         frames,
         exposure_time,
-        lambda: bps.sleep(time_between_frames - exposure_time),
+        time_between_frames,
         devices,
         baseline_devices,
         metadata=metadata,
