@@ -57,7 +57,6 @@ def setup_and_teardown_collection(
         baseline_devices (list[StandardReadable] | None, optional): Any other devices to
                 record metadata from. Defaults to None.
     """
-
     MAX_TIME_BETWEEN_FRAMES = 0.1
     I0_DEADTIME = 0.0001
 
