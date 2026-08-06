@@ -40,7 +40,6 @@ def setup_and_teardown_collection(
     devices: GenericCollectionDevices,
     collection: Callable[[], MsgGenerator],
     baseline_devices: list[StandardReadable] | None = None,
-    monitor_devices: list[StandardReadable] | None = None,
     metadata: dict[str, Any] | None = None,
 ) -> MsgGenerator:
     """Setup and tear down the eiger and i0 detectors for a collection. The specific
@@ -85,9 +84,7 @@ def setup_and_teardown_collection(
 
     detectors = [devices.fastcs_eiger, devices.i0]
     baseline_devices = baseline_devices or []
-    monitor_devices = monitor_devices or []
     LOGGER.info(f"Baseline devices: {baseline_devices}")
-    LOGGER.info(f"Monitored devices: {monitor_devices}")
 
     def cleanup(*_):
         # Close the shutter
@@ -98,7 +95,6 @@ def setup_and_teardown_collection(
 
     @bpp.stage_decorator(detectors)
     @bpp.baseline_decorator(baseline_devices)
-    @bpp.monitor_during_decorator(monitor_devices)
     @bpp.run_decorator(md=metadata)
     @bpp.contingency_decorator(final_plan=cleanup)
     def inner_run():
