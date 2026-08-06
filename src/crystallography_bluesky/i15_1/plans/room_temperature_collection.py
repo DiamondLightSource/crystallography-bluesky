@@ -11,6 +11,9 @@ from crystallography_bluesky.i15_1.plans.generic_collection import (
     GenericCollectionDevices,
     setup_and_teardown_collection,
 )
+from crystallography_bluesky.i15_1.plans.setup_zebra import (
+    setup_zebra_for_software_triggering,
+)
 
 devices = inject("")
 
@@ -61,6 +64,8 @@ def data_collection(
         f"Total exposure time will be {total_frames * exposure_time_per_frame} compared"
         f" to user specified {full_collection_time}"
     )
+
+    yield from setup_zebra_for_software_triggering(generic_collection_devices.zebra)
 
     def collection():
         for position, frames in frames_per_angle.items():
