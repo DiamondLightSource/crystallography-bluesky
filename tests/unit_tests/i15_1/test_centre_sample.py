@@ -89,7 +89,8 @@ def test_centre_sample_plan_makes_expected_calls(
     msgs = assert_message_and_return_remaining(
         msgs,
         predicate=lambda msg: (
-            msg.command == "open_run" and msg.kwargs == {"some": "metadata"}
+            msg.command == "open_run"
+            and msg.kwargs == {"some": "metadata", "detectors": ["fastcs-eiger", "i0"]}
         ),
     )
     msgs = assert_message_and_return_remaining(

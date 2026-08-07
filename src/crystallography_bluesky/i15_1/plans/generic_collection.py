@@ -79,6 +79,9 @@ def setup_and_teardown_collection(
     )
 
     detectors = [devices.fastcs_eiger, devices.i0]
+    metadata = metadata or {}
+    metadata.update({"detectors": [detector.name for detector in detectors]})
+
     baseline_devices = baseline_devices or []
     LOGGER.info(f"Baseline devices: {baseline_devices}")
 
