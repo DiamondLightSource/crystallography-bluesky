@@ -42,9 +42,9 @@ def setup_zebra_for_hardware_triggering(
 
 
 def setup_zebra_for_software_triggering(zebra: Zebra) -> MsgGenerator:
-    # Set eiger and i0 to be triggered directly from SOFT_IN1
     group = "zebra_setup"
 
+    # Set eiger and i0 to be triggered directly from SOFT_IN1
     yield from bps.abs_set(
         zebra.output.out_pvs[zebra.mapping.outputs.TTL_EIGER],
         zebra.mapping.sources.SOFT_IN1,
