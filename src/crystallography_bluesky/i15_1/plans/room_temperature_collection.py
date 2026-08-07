@@ -1,4 +1,5 @@
 from math import ceil
+from typing import Any
 
 import bluesky.plan_stubs as bps
 from bluesky.utils import MsgGenerator
@@ -9,6 +10,9 @@ from ophyd_async.core import StandardReadable
 from crystallography_bluesky.i15_1.plans.generic_collection import (
     GenericCollectionDevices,
     setup_and_teardown_collection,
+)
+from crystallography_bluesky.i15_1.plans.setup_zebra import (
+    setup_zebra_for_software_triggering,
 )
 
 devices = inject("")
@@ -38,6 +42,7 @@ def data_collection(
     exposure_time_per_frame: float,
     generic_collection_devices: GenericCollectionDevices = devices,
     baseline_devices: list[StandardReadable] | None = None,
+    metadata: dict[str, Any] | None = None,
 ) -> MsgGenerator:
 
     async def calc_timeout(*_, **__):
@@ -59,6 +64,8 @@ def data_collection(
         f"Total exposure time will be {total_frames * exposure_time_per_frame} compared"
         f" to user specified {full_collection_time}"
     )
+
+    yield from setup_zebra_for_software_triggering(generic_collection_devices.zebra)
 
     def collection():
         for position, frames in frames_per_angle.items():
@@ -84,4 +91,5 @@ def data_collection(
         collection,
         [generic_collection_devices.robot.spinner, generic_collection_devices.xtal]
         + (baseline_devices or []),
+        metadata=metadata,
     )

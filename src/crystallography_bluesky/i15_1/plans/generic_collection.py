@@ -16,6 +16,10 @@ from ophyd_async.core import DetectorTrigger, StandardReadable, TriggerInfo
 from ophyd_async.epics.motor import Motor
 from ophyd_async.fastcs.eiger import EigerDetector
 
+from crystallography_bluesky.i15_1.plans.setup_zebra import (
+    setup_zebra_for_software_triggering,
+)
+
 devices = inject("")
 
 
@@ -52,11 +56,11 @@ def setup_and_teardown_collection(
         baseline_devices (list[StandardReadable] | None, optional): Any other devices to
                 record metadata from. Defaults to None.
     """
-    TIME_BETWEEN_FRAMES = 0.1
+    MAX_TIME_BETWEEN_FRAMES = 0.1
     I0_DEADTIME = 0.0001
 
     # See https://github.com/DiamondLightSource/crystallography-bluesky/issues/56
-    assert exposure_time < TIME_BETWEEN_FRAMES, (
+    assert exposure_time < MAX_TIME_BETWEEN_FRAMES, (
         "This test does not work with long frames"
     )
 
@@ -147,7 +151,9 @@ def generic_per_step_collection(
                 record metadata from. Defaults to None.
     """
 
-    def default_collection():
+    yield from setup_zebra_for_software_triggering(devices.zebra)
+
+    def software_triggered_collection():
         LOGGER.info(f"Triggering i0 and eiger {frames} times")
         for _ in range(frames):
             yield from bps.abs_set(devices.zebra.inputs.soft_in_1, 1, wait=True)
@@ -158,10 +164,10 @@ def generic_per_step_collection(
     DEFAULT_BASELINE_DEVICES = [devices.robot.spinner, devices.xtal, devices.tth]
 
     yield from setup_and_teardown_collection(
-        frames,
-        exposure_time,
-        devices,
-        default_collection,
-        DEFAULT_BASELINE_DEVICES + (baseline_devices or []),
-        metadata,
+        frames=frames,
+        exposure_time=exposure_time,
+        devices=devices,
+        collection=software_triggered_collection,
+        baseline_devices=DEFAULT_BASELINE_DEVICES + (baseline_devices or []),
+        metadata=metadata,
     )

@@ -3,11 +3,15 @@ from typing import Any
 import bluesky.plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
+from dodal.devices.zebra.zebra import ArmDemand
 from ophyd_async.core import StandardReadable
 
 from crystallography_bluesky.i15_1.plans.generic_collection import (
     GenericCollectionDevices,
-    generic_per_step_collection,
+    setup_and_teardown_collection,
+)
+from crystallography_bluesky.i15_1.plans.setup_zebra import (
+    setup_zebra_for_hardware_triggering,
 )
 
 devices = inject("")
@@ -21,7 +25,7 @@ def static_collection(
     baseline_devices: list[StandardReadable] | None = None,
     metadata: dict[str, Any] | None = None,
 ) -> MsgGenerator:
-    """Take a static collection with the eiger and i0 detectors.
+    """Take a hardware-triggered static collection with the eiger and i0 detectors.
 
     Args:
         frames (int): Number of frames to capture
@@ -32,11 +36,21 @@ def static_collection(
         baseline_devices (list[StandardReadable] | None, optional): Any other devices to
                 record metadata from. Defaults to None.
     """
-    yield from generic_per_step_collection(
-        frames,
-        exposure_time,
-        lambda: bps.sleep(time_between_frames - exposure_time),
-        devices,
-        baseline_devices,
+    DEFAULT_BASELINE_DEVICES = [devices.robot.spinner, devices.xtal, devices.tth]
+
+    yield from setup_zebra_for_hardware_triggering(
+        devices.zebra, frames, time_between_frames
+    )
+
+    def collection():
+        yield from bps.abs_set(devices.zebra.pc.arm, ArmDemand.ARM, wait=True)
+        yield from bps.sleep(frames * time_between_frames)
+
+    yield from setup_and_teardown_collection(
+        frames=frames,
+        exposure_time=exposure_time,
+        devices=devices,
+        collection=collection,
+        baseline_devices=DEFAULT_BASELINE_DEVICES + (baseline_devices or []),
         metadata=metadata,
     )
