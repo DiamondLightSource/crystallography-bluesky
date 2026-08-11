@@ -5,7 +5,7 @@ from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.devices.beamlines.i15_1.laue import LaueMonochrometer
 from dodal.devices.beamlines.i15_1.robot import Robot
-from dodal.devices.tetramm import TetrammDetector
+from dodal.devices.tetramm import SummingTetrammDetector
 from dodal.devices.zebra.zebra import ArmDemand, Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import OpenClose, ZebraFastShutter
 from ophyd_async.core import get_mock_put
@@ -228,7 +228,7 @@ def test_shutter_closed_after_complete(
 )
 async def test_given_plan_throws_exception_then_shutters_closed(
     eiger: EigerDetector,
-    i0: TetrammDetector,
+    i0: SummingTetrammDetector,
     zebra: Zebra,
     robot: Robot,
     tth: Motor,
@@ -253,7 +253,7 @@ async def test_given_plan_throws_exception_then_shutters_closed(
 )
 def test_if_plan_fails_during_trigger_then_soft_in_cleaned_up(
     eiger: EigerDetector,
-    i0: TetrammDetector,
+    i0: SummingTetrammDetector,
     zebra: Zebra,
     robot: Robot,
     tth: Motor,
