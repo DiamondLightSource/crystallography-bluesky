@@ -1,0 +1,98 @@
+from functools import partial
+from typing import Any
+
+from bluesky import plan_stubs as bps
+from bluesky.utils import MsgGenerator
+from dodal.common import inject
+from dodal.devices.beamlines.i15_1.blower import Blower
+from dodal.devices.motors import Motor
+from dodal.log import LOGGER
+from ophyd_async.core import SignalRW, StandardReadable
+
+from crystallography_bluesky.i15_1.plans.generic_collection import (
+    GenericCollectionDevices,
+    setup_and_teardown_collection,
+)
+from crystallography_bluesky.i15_1.plans.room_temperature_collection import (
+    calculate_frames_per_angle,
+    inner_collection,
+)
+from crystallography_bluesky.i15_1.plans.setup_zebra import (
+    setup_zebra_for_software_triggering,
+)
+
+devices = inject("")
+blower = inject("blower")
+
+
+def _collection(
+    blower: Blower,
+    tth: Motor,
+    detector_trigger: SignalRW,
+    temperatures_celsius: list[float],
+    frames_per_angle: dict[float, int],
+    exposure_time_per_frame: float,
+):
+    for temperature in temperatures_celsius:
+        LOGGER.info(f"Moving to temperature {temperature}")
+        yield from bps.mv(blower.temperature, temperature)
+        yield from inner_collection(
+            tth,
+            detector_trigger,
+            frames_per_angle,
+            exposure_time_per_frame,
+            [blower.temperature],
+        )
+
+
+def blower_collection(
+    time_per_collection: float,
+    exposure_time_per_frame: float,
+    temperatures_celsius: list[float],
+    ramp_rate_c_per_min: float,
+    settle_time: float,
+    generic_collection_devices: GenericCollectionDevices = devices,
+    blower: Blower = blower,
+    baseline_devices: list[StandardReadable] | None = None,
+    metadata: dict[str, Any] | None = None,
+) -> MsgGenerator:
+
+    async def calc_timeout(*_, **__):
+        return 60
+
+    # tth is currently very slow, speed will be improved for run
+    generic_collection_devices.tth.movable_logic.calculate_timeout = calc_timeout
+
+    yield from setup_zebra_for_software_triggering(generic_collection_devices.zebra)
+
+    yield from bps.abs_set(blower.settle_time_s, settle_time)
+    yield from bps.abs_set(blower.ramp_rate_c_per_sec, ramp_rate_c_per_min / 60)
+
+    frames_per_angle, total_frames = calculate_frames_per_angle(
+        time_per_collection, exposure_time_per_frame
+    )
+
+    total_frames *= len(temperatures_celsius)
+
+    detector_trigger = generic_collection_devices.zebra.inputs.soft_in_1
+    tth = generic_collection_devices.tth
+
+    collection = partial(
+        _collection,
+        blower,
+        tth,
+        detector_trigger,
+        temperatures_celsius,
+        frames_per_angle,
+        exposure_time_per_frame,
+    )
+
+    yield from setup_and_teardown_collection(
+        int(total_frames),
+        exposure_time_per_frame,
+        generic_collection_devices,
+        collection,
+        [generic_collection_devices.robot.spinner, generic_collection_devices.xtal]
+        + (baseline_devices or []),
+        metadata=metadata,
+    )
