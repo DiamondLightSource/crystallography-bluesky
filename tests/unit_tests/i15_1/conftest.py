@@ -1,8 +1,10 @@
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
 from bluesky import RunEngine
 from daq_config_server.client import ConfigClient
+from dodal.devices.beamlines.i15_1.blower import Blower
 from dodal.devices.beamlines.i15_1.laue import LaueMonochrometer
 from dodal.devices.beamlines.i15_1.robot import Robot
 from dodal.devices.motors import XYZStage
@@ -110,3 +112,11 @@ async def common_collection_devices(
     xtal: LaueMonochrometer,
 ) -> GenericCollectionDevices:
     return GenericCollectionDevices(eiger, i0, zebra, robot, tth, fast_shutter, xtal)
+
+
+@pytest.fixture
+async def blower() -> Blower:
+    """Blower device for testing."""
+    async with init_devices(mock=True):
+        blower = Blower("", "", "", MagicMock(), "")
+    return blower

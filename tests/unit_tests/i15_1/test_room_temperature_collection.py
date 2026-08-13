@@ -115,6 +115,6 @@ def test_data_collection_takes_one_frame_per_position_for_short_collection(
     tth_stream_creates = [
         msg
         for msg in msgs
-        if msg.command == "create" and msg.kwargs.get("name") == "tth"
+        if msg.command == "create" and msg.kwargs.get("name") == "data"
     ]
     assert len(tth_stream_creates) == len(positions_to_fraction)

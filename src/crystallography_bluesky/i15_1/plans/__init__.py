@@ -1,3 +1,4 @@
+from .blower_collection import blower_collection
 from .centre_sample import centre_sample
 from .robot import (
     move_hexapod_to_home_position,
@@ -18,4 +19,5 @@ __all__ = [
     "static_collection",
     "centre_sample",
     "room_temperature_collection",
+    "blower_collection",
 ]
