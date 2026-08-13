@@ -88,7 +88,7 @@ def blower_collection(
     )
 
     yield from setup_and_teardown_collection(
-        int(total_frames),
+        total_frames,
         exposure_time_per_frame,
         generic_collection_devices,
         collection,

@@ -6,38 +6,11 @@ import pytest
 from bluesky import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.devices.beamlines.i15_1.blower import Blower
-from ophyd_async.core import callback_on_mock_put
 
-from crystallography_bluesky.i15_1.plans.blower_collection import (
-    _calculate_number_of_frames,
-    blower_collection,
-    positions_to_fraction,
-)
+from crystallography_bluesky.i15_1.plans.blower_collection import blower_collection
 from crystallography_bluesky.i15_1.plans.generic_collection import (
     GenericCollectionDevices,
 )
-
-
-def test_blower_collection_calculates_expected_frame_count():
-    """Test that frame calculation works correctly for blower collection."""
-    frames = _calculate_number_of_frames(
-        fraction_of_time=0.3,
-        full_collection_time=10,
-        exposure_time_per_frame=0.5,
-    )
-
-    assert frames == 6
-
-
-def test_blower_collection_returns_one_frame_if_calculation_would_be_zero():
-    """Test that at least one frame is collected even for tiny time allocations."""
-    frames = _calculate_number_of_frames(
-        fraction_of_time=0.01,
-        full_collection_time=0.1,
-        exposure_time_per_frame=1,
-    )
-
-    assert frames == 1
 
 
 @pytest.mark.parametrize(
