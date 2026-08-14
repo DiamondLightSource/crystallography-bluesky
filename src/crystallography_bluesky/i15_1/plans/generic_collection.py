@@ -8,7 +8,7 @@ from bluesky.utils import MsgGenerator
 from dodal.common import inject
 from dodal.devices.beamlines.i15_1.laue import LaueMonochrometer
 from dodal.devices.beamlines.i15_1.robot import Robot
-from dodal.devices.tetramm import TetrammDetector
+from dodal.devices.tetramm import SummingTetrammDetector
 from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import OpenClose, ZebraFastShutter
 from dodal.log import LOGGER
@@ -26,7 +26,7 @@ devices = inject("")
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
 class GenericCollectionDevices:
     fastcs_eiger: EigerDetector
-    i0: TetrammDetector
+    i0: SummingTetrammDetector
     zebra: Zebra
     robot: Robot
     tth: Motor

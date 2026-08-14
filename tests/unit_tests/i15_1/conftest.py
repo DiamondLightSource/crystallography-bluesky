@@ -8,7 +8,7 @@ from dodal.devices.beamlines.i15_1.blower import Blower
 from dodal.devices.beamlines.i15_1.laue import LaueMonochrometer
 from dodal.devices.beamlines.i15_1.robot import Robot
 from dodal.devices.motors import XYZStage
-from dodal.devices.tetramm import TetrammDetector
+from dodal.devices.tetramm import SummingTetrammDetector
 from dodal.devices.zebra.zebra import Zebra, ZebraMapping
 from dodal.devices.zebra.zebra_constants_mapping import ZebraTTLOutputs
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraFastShutter
@@ -32,9 +32,9 @@ def path_provider() -> StaticPathProvider:
 
 
 @pytest.fixture
-async def i0(path_provider: StaticPathProvider) -> TetrammDetector:
+async def i0(path_provider: StaticPathProvider) -> SummingTetrammDetector:
     async with init_devices(mock=True):
-        i0 = TetrammDetector(
+        i0 = SummingTetrammDetector(
             "",
             path_provider,
             name="i0",
@@ -104,7 +104,7 @@ async def xtal() -> LaueMonochrometer:
 @pytest.fixture
 async def common_collection_devices(
     eiger: EigerDetector,
-    i0: TetrammDetector,
+    i0: SummingTetrammDetector,
     zebra: Zebra,
     robot: Robot,
     tth: Motor,
