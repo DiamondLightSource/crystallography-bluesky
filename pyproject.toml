@@ -29,7 +29,7 @@ dependencies = [
     "ophyd-async[ca,pva] >= v0.19.1",
     "bluesky >= 1.13.1",
     "daq-config-server>=1.5.2",
-    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@main",
+    "dls-dodal @ git+https://github.com/DiamondLightSource/dodal.git@xtal_bluesky_111_positions_percentage_config_file",
 ]
 
 dynamic = ["version"]
