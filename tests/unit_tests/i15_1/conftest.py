@@ -104,7 +104,7 @@ async def xtal() -> LaueMonochrometer:
 @pytest.fixture
 async def common_collection_devices(
     eiger: EigerDetector,
-    i0: TetrammDetector,
+    i0: SummingTetrammDetector,
     zebra: Zebra,
     robot: Robot,
     tth: Motor,
