@@ -4,7 +4,10 @@ from typing import Any
 
 import bluesky.plan_stubs as bps
 from bluesky.utils import MsgGenerator
+from daq_config_server.models.i15_1.positions_to_times import AnglesToTimes
+from dodal.beamlines.i15_1 import TTH_ANGLE_TO_COLLECTION_TIME_FILEPATH
 from dodal.common import inject
+from dodal.common.beamlines.beamline_utils import get_config_client
 from dodal.devices.motors import Motor
 from dodal.log import LOGGER
 from ophyd_async.core import SignalRW, StandardReadable
@@ -19,17 +22,6 @@ from crystallography_bluesky.i15_1.plans.setup_zebra import (
 
 devices = inject("")
 
-# See https://github.com/DiamondLightSource/crystallography-bluesky/issues/111 for a
-# cleaner solution to this
-positions_to_fraction: dict[float, float] = {
-    10: 0.05,
-    20: 0.05,
-    30: 0.1,
-    40: 0.2,
-    50: 0.3,
-    60: 0.3,
-}
-
 
 def _calculate_number_of_frames(
     fraction_of_time: float,
@@ -42,6 +34,12 @@ def _calculate_number_of_frames(
 def calculate_frames_per_angle(
     full_collection_time: float, exposure_time_per_frame: float
 ):
+    config_client = get_config_client()
+    positions_to_fraction = config_client.get_file_contents(
+        TTH_ANGLE_TO_COLLECTION_TIME_FILEPATH,
+        AnglesToTimes,
+    ).tth_angle_to_collection_time
+
     frames_per_angle = {}
     total_frames = 0
     for angle, fraction in positions_to_fraction.items():
