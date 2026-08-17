@@ -1,9 +1,10 @@
 from pathlib import Path
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from bluesky import RunEngine
 from daq_config_server.client import ConfigClient
+from daq_config_server.models.i15_1.positions_to_times import AnglesToTimes
 from dodal.devices.beamlines.i15_1.blower import Blower
 from dodal.devices.beamlines.i15_1.laue import LaueMonochrometer
 from dodal.devices.beamlines.i15_1.robot import Robot
@@ -120,3 +121,30 @@ async def blower() -> Blower:
     async with init_devices(mock=True):
         blower = Blower("", "", "", MagicMock(), "")
     return blower
+
+
+@pytest.fixture
+def positions_to_fraction():
+    return {
+        10: 0.05,
+        20: 0.05,
+        30: 0.1,
+        40: 0.2,
+        50: 0.3,
+        60: 0.3,
+    }
+
+
+@pytest.fixture
+def mock_positions_to_fraction_config_client(positions_to_fraction):
+    mock_client = MagicMock()
+    mock_client.get_file_contents = MagicMock(
+        wraps=lambda _, __: AnglesToTimes(
+            tth_angle_to_collection_time=positions_to_fraction
+        )
+    )
+    with patch(
+        "crystallography_bluesky.i15_1.plans.room_temperature_collection.get_config_client",
+        return_value=mock_client,
+    ):
+        yield mock_client

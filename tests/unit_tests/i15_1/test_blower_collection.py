@@ -13,6 +13,12 @@ from crystallography_bluesky.i15_1.plans.generic_collection import (
 )
 
 
+@pytest.fixture(autouse=True)
+def always_mock_positions_to_fraction_config_client(
+    mock_positions_to_fraction_config_client,
+): ...
+
+
 @pytest.mark.parametrize(
     "temperatures, time_per_collection, exposure_per_frame, expected_frames",
     (
