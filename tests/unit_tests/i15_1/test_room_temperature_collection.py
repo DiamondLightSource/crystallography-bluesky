@@ -5,12 +5,12 @@ import bluesky.plan_stubs as bps
 from bluesky import RunEngine
 from bluesky.simulators import RunEngineSimulator
 from daq_config_server.models.i15_1.positions_to_times import AnglesToTimes
-from dodal.beamlines.i15_1 import TTH_ANGLE_TO_COLLECTION_TIME_FILEPATH
 
 from crystallography_bluesky.i15_1.plans.generic_collection import (
     GenericCollectionDevices,
 )
 from crystallography_bluesky.i15_1.plans.room_temperature_collection import (
+    TTH_ANGLE_TO_COLLECTION_TIME_FILEPATH,
     _calculate_number_of_frames,
     data_collection,
 )

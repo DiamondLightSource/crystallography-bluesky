@@ -5,7 +5,6 @@ from typing import Any
 import bluesky.plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from daq_config_server.models.i15_1.positions_to_times import AnglesToTimes
-from dodal.beamlines.i15_1 import TTH_ANGLE_TO_COLLECTION_TIME_FILEPATH
 from dodal.common import inject
 from dodal.common.beamlines.beamline_utils import get_config_client
 from dodal.devices.motors import Motor
@@ -18,6 +17,10 @@ from crystallography_bluesky.i15_1.plans.generic_collection import (
 )
 from crystallography_bluesky.i15_1.plans.setup_zebra import (
     setup_zebra_for_software_triggering,
+)
+
+TTH_ANGLE_TO_COLLECTION_TIME_FILEPATH = (
+    "/dls_sw/i15-1/software/daq_configuration/tth_angle_to_collection_time.txt"
 )
 
 devices = inject("")
