@@ -119,7 +119,11 @@ def data_collection(
         exposure_time_per_frame,
         generic_collection_devices,
         collection,
-        [generic_collection_devices.robot.spinner, generic_collection_devices.xtal]
+        [
+            generic_collection_devices.robot.spinner,
+            generic_collection_devices.xtal,
+            generic_collection_devices.attenuator,
+        ]
         + (baseline_devices or []),
         metadata=metadata,
     )
