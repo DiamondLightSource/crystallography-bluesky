@@ -11,6 +11,7 @@ from ophyd_async.core import SignalRW, StandardReadable
 
 from crystallography_bluesky.i15_1.plans.generic_collection import (
     GenericCollectionDevices,
+    get_default_baseline_devices,
     setup_and_teardown_collection,
 )
 from crystallography_bluesky.i15_1.plans.room_temperature_collection import (
@@ -87,16 +88,18 @@ def blower_collection(
         exposure_time_per_frame,
     )
 
+    all_baseline_devices = get_default_baseline_devices(generic_collection_devices) + (
+        baseline_devices or []
+    )
+
+    # We're using the tth in the scan so do not want to take the baseline reading
+    all_baseline_devices.remove(generic_collection_devices.tth)
+
     yield from setup_and_teardown_collection(
         total_frames,
         exposure_time_per_frame,
         generic_collection_devices,
         collection,
-        [
-            generic_collection_devices.robot.spinner,
-            generic_collection_devices.xtal,
-            generic_collection_devices.attenuator,
-        ]
-        + (baseline_devices or []),
+        all_baseline_devices,
         metadata=metadata,
     )
