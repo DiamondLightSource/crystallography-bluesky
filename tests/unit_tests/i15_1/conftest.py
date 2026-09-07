@@ -74,9 +74,9 @@ async def tth() -> Motor:
 @pytest.fixture
 async def attenuator() -> Attenuator:
     async with init_devices(mock=True):
-        atten = Attenuator("", "")
+        attenuator = Attenuator("", "")
 
-    return atten
+    return attenuator
 
 
 @pytest.fixture
