@@ -6,6 +6,7 @@ import bluesky.preprocessors as bpp
 import pydantic
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
+from dodal.devices.beamlines.i15_1.attenuator import Attenuator
 from dodal.devices.beamlines.i15_1.laue import LaueMonochrometer
 from dodal.devices.beamlines.i15_1.robot import Robot
 from dodal.devices.tetramm import SummingTetrammDetector
@@ -32,6 +33,16 @@ class GenericCollectionDevices:
     tth: Motor
     fast_shutter: ZebraFastShutter
     xtal: LaueMonochrometer
+    attenuator: Attenuator
+
+
+def get_default_baseline_devices(all_devices: GenericCollectionDevices):
+    return [
+        all_devices.robot.spinner,
+        all_devices.xtal,
+        all_devices.tth,
+        all_devices.attenuator,
+    ]
 
 
 def setup_and_teardown_collection(
@@ -161,13 +172,15 @@ def generic_per_step_collection(
             yield from bps.abs_set(devices.zebra.inputs.soft_in_1, 0, wait=True)
             yield from per_step()
 
-    DEFAULT_BASELINE_DEVICES = [devices.robot.spinner, devices.xtal, devices.tth]
+    all_baseline_devices = get_default_baseline_devices(devices) + (
+        baseline_devices or []
+    )
 
     yield from setup_and_teardown_collection(
         frames=frames,
         exposure_time=exposure_time,
         devices=devices,
         collection=software_triggered_collection,
-        baseline_devices=DEFAULT_BASELINE_DEVICES + (baseline_devices or []),
+        baseline_devices=all_baseline_devices,
         metadata=metadata,
     )

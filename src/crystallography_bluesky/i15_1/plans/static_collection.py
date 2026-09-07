@@ -8,6 +8,7 @@ from ophyd_async.core import StandardReadable
 
 from crystallography_bluesky.i15_1.plans.generic_collection import (
     GenericCollectionDevices,
+    get_default_baseline_devices,
     setup_and_teardown_collection,
 )
 from crystallography_bluesky.i15_1.plans.setup_zebra import (
@@ -36,7 +37,7 @@ def static_collection(
         baseline_devices (list[StandardReadable] | None, optional): Any other devices to
                 record metadata from. Defaults to None.
     """
-    DEFAULT_BASELINE_DEVICES = [devices.robot.spinner, devices.xtal, devices.tth]
+    DEFAULT_BASELINE_DEVICES = get_default_baseline_devices(devices)
 
     yield from setup_zebra_for_hardware_triggering(
         devices.zebra, frames, time_between_frames

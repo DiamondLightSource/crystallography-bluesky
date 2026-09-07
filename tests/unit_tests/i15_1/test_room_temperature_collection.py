@@ -77,6 +77,7 @@ def test_data_collection_calls_setup_with_expected_arguments(
         == [
             common_collection_devices.robot.spinner,
             common_collection_devices.xtal,
+            common_collection_devices.attenuator,
         ]
         + baseline_devices
     )

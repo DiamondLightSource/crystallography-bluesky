@@ -5,6 +5,7 @@ import pytest
 from bluesky import RunEngine
 from daq_config_server.client import ConfigClient
 from daq_config_server.models.i15_1.positions_to_times import AnglesToTimes
+from dodal.devices.beamlines.i15_1.attenuator import Attenuator
 from dodal.devices.beamlines.i15_1.blower import Blower
 from dodal.devices.beamlines.i15_1.laue import LaueMonochrometer
 from dodal.devices.beamlines.i15_1.robot import Robot
@@ -71,6 +72,14 @@ async def tth() -> Motor:
 
 
 @pytest.fixture
+async def attenuator() -> Attenuator:
+    async with init_devices(mock=True):
+        attenuator = Attenuator("", "")
+
+    return attenuator
+
+
+@pytest.fixture
 async def eiger(path_provider: StaticPathProvider) -> EigerDetector:
     async with init_devices(mock=True):
         eiger = EigerDetector(
@@ -111,8 +120,11 @@ async def common_collection_devices(
     tth: Motor,
     fast_shutter: ZebraFastShutter,
     xtal: LaueMonochrometer,
+    attenuator: Attenuator,
 ) -> GenericCollectionDevices:
-    return GenericCollectionDevices(eiger, i0, zebra, robot, tth, fast_shutter, xtal)
+    return GenericCollectionDevices(
+        eiger, i0, zebra, robot, tth, fast_shutter, xtal, attenuator
+    )
 
 
 @pytest.fixture
