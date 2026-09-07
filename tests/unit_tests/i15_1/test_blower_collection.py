@@ -14,8 +14,8 @@ from crystallography_bluesky.i15_1.plans.generic_collection import (
 
 
 @pytest.fixture(autouse=True)
-def always_mock_positions_to_fraction_config_client(
-    mock_positions_to_fraction_config_client,
+def always_mock_collection_spec_config_client(
+    mock_collection_spec_config_client,
 ): ...
 
 
