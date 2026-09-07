@@ -1,12 +1,16 @@
+from dataclasses import dataclass
 from functools import partial
 from math import ceil
-from typing import Any
+from typing import Any, TypeAlias
 
 import bluesky.plan_stubs as bps
 from bluesky.utils import MsgGenerator
-from daq_config_server.models.i15_1.positions_to_times import AnglesToTimes
+from daq_config_server.models.i15_1.collection_specification import (
+    CollectionSpecification as CollectionSpecFromConfig,
+)
 from dodal.common import inject
 from dodal.common.beamlines.beamline_utils import get_config_client
+from dodal.devices.beamlines.i15_1.attenuator import Attenuator, AttenuatorPositions
 from dodal.devices.motors import Motor
 from dodal.log import LOGGER
 from ophyd_async.core import SignalRW, StandardReadable
@@ -20,8 +24,18 @@ from crystallography_bluesky.i15_1.plans.setup_zebra import (
     setup_zebra_for_software_triggering,
 )
 
-TTH_ANGLE_TO_COLLECTION_TIME_FILEPATH = (
-    "/dls_sw/i15-1/software/daq_configuration/tth_angle_to_collection_time.txt"
+
+@dataclass
+class SpecificationPerPosition:
+    frames: int
+    transmission: AttenuatorPositions
+
+
+CollectionSpecification: TypeAlias = dict[float, SpecificationPerPosition]
+
+
+COLLECTION_SPEC_FILEPATH = (
+    "/dls_sw/i15-1/software/daq_configuration/collection_specification.txt"
 )
 
 devices = inject("")
@@ -35,46 +49,59 @@ def _calculate_number_of_frames(
     return ceil((fraction_of_time * full_collection_time) / exposure_time_per_frame)
 
 
-def calculate_frames_per_angle(
+def get_collection_specification(
     full_collection_time: float, exposure_time_per_frame: float
-):
+) -> tuple[CollectionSpecification, int]:
+    """The standard collection specification is defined in configuration but needs
+    conversion:
+     * The config specifies exposure in percentage of total time, we want number of
+       frames.
+     * The transmission is just a float, we want to convert to one of the aperture
+       options.
+    """
     config_client = get_config_client()
-    positions_to_fraction = config_client.get_file_contents(
-        TTH_ANGLE_TO_COLLECTION_TIME_FILEPATH,
-        AnglesToTimes,
-    ).tth_angle_to_collection_time
+    collection_spec_from_config = config_client.get_file_contents(
+        COLLECTION_SPEC_FILEPATH,
+        CollectionSpecFromConfig,
+    ).tth_angle_to_specification
 
-    frames_per_angle = {}
+    collection_spec: CollectionSpecification = {}
     total_frames = 0
-    for angle, fraction in positions_to_fraction.items():
+    for angle, spec in collection_spec_from_config.items():
         frames = _calculate_number_of_frames(
-            fraction, full_collection_time, exposure_time_per_frame
+            spec.exposure_time, full_collection_time, exposure_time_per_frame
         )
-        frames_per_angle[angle] = frames
+        collection_spec[angle] = SpecificationPerPosition(
+            frames, AttenuatorPositions.from_trans_float(spec.transmission)
+        )
         total_frames += frames
 
     LOGGER.info(
         f"Total exposure time will be {total_frames * exposure_time_per_frame} compared"
         f" to user specified {full_collection_time}"
     )
-    return frames_per_angle, total_frames
+    return collection_spec, total_frames
 
 
 def inner_collection(
     tth: Motor,
     detector_trigger: SignalRW,
-    frames_per_angle: dict[float, int],
+    attenuator: Attenuator,
+    collection_spec: CollectionSpecification,
     exposure_time_per_frame: float,
     signals_to_read_per_point: list[StandardReadable] | None = None,
 ):
     if not signals_to_read_per_point:
         signals_to_read_per_point = []
     signals_to_read_per_point.append(tth)
-    for position, frames in frames_per_angle.items():
-        yield from bps.mv(tth, position)
+    for position, point_spec in collection_spec.items():
+        yield from bps.mv(tth, position, attenuator, point_spec.transmission)
         current_tth = yield from bps.rd(tth)
-        LOGGER.info(f"Triggering i0 and eiger {frames} times at tth of {current_tth}")
-        for _ in range(int(frames)):
+        LOGGER.info(
+            f"Triggering i0 and eiger {point_spec.frames} times at tth of {current_tth}"
+            f" and attenuation of {point_spec.transmission}"
+        )
+        for _ in range(int(point_spec.frames)):
             yield from bps.create(name="data")
             for signal in signals_to_read_per_point:
                 yield from bps.read(signal)
@@ -100,7 +127,7 @@ def data_collection(
 
     yield from setup_zebra_for_software_triggering(generic_collection_devices.zebra)
 
-    frames_per_angle, total_frames = calculate_frames_per_angle(
+    frames_per_angle, total_frames = get_collection_specification(
         full_collection_time, exposure_time_per_frame
     )
 
@@ -111,6 +138,7 @@ def data_collection(
         inner_collection,
         tth,
         detector_trigger,
+        generic_collection_devices.attenuator,
         frames_per_angle,
         exposure_time_per_frame,
     )
@@ -120,7 +148,7 @@ def data_collection(
     )
 
     # We're using the tth in the scan so do not want to take the baseline reading
-    all_baseline_devices.remove(generic_collection_devices.tth)
+    all_baseline_devices.remove(tth)
 
     yield from setup_and_teardown_collection(
         total_frames,
