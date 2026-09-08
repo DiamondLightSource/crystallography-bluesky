@@ -73,7 +73,7 @@ def blower_collection(
     yield from bps.abs_set(blower.settle_time_s, settle_time)
     yield from bps.abs_set(blower.ramp_rate_c_per_sec, ramp_rate_c_per_min / 60)
 
-    frames_per_angle, total_frames = get_collection_specification(
+    collection_spec, total_frames = get_collection_specification(
         time_per_collection, exposure_time_per_frame
     )
 
@@ -89,7 +89,7 @@ def blower_collection(
         detector_trigger,
         generic_collection_devices.attenuator,
         temperatures_celsius,
-        frames_per_angle,
+        collection_spec,
         exposure_time_per_frame,
     )
 
