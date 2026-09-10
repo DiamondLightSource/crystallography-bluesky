@@ -62,12 +62,6 @@ def blower_collection(
     metadata: dict[str, Any] | None = None,
 ) -> MsgGenerator:
 
-    async def calc_timeout(*_, **__):
-        return 60
-
-    # tth is currently very slow, speed will be improved for run
-    generic_collection_devices.tth.movable_logic.calculate_timeout = calc_timeout
-
     yield from setup_zebra_for_software_triggering(generic_collection_devices.zebra)
 
     yield from bps.abs_set(blower.settle_time_s, settle_time)

@@ -1,4 +1,3 @@
-import asyncio
 from unittest.mock import MagicMock, patch
 
 import bluesky.plan_stubs as bps
@@ -83,13 +82,6 @@ def test_data_collection_calls_setup_with_expected_arguments(
             common_collection_devices.attenuator,
         ]
         + baseline_devices
-    )
-
-    assert (
-        asyncio.run(
-            common_collection_devices.tth.movable_logic.calculate_timeout(None, None)  # type: ignore
-        )
-        == 60
     )
 
 
