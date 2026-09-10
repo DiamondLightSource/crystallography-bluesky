@@ -1,4 +1,3 @@
-import json
 from pathlib import Path
 
 from bluesky.callbacks import CallbackBase
@@ -53,5 +52,4 @@ class TriggerAnalysisCallback(CallbackBase):
             raise ValueError("Results requested but analysis has not been triggered")
         result = self._client.get_request_id_result(self.request_id)
         LOGGER.info(f"Received result from analysis {result} for {self.request_id}")
-        # Needed until https://github.com/DiamondLightSource/heliotrapi/issues/35 done
-        return json.loads(result.result)
+        return result.result
