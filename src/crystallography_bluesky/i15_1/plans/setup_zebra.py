@@ -29,12 +29,12 @@ def setup_zebra_for_hardware_triggering(
 
     # Set eiger and i0 to be triggered directly from PC_PULSE
     yield from bps.abs_set(
-        zebra.output.out_pvs[zebra.mapping.outputs.TTL_EIGER],
+        zebra.output.out_lvds_pvs[zebra.mapping.outputs.LVDS_EIGER],
         zebra.mapping.sources.PC_PULSE,
         group=group,
     )
     yield from bps.abs_set(
-        zebra.output.out_pvs[zebra.mapping.outputs.TTL_I0],
+        zebra.output.out_ttl_pvs[zebra.mapping.outputs.TTL_I0],
         zebra.mapping.sources.PC_PULSE,
         group=group,
     )
@@ -46,12 +46,12 @@ def setup_zebra_for_software_triggering(zebra: Zebra) -> MsgGenerator:
 
     # Set eiger and i0 to be triggered directly from SOFT_IN1
     yield from bps.abs_set(
-        zebra.output.out_pvs[zebra.mapping.outputs.TTL_EIGER],
+        zebra.output.out_lvds_pvs[zebra.mapping.outputs.LVDS_EIGER],
         zebra.mapping.sources.SOFT_IN1,
         group=group,
     )
     yield from bps.abs_set(
-        zebra.output.out_pvs[zebra.mapping.outputs.TTL_I0],
+        zebra.output.out_ttl_pvs[zebra.mapping.outputs.TTL_I0],
         zebra.mapping.sources.SOFT_IN1,
         group=group,
     )
