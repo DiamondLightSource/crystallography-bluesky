@@ -12,8 +12,9 @@ from dodal.common import inject
 from dodal.common.beamlines.beamline_utils import get_config_client
 from dodal.devices.beamlines.i15_1.attenuator import Attenuator, AttenuatorPositions
 from dodal.devices.motors import Motor
+from dodal.devices.zebra.zebra import ArmDemand, Zebra
 from dodal.log import LOGGER
-from ophyd_async.core import SignalRW, StandardReadable
+from ophyd_async.core import StandardReadable, wait_for_value
 
 from crystallography_bluesky.i15_1.plans.generic_collection import (
     GenericCollectionDevices,
@@ -21,7 +22,8 @@ from crystallography_bluesky.i15_1.plans.generic_collection import (
     setup_and_teardown_collection,
 )
 from crystallography_bluesky.i15_1.plans.setup_zebra import (
-    setup_zebra_for_software_triggering,
+    setup_zebra_for_hardware_triggering,
+    update_zebra_hardware_triggering,
 )
 
 
@@ -85,10 +87,10 @@ def get_collection_specification(
 
 def inner_collection(
     tth: Motor,
-    detector_trigger: SignalRW,
+    zebra: Zebra,
     attenuator: Attenuator,
     collection_spec: CollectionSpecification,
-    exposure_time_per_frame: float,
+    time_between_frames: float,
     signals_to_read_per_point: list[StandardReadable] | None = None,
 ):
     if not signals_to_read_per_point:
@@ -101,14 +103,48 @@ def inner_collection(
             f"Triggering i0 and eiger {point_spec.frames} times at tth of {current_tth}"
             f" and attenuation of {point_spec.transmission}"
         )
+
+        # Set number of frame for this position
+        yield from update_zebra_hardware_triggering(
+            zebra,
+            point_spec.frames,
+            time_between_frames,
+        )
+        yield from bps.wait()
+
+        # Arm zebra
+        yield from bps.abs_set(zebra.pc.arm, ArmDemand.ARM, wait=True)
+        # Here wait=True means this waits for the arm to be started, not
+        # for the collection to complete. Log time so we can verify:
+        LOGGER.info(
+            f"Triggered i0 and eiger {point_spec.frames} times at tth of {current_tth}"
+        )
+
+        # Collected signals at roughly the same time as the frames, by dead reckoning
         for _ in range(int(point_spec.frames)):
             yield from bps.create(name="data")
             for signal in signals_to_read_per_point:
                 yield from bps.read(signal)
             yield from bps.save()
-            yield from bps.abs_set(detector_trigger, 1, wait=True)
-            yield from bps.sleep(exposure_time_per_frame)
-            yield from bps.abs_set(detector_trigger, 0, wait=True)
+            yield from bps.sleep(time_between_frames)
+
+        LOGGER.info(
+            f"Collected {point_spec.frames} signals at tth of {current_tth}"
+            f" by dead reckoning"
+        )
+
+        # Sleeping for time_between_frames for each iteration of the loop
+        # above should result in the overall trigger sequence having finished
+        # as or before we get here, but on the off-chance that it hasn't,
+        # explicitly wait for the zebra Arm Status signal to go to disarmed.
+        yield from bps.wait_for(
+            [lambda: wait_for_value(zebra.pc.arm.armed, 0, timeout=5.0)]
+        )
+
+        # This avoids continuing on to the next tth before the zebra has completed
+        # triggering the current position if the timing is slightly off.
+        # Log time so we can verify now too:
+        LOGGER.info(f"Completed {point_spec.frames} triggers at tth of {current_tth}")
 
 
 def data_collection(
@@ -119,22 +155,32 @@ def data_collection(
     metadata: dict[str, Any] | None = None,
 ) -> MsgGenerator:
 
-    yield from setup_zebra_for_software_triggering(generic_collection_devices.zebra)
+    minimum_dead_time = 0.0001  # Minimum value independent of timebase
+    trigger_pulse_width = 0.0001  # Assumes zebra is set to seconds timebase
 
     collection_spec, total_frames = get_collection_specification(
         full_collection_time, exposure_time_per_frame
     )
 
-    detector_trigger = generic_collection_devices.zebra.inputs.soft_in_1
+    first_frames_value = next(iter(collection_spec.values())).frames
+    time_between_frames = exposure_time_per_frame + minimum_dead_time
+
+    yield from setup_zebra_for_hardware_triggering(
+        generic_collection_devices.zebra,
+        first_frames_value,
+        time_between_frames,
+        trigger_pulse_width,
+    )
+
     tth = generic_collection_devices.tth
 
     collection = partial(
         inner_collection,
         tth,
-        detector_trigger,
+        generic_collection_devices.zebra,
         generic_collection_devices.attenuator,
         collection_spec,
-        exposure_time_per_frame,
+        time_between_frames,
     )
 
     all_baseline_devices = get_default_baseline_devices(generic_collection_devices) + (

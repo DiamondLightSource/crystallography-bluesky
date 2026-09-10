@@ -7,6 +7,7 @@ from daq_config_server.models.i15_1.collection_specification import (
     CollectionSpecification,
 )
 from dodal.devices.beamlines.i15_1.attenuator import AttenuatorPositions
+from dodal.devices.zebra.zebra import ArmDemand
 
 from crystallography_bluesky.i15_1.plans.generic_collection import (
     GenericCollectionDevices,
@@ -105,14 +106,14 @@ def test_data_collection_takes_one_frame_per_position_for_short_collection(
     ]
     assert tth_positions == list(positions_to_spec.keys())
 
-    detector_high_triggers = [
+    detector_arms = [
         msg
         for msg in msgs
         if msg.command == "set"
-        and msg.obj.name == "zebra-inputs-soft_in_1"
-        and msg.args[0] == 1
+        and msg.obj.name == "zebra-pc-arm"
+        and msg.args[0] == ArmDemand.ARM
     ]
-    assert len(detector_high_triggers) == len(positions_to_spec)
+    assert len(detector_arms) == len(positions_to_spec)
 
     tth_stream_creates = [
         msg
@@ -127,16 +128,26 @@ def test_data_collection_changes_transmission_per_position(
     positions_to_spec: dict[float, tuple[float, float]],
     mock_collection_spec_config_client,
 ):
+    full_collection_time = 1
+    exposure_time_per_frame = 0.01
+
     run_engine = RunEngineSimulator()
     msgs = run_engine.simulate_plan(
         data_collection(
-            full_collection_time=1,
-            exposure_time_per_frame=0.01,
+            full_collection_time=full_collection_time,
+            exposure_time_per_frame=exposure_time_per_frame,
             generic_collection_devices=common_collection_devices,
         )
     )
 
     for position, spec in positions_to_spec.items():
+        fraction_of_time = spec[0]
+        frames = _calculate_number_of_frames(
+            fraction_of_time=fraction_of_time,
+            full_collection_time=full_collection_time,
+            exposure_time_per_frame=exposure_time_per_frame,
+        )
+
         msgs = assert_message_and_return_remaining(
             msgs,
             predicate=lambda msg, position=position: (
@@ -151,6 +162,42 @@ def test_data_collection_changes_transmission_per_position(
                 msg.command == "set"
                 and msg.obj.name == "attenuator"
                 and msg.args[0] == AttenuatorPositions.from_trans_float(transmission)
+            ),
+        )
+
+        msgs = assert_message_and_return_remaining(
+            msgs,
+            predicate=lambda msg, frames=frames: (
+                msg.command == "set"
+                and msg.obj.name == common_collection_devices.zebra.pc.pulse_max.name
+                and msg.args[0] == frames
+            ),
+        )
+
+        gate_width = frames * (exposure_time_per_frame + 0.0001)
+
+        msgs = assert_message_and_return_remaining(
+            msgs,
+            predicate=lambda msg, gate_width=gate_width: (
+                msg.command == "set"
+                and msg.obj.name == common_collection_devices.zebra.pc.gate_width.name
+                and msg.args[0] == gate_width
+            ),
+        )
+
+        msgs = assert_message_and_return_remaining(
+            msgs,
+            predicate=lambda msg, frames=frames: (
+                msg.command == "set"
+                and msg.obj.name == common_collection_devices.zebra.pc.arm.name
+                and msg.args[0] == ArmDemand.ARM
+            ),
+        )
+
+        msgs = assert_message_and_return_remaining(
+            msgs,
+            predicate=lambda msg, frames=frames: (
+                msg.command == "wait_for" and msg.obj is None
             ),
         )
 
