@@ -294,7 +294,11 @@ def test_centre_sample_throws_error_if_result_out_of_bounds_of_scan(
     mock_analysis_client: MagicMock,
     hexapod: XYZStage,
     blueapi_run_engine: RunEngine,
+    tth: Motor,
 ):
+    generic_collection_devices = MagicMock()
+    generic_collection_devices.tth = tth
+
     mock_analysis_client.get_request_id_result.return_value.result = {"centre": 21}
 
     @bpp.run_decorator()
@@ -303,4 +307,6 @@ def test_centre_sample_throws_error_if_result_out_of_bounds_of_scan(
 
     mock_generic_collection.side_effect = my_plan
     with pytest.raises(AssertionError):
-        blueapi_run_engine(centre_sample(10, 20, 10, 0.01, MagicMock(), hexapod))
+        blueapi_run_engine(
+            centre_sample(10, 20, 10, 0.01, generic_collection_devices, hexapod)
+        )

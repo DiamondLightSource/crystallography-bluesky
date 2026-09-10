@@ -60,7 +60,12 @@ def centre_sample(
         dataset_path=f"/entry/instrument/{eiger.name}/{eiger.name}",
     )
 
-    yield from bps.mv(hexapod.z, start_z, generic_collection_devices.tth, tth_angle)
+    yield from bps.mv(
+        hexapod.z,
+        start_z,
+        generic_collection_devices.tth,
+        tth_angle,
+    )
     step_size = (end_z - start_z) / steps
 
     def per_step():
