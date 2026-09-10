@@ -9,13 +9,16 @@ def setup_zebra_for_hardware_triggering(
     time_between_frames: float,
     pulse_width: float | None = None,
 ) -> MsgGenerator:
+    # Note that this all assumes the time units (PC_TSPRE PV) are set to s, rather than
+    # ms or 10s
+
     group = "zebra_setup"
 
     pulse_width = pulse_width if pulse_width is not None else time_between_frames / 2
 
     assert pulse_width < time_between_frames, (
         f"Cannot have a pulse width ({pulse_width}) "
-        + f"less than time between frames ({time_between_frames})"
+        + f"greater than or equal to the time between frames ({time_between_frames})"
     )
 
     yield from bps.abs_set(zebra.pc.pulse_max, frames, group=group)

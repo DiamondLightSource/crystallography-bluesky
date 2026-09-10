@@ -12,6 +12,7 @@ from dodal.common import inject
 from dodal.common.beamlines.beamline_utils import get_config_client
 from dodal.devices.beamlines.i15_1.attenuator import Attenuator, AttenuatorPositions
 from dodal.devices.motors import Motor
+from dodal.devices.zebra.zebra import ArmDemand
 from dodal.log import LOGGER
 from ophyd_async.core import SignalRW, StandardReadable
 
@@ -21,7 +22,7 @@ from crystallography_bluesky.i15_1.plans.generic_collection import (
     setup_and_teardown_collection,
 )
 from crystallography_bluesky.i15_1.plans.setup_zebra import (
-    setup_zebra_for_software_triggering,
+    setup_zebra_for_hardware_triggering,
 )
 
 
@@ -101,14 +102,34 @@ def inner_collection(
             f"Triggering i0 and eiger {point_spec.frames} times at tth of {current_tth}"
             f" and attenuation of {point_spec.transmission}"
         )
+
+        # Set number of frame for this position
+        group = "zebra_setup_per_position"
+        yield from bps.abs_set(devices.zebra.pc.pulse_max, point_spec.frames, group)
+        yield from bps.wait(group)
+
+        # Arm zebra
+        yield from bps.abs_set(devices.zebra.pc.arm, ArmDemand.ARM, wait=True)
+
+        # Fake signals being collected at roughly the same time as the frames, by dead
+        # reckoning
         for _ in range(int(point_spec.frames)):
             yield from bps.create(name="data")
             for signal in signals_to_read_per_point:
                 yield from bps.read(signal)
             yield from bps.save()
-            yield from bps.abs_set(detector_trigger, 1, wait=True)
+            # yield from bps.abs_set(detector_trigger, 1, wait=True) # No longer soft
             yield from bps.sleep(exposure_time_per_frame)
-            yield from bps.abs_set(detector_trigger, 0, wait=True)
+            # yield from bps.abs_set(detector_trigger, 0, wait=True) #  triggering
+
+        # Do we have to wait for zebra to go 'not armed'? If the above loop got
+        # the timing wrong this loop may continue before the zebra has completed
+        # triggering the current position
+        # For the moment, just log times to give us some idea of synhrionisation
+        LOGGER.info(
+            f"Collected {point_spec.frames} signals at tth of {current_tth}"
+            f" by dead reckoning"
+        )
 
 
 def data_collection(
@@ -119,13 +140,25 @@ def data_collection(
     metadata: dict[str, Any] | None = None,
 ) -> MsgGenerator:
 
-    yield from setup_zebra_for_software_triggering(generic_collection_devices.zebra)
+    trigger_pulse_width = 0.0001  # Asasumes zebra is set to seconds timebase
+
+    # yield from setup_zebra_for_software_triggering(generic_collection_devices.zebra)
 
     frames_per_angle, total_frames = get_collection_specification(
         full_collection_time, exposure_time_per_frame
     )
 
+    first_frames_value = next(iter(frames_per_angle.values())).frames
+
+    yield from setup_zebra_for_hardware_triggering(
+        generic_collection_devices.zebra,
+        first_frames_value,
+        exposure_time_per_frame + trigger_pulse_width,
+        trigger_pulse_width,
+    )
+
     detector_trigger = generic_collection_devices.zebra.inputs.soft_in_1
+
     tth = generic_collection_devices.tth
 
     collection = partial(
