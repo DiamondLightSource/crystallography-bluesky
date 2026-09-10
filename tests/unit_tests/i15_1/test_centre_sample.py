@@ -9,8 +9,12 @@ from bluesky.simulators import RunEngineSimulator, assert_message_and_return_rem
 from dodal.devices.motors import XYZStage
 from heliotrapi.models import AnalysisResult
 from ophyd_async.core import get_mock_put
+from ophyd_async.epics.motor import Motor
 
-from crystallography_bluesky.i15_1.plans.centre_sample import centre_sample
+from crystallography_bluesky.i15_1.plans.centre_sample import (
+    DEFAULT_CENTRING_TTH_ANGLE,
+    centre_sample,
+)
 from crystallography_bluesky.i15_1.plans.generic_collection import (
     GenericCollectionDevices,
 )
@@ -59,7 +63,7 @@ def test_centre_sample_plan_makes_expected_calls(
     run_engine = RunEngineSimulator()
     msgs = run_engine.simulate_plan(
         centre_sample(
-            10,
+            9,
             20,
             10,
             0.01,
@@ -67,6 +71,20 @@ def test_centre_sample_plan_makes_expected_calls(
             hexapod,
             metadata={"some": "metadata"},
         )
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        predicate=lambda msg: (
+            msg.command == "set" and msg.obj.name == "hexapod-z" and msg.args == (9,)
+        ),
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        predicate=lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "tth"
+            and msg.args == (DEFAULT_CENTRING_TTH_ANGLE,)
+        ),
     )
 
     msgs = assert_message_and_return_remaining(
@@ -229,14 +247,19 @@ def test_centre_sample_calls_analysis_and_retrieves_result(
     mock_analysis_client: MagicMock,
     hexapod: XYZStage,
     blueapi_run_engine: RunEngine,
+    tth: Motor,
 ):
+    generic_collection_devices = MagicMock()
+    generic_collection_devices.tth = tth
 
     @bpp.run_decorator()
     def my_plan(*_, **__):
         yield from bps.null()
 
     mock_generic_collection.side_effect = my_plan
-    blueapi_run_engine(centre_sample(10, 20, 10, 0.01, MagicMock(), hexapod))
+    blueapi_run_engine(
+        centre_sample(10, 20, 10, 0.01, generic_collection_devices, hexapod)
+    )
 
     mock_analysis_client.submit.assert_called_once()
     mock_analysis_client.get_request_id_result.assert_called_once()
@@ -248,13 +271,19 @@ def test_centre_sample_moves_to_analysis_result(
     mock_analysis_client: MagicMock,
     hexapod: XYZStage,
     blueapi_run_engine: RunEngine,
+    tth: Motor,
 ):
+    generic_collection_devices = MagicMock()
+    generic_collection_devices.tth = tth
+
     @bpp.run_decorator()
     def my_plan(*_, **__):
         yield from bps.null()
 
     mock_generic_collection.side_effect = my_plan
-    blueapi_run_engine(centre_sample(10, 20, 10, 0.01, MagicMock(), hexapod))
+    blueapi_run_engine(
+        centre_sample(10, 20, 10, 0.01, generic_collection_devices, hexapod)
+    )
 
     get_mock_put(hexapod.z.user_setpoint).assert_awaited_with(17)
 

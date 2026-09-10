@@ -17,8 +17,12 @@ from crystallography_bluesky.i15_1.plans.generic_collection import (
     generic_per_step_collection,
 )
 
+# Should get this from a config file https://github.com/DiamondLightSource/crystallography-bluesky/issues/134
+DEFAULT_CENTRING_TTH_ANGLE = 10.0
+
 devices = inject("")
 hexapod = inject("hexapod")
+tth = inject("tth")
 
 
 def centre_sample(
@@ -29,6 +33,7 @@ def centre_sample(
     generic_collection_devices: GenericCollectionDevices = devices,
     hexapod: XYZStage = hexapod,
     baseline_devices: list[StandardReadable] | None = None,
+    tth_angle: float = DEFAULT_CENTRING_TTH_ANGLE,
     metadata: dict[str, Any] | None = None,
 ) -> MsgGenerator:
     """Run a step scan in hexapod z, trigger analysis to find the centre and
@@ -55,7 +60,7 @@ def centre_sample(
         dataset_path=f"/entry/instrument/{eiger.name}/{eiger.name}",
     )
 
-    yield from bps.mv(hexapod.z, start_z)
+    yield from bps.mv(hexapod.z, start_z, generic_collection_devices.tth, tth_angle)
     step_size = (end_z - start_z) / steps
 
     def per_step():
