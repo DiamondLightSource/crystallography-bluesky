@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock
 import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
-from dodal.devices.beamlines.i15_1.attenuator import Attenuator
+from dodal.devices.beamlines.i15_1.attenuator import Attenuator, AttenuatorPositions
 from dodal.devices.beamlines.i15_1.laue import LaueMonochrometer
 from dodal.devices.beamlines.i15_1.robot import Robot
 from dodal.devices.tetramm import SummingTetrammDetector
@@ -27,10 +27,21 @@ def test_static_collection_plan_makes_expected_calls(
     run_engine = RunEngineSimulator()
     msgs = run_engine.simulate_plan(
         static_collection(
-            10, 0.01, devices=common_collection_devices, metadata={"some": "metadata"}
+            10,
+            0.01,
+            AttenuatorPositions.TRANS_10,
+            devices=common_collection_devices,
+            metadata={"some": "metadata"},
         )
     )
-
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        predicate=lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "attenuator"
+            and msg.args[0] == AttenuatorPositions.TRANS_10
+        ),
+    )
     msgs = assert_message_and_return_remaining(
         msgs,
         predicate=lambda msg: (
@@ -187,7 +198,9 @@ def test_shutter_opened_before_detectors_kicked_off(
 ):
     run_engine = RunEngineSimulator()
     msgs = run_engine.simulate_plan(
-        static_collection(10, 0.01, devices=common_collection_devices)
+        static_collection(
+            10, 0.01, AttenuatorPositions.TRANS_0_1, devices=common_collection_devices
+        )
     )
 
     msgs = assert_message_and_return_remaining(
@@ -211,7 +224,9 @@ def test_shutter_closed_after_complete(
 ):
     run_engine = RunEngineSimulator()
     msgs = run_engine.simulate_plan(
-        static_collection(10, 0.01, devices=common_collection_devices)
+        static_collection(
+            10, 0.01, AttenuatorPositions.TRANS_0_1, devices=common_collection_devices
+        )
     )
 
     msgs = assert_message_and_return_remaining(
@@ -250,7 +265,9 @@ async def test_given_plan_throws_exception_then_shutters_closed(
     zebra.inputs.soft_in_1.set = AsyncMock(ValueError)
 
     with pytest.raises(ValueError):
-        run_engine(static_collection(10, 0.01, devices=devices))
+        run_engine(
+            static_collection(10, 0.01, AttenuatorPositions.TRANS_0_1, devices=devices)
+        )
 
     get_mock_put(fast_shutter._set_pv).assert_called()
     assert (await fast_shutter.shutter_state.get_value()) == OpenClose.CLOSE
@@ -280,7 +297,9 @@ def test_if_plan_fails_during_trigger_then_soft_in_cleaned_up(
 
     run_engine.add_handler("sleep", lambda msg: raise_exception())
 
-    msgs = run_engine.simulate_plan(static_collection(10, 0.01, devices=devices))
+    msgs = run_engine.simulate_plan(
+        static_collection(10, 0.01, AttenuatorPositions.TRANS_0_1, devices=devices)
+    )
 
     msgs = assert_message_and_return_remaining(
         msgs,

@@ -4,6 +4,7 @@ from typing import Any
 from bluesky import plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
+from dodal.devices.beamlines.i15_1.attenuator import Attenuator
 from dodal.devices.beamlines.i15_1.blower import Blower
 from dodal.devices.motors import Motor
 from dodal.log import LOGGER
@@ -15,7 +16,8 @@ from crystallography_bluesky.i15_1.plans.generic_collection import (
     setup_and_teardown_collection,
 )
 from crystallography_bluesky.i15_1.plans.room_temperature_collection import (
-    calculate_frames_per_angle,
+    CollectionSpecification,
+    get_collection_specification,
     inner_collection,
 )
 from crystallography_bluesky.i15_1.plans.setup_zebra import (
@@ -30,8 +32,9 @@ def _collection(
     blower: Blower,
     tth: Motor,
     detector_trigger: SignalRW,
+    attenuator: Attenuator,
     temperatures_celsius: list[float],
-    frames_per_angle: dict[float, int],
+    collection_spec: CollectionSpecification,
     exposure_time_per_frame: float,
 ):
     for temperature in temperatures_celsius:
@@ -40,7 +43,8 @@ def _collection(
         yield from inner_collection(
             tth,
             detector_trigger,
-            frames_per_angle,
+            attenuator,
+            collection_spec,
             exposure_time_per_frame,
             [blower.temperature],
         )
@@ -69,7 +73,7 @@ def blower_collection(
     yield from bps.abs_set(blower.settle_time_s, settle_time)
     yield from bps.abs_set(blower.ramp_rate_c_per_sec, ramp_rate_c_per_min / 60)
 
-    frames_per_angle, total_frames = calculate_frames_per_angle(
+    collection_spec, total_frames = get_collection_specification(
         time_per_collection, exposure_time_per_frame
     )
 
@@ -83,8 +87,9 @@ def blower_collection(
         blower,
         tth,
         detector_trigger,
+        generic_collection_devices.attenuator,
         temperatures_celsius,
-        frames_per_angle,
+        collection_spec,
         exposure_time_per_frame,
     )
 

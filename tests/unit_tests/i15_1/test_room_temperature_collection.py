@@ -3,14 +3,17 @@ from unittest.mock import MagicMock, patch
 
 import bluesky.plan_stubs as bps
 from bluesky import RunEngine
-from bluesky.simulators import RunEngineSimulator
-from daq_config_server.models.i15_1.positions_to_times import AnglesToTimes
+from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
+from daq_config_server.models.i15_1.collection_specification import (
+    CollectionSpecification,
+)
+from dodal.devices.beamlines.i15_1.attenuator import AttenuatorPositions
 
 from crystallography_bluesky.i15_1.plans.generic_collection import (
     GenericCollectionDevices,
 )
 from crystallography_bluesky.i15_1.plans.room_temperature_collection import (
-    TTH_ANGLE_TO_COLLECTION_TIME_FILEPATH,
+    COLLECTION_SPEC_FILEPATH,
     _calculate_number_of_frames,
     data_collection,
 )
@@ -42,8 +45,8 @@ def test_calculate_number_of_frames_returns_one_if_calculation_would_be_zero():
 def test_data_collection_calls_setup_with_expected_arguments(
     mock_setup: MagicMock,
     common_collection_devices: GenericCollectionDevices,
-    positions_to_fraction: dict[float, float],
-    mock_positions_to_fraction_config_client,
+    positions_to_spec: dict[float, tuple[float, float]],
+    mock_collection_spec_config_client,
 ):
     baseline_devices = [common_collection_devices.tth]
 
@@ -63,8 +66,8 @@ def test_data_collection_calls_setup_with_expected_arguments(
     )
 
     expected_total_frames = sum(
-        _calculate_number_of_frames(fraction, 2, 0.01)
-        for fraction in positions_to_fraction.values()
+        _calculate_number_of_frames(fraction[0], 2, 0.01)
+        for fraction in positions_to_spec.values()
     )
 
     setup_call_args = mock_setup.call_args.args
@@ -92,8 +95,8 @@ def test_data_collection_calls_setup_with_expected_arguments(
 
 def test_data_collection_takes_one_frame_per_position_for_short_collection(
     common_collection_devices: GenericCollectionDevices,
-    positions_to_fraction: dict[float, float],
-    mock_positions_to_fraction_config_client,
+    positions_to_spec: dict[float, tuple[float, float]],
+    mock_collection_spec_config_client,
 ):
     run_engine = RunEngineSimulator()
     msgs = run_engine.simulate_plan(
@@ -107,7 +110,7 @@ def test_data_collection_takes_one_frame_per_position_for_short_collection(
     tth_positions = [
         msg.args[0] for msg in msgs if msg.command == "set" and msg.obj.name == "tth"
     ]
-    assert tth_positions == list(positions_to_fraction.keys())
+    assert tth_positions == list(positions_to_spec.keys())
 
     detector_high_triggers = [
         msg
@@ -116,19 +119,52 @@ def test_data_collection_takes_one_frame_per_position_for_short_collection(
         and msg.obj.name == "zebra-inputs-soft_in_1"
         and msg.args[0] == 1
     ]
-    assert len(detector_high_triggers) == len(positions_to_fraction)
+    assert len(detector_high_triggers) == len(positions_to_spec)
 
     tth_stream_creates = [
         msg
         for msg in msgs
         if msg.command == "create" and msg.kwargs.get("name") == "data"
     ]
-    assert len(tth_stream_creates) == len(positions_to_fraction)
+    assert len(tth_stream_creates) == len(positions_to_spec)
+
+
+def test_data_collection_changes_transmission_per_position(
+    common_collection_devices: GenericCollectionDevices,
+    positions_to_spec: dict[float, tuple[float, float]],
+    mock_collection_spec_config_client,
+):
+    run_engine = RunEngineSimulator()
+    msgs = run_engine.simulate_plan(
+        data_collection(
+            full_collection_time=1,
+            exposure_time_per_frame=0.01,
+            generic_collection_devices=common_collection_devices,
+        )
+    )
+
+    for position, spec in positions_to_spec.items():
+        msgs = assert_message_and_return_remaining(
+            msgs,
+            predicate=lambda msg, position=position: (
+                msg.command == "set"
+                and msg.obj.name == "tth"
+                and msg.args[0] == position
+            ),
+        )
+        msgs = assert_message_and_return_remaining(
+            msgs,
+            predicate=lambda msg, transmission=spec[1]: (
+                msg.command == "set"
+                and msg.obj.name == "attenuator"
+                and msg.args[0] == AttenuatorPositions.from_trans_float(transmission)
+            ),
+        )
 
 
 def test_data_collection_gets_positions_to_fraction_from_config_server(
     common_collection_devices: GenericCollectionDevices,
-    mock_positions_to_fraction_config_client: MagicMock,
+    mock_collection_spec_config_client: MagicMock,
 ):
     run_engine = RunEngineSimulator()
     run_engine.simulate_plan(
@@ -138,6 +174,6 @@ def test_data_collection_gets_positions_to_fraction_from_config_server(
             generic_collection_devices=common_collection_devices,
         )
     )
-    mock_positions_to_fraction_config_client.get_file_contents.assert_called_once_with(
-        TTH_ANGLE_TO_COLLECTION_TIME_FILEPATH, AnglesToTimes
+    mock_collection_spec_config_client.get_file_contents.assert_called_once_with(
+        COLLECTION_SPEC_FILEPATH, CollectionSpecification
     )
