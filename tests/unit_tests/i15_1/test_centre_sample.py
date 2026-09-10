@@ -43,7 +43,7 @@ def mock_analysis_client():
         mock_analysis_client_cls.return_value = (mock_client := MagicMock())
         mock_client.get_request_id_result.return_value = AnalysisResult(
             analysis_name="fake_sample_alignment_i15_1",
-            result='{"centre": 17}',
+            result={"centre": 17},
             status="completed",
             created_at=datetime.now(),
         )
@@ -266,7 +266,7 @@ def test_centre_sample_throws_error_if_result_out_of_bounds_of_scan(
     hexapod: XYZStage,
     blueapi_run_engine: RunEngine,
 ):
-    mock_analysis_client.get_request_id_result.return_value.result = '{"centre": 21}'
+    mock_analysis_client.get_request_id_result.return_value.result = {"centre": 21}
 
     @bpp.run_decorator()
     def my_plan(*_, **__):
