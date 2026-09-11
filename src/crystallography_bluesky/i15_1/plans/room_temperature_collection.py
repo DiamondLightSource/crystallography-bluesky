@@ -119,12 +119,6 @@ def data_collection(
     metadata: dict[str, Any] | None = None,
 ) -> MsgGenerator:
 
-    async def calc_timeout(*_, **__):
-        return 60
-
-    # tth is currently very slow, speed will be improved for run
-    generic_collection_devices.tth.movable_logic.calculate_timeout = calc_timeout
-
     yield from setup_zebra_for_software_triggering(generic_collection_devices.zebra)
 
     frames_per_angle, total_frames = get_collection_specification(
