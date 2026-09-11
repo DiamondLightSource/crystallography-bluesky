@@ -8,7 +8,7 @@ from dodal.devices.beamlines.i15_1.attenuator import Attenuator
 from dodal.devices.beamlines.i15_1.blower import Blower
 from dodal.devices.motors import Motor
 from dodal.log import LOGGER
-from ophyd_async.core import SignalRW, StandardReadable
+from ophyd_async.core import StandardReadable
 
 from crystallography_bluesky.i15_1.plans.generic_collection import (
     GenericCollectionDevices,
@@ -21,7 +21,7 @@ from crystallography_bluesky.i15_1.plans.room_temperature_collection import (
     inner_collection,
 )
 from crystallography_bluesky.i15_1.plans.setup_zebra import (
-    setup_zebra_for_software_triggering,
+    setup_zebra_for_hardware_triggering,
 )
 
 devices = inject("")
@@ -31,23 +31,24 @@ blower = inject("blower")
 def _collection(
     blower: Blower,
     tth: Motor,
-    detector_trigger: SignalRW,
     attenuator: Attenuator,
     temperatures_celsius: list[float],
     collection_spec: CollectionSpecification,
-    exposure_time_per_frame: float,
+    time_between_frames: float,
 ):
     for temperature in temperatures_celsius:
         LOGGER.info(f"Moving to temperature {temperature}")
         yield from bps.mv(blower.temperature, temperature)
         yield from inner_collection(
             tth,
-            detector_trigger,
             attenuator,
             collection_spec,
-            exposure_time_per_frame,
+            time_between_frames,
             [blower.temperature],
         )
+        # Is room_temperature_collection the correct place to
+        # get inner_collection from?
+        # Would single_temperature_collection be a better desciption?
 
 
 def blower_collection(
@@ -62,8 +63,6 @@ def blower_collection(
     metadata: dict[str, Any] | None = None,
 ) -> MsgGenerator:
 
-    yield from setup_zebra_for_software_triggering(generic_collection_devices.zebra)
-
     yield from bps.abs_set(blower.settle_time_s, settle_time)
     yield from bps.abs_set(blower.ramp_rate_c_per_sec, ramp_rate_c_per_min / 60)
 
@@ -71,16 +70,24 @@ def blower_collection(
         time_per_collection, exposure_time_per_frame
     )
 
+    pulse_width = 0.0001  # Assumes zebra is set to seconds timebase
+    first_frames_value = next(iter(collection_spec.values())).frames
+    time_between_frames = exposure_time_per_frame + pulse_width
+
+    yield from setup_zebra_for_hardware_triggering(
+        generic_collection_devices.zebra,
+        first_frames_value,
+        time_between_frames,
+    )
+
     total_frames *= len(temperatures_celsius)
 
-    detector_trigger = generic_collection_devices.zebra.inputs.soft_in_1
     tth = generic_collection_devices.tth
 
     collection = partial(
         _collection,
         blower,
         tth,
-        detector_trigger,
         generic_collection_devices.attenuator,
         temperatures_celsius,
         collection_spec,
