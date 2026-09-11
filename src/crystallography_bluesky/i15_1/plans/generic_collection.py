@@ -6,7 +6,7 @@ import bluesky.preprocessors as bpp
 import pydantic
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
-from dodal.devices.beamlines.i15_1.attenuator import Attenuator
+from dodal.devices.beamlines.i15_1.attenuators import FastAttenuator, SlowAttenuator
 from dodal.devices.beamlines.i15_1.laue import LaueMonochrometer
 from dodal.devices.beamlines.i15_1.robot import Robot
 from dodal.devices.tetramm import SummingTetrammDetector
@@ -33,7 +33,8 @@ class GenericCollectionDevices:
     tth: Motor
     fast_shutter: ZebraFastShutter
     xtal: LaueMonochrometer
-    attenuator: Attenuator
+    fast_attenuator: FastAttenuator
+    slow_attenuator: SlowAttenuator
 
 
 def get_default_baseline_devices(all_devices: GenericCollectionDevices):
@@ -41,7 +42,8 @@ def get_default_baseline_devices(all_devices: GenericCollectionDevices):
         all_devices.robot.spinner,
         all_devices.xtal,
         all_devices.tth,
-        all_devices.attenuator,
+        all_devices.fast_attenuator,
+        all_devices.slow_attenuator,
     ]
 
 
