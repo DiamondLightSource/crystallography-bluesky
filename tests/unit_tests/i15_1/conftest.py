@@ -15,7 +15,7 @@ from dodal.devices.beamlines.i15_1.robot import Robot
 from dodal.devices.motors import XYZStage
 from dodal.devices.tetramm import SummingTetrammDetector
 from dodal.devices.zebra.zebra import Zebra, ZebraMapping
-from dodal.devices.zebra.zebra_constants_mapping import ZebraTTLOutputs
+from dodal.devices.zebra.zebra_constants_mapping import ZebraOutputs
 from dodal.devices.zebra.zebra_controlled_shutter import ZebraFastShutter
 from ophyd_async.core import StaticFilenameProvider, StaticPathProvider, init_devices
 from ophyd_async.epics.motor import Motor
@@ -51,7 +51,7 @@ async def i0(path_provider: StaticPathProvider) -> SummingTetrammDetector:
 async def zebra() -> Zebra:
     async with init_devices(mock=True):
         zebra = Zebra(
-            ZebraMapping(outputs=ZebraTTLOutputs(TTL_EIGER=3, TTL_I0=2)),
+            ZebraMapping(outputs=ZebraOutputs(LVDS_EIGER=3, TTL_I0=2)),
             "",
             "zebra",
         )

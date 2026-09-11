@@ -55,7 +55,7 @@ def test_static_collection_plan_makes_expected_calls(
         msgs,
         predicate=lambda msg: (
             msg.command == "set"
-            and msg.obj.name == "zebra-output-out_pvs-3"  # Eiger
+            and msg.obj.name == "zebra-output-out_lvds_pvs-3"  # Eiger
             and msg.args[0] == 31  # PC_PULSE
         ),
     )
@@ -64,7 +64,7 @@ def test_static_collection_plan_makes_expected_calls(
         msgs,
         predicate=lambda msg: (
             msg.command == "set"
-            and msg.obj.name == "zebra-output-out_pvs-2"  # I0
+            and msg.obj.name == "zebra-output-out_ttl_pvs-2"  # I0
             and msg.args[0] == 31  # PC_PULSE
         ),
     )

@@ -21,10 +21,10 @@ def test_setup_zebra_for_hardware_triggering_sets_expected_pvs(
     get_mock_put(zebra.pc.gate_width).assert_called_once_with(10)
 
     get_mock_put(
-        zebra.output.out_pvs[zebra.mapping.outputs.TTL_EIGER]
+        zebra.output.out_lvds_pvs[zebra.mapping.outputs.LVDS_EIGER]
     ).assert_called_once_with(31)
     get_mock_put(
-        zebra.output.out_pvs[zebra.mapping.outputs.TTL_I0]
+        zebra.output.out_ttl_pvs[zebra.mapping.outputs.TTL_I0]
     ).assert_called_once_with(31)
 
 
@@ -41,8 +41,8 @@ def test_setup_zebra_for_software_triggering_sets_expected_pvs(
     run_engine(setup_zebra_for_software_triggering(zebra))
 
     get_mock_put(
-        zebra.output.out_pvs[zebra.mapping.outputs.TTL_EIGER]
+        zebra.output.out_lvds_pvs[zebra.mapping.outputs.LVDS_EIGER]
     ).assert_called_once_with(60)
     get_mock_put(
-        zebra.output.out_pvs[zebra.mapping.outputs.TTL_I0]
+        zebra.output.out_ttl_pvs[zebra.mapping.outputs.TTL_I0]
     ).assert_called_once_with(60)
