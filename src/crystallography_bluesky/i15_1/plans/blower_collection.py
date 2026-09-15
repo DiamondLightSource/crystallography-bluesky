@@ -4,7 +4,7 @@ from typing import Any
 from bluesky import plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
-from dodal.devices.beamlines.i15_1.attenuator import Attenuator
+from dodal.devices.beamlines.i15_1.attenuators import FastAttenuatorDemand
 from dodal.devices.beamlines.i15_1.blower import Blower
 from dodal.devices.motors import Motor
 from dodal.log import LOGGER
@@ -29,21 +29,22 @@ blower = inject("blower")
 
 
 def _collection(
+    generic_collection_devices: GenericCollectionDevices,
     blower: Blower,
-    tth: Motor,
-    detector_trigger: SignalRW,
-    attenuator: Attenuator,
     temperatures_celsius: list[float],
     collection_spec: CollectionSpecification,
     exposure_time_per_frame: float,
 ):
+    detector_trigger = generic_collection_devices.zebra.inputs.soft_in_1
+
     for temperature in temperatures_celsius:
         LOGGER.info(f"Moving to temperature {temperature}")
         yield from bps.mv(blower.temperature, temperature)
         yield from inner_collection(
-            tth,
+            generic_collection_devices.tth,
             detector_trigger,
-            attenuator,
+            generic_collection_devices.slow_attenuator,
+            generic_collection_devices.fast_attenuator,
             collection_spec,
             exposure_time_per_frame,
             [blower.temperature],
@@ -73,15 +74,10 @@ def blower_collection(
 
     total_frames *= len(temperatures_celsius)
 
-    detector_trigger = generic_collection_devices.zebra.inputs.soft_in_1
-    tth = generic_collection_devices.tth
-
     collection = partial(
         _collection,
+        generic_collection_devices,
         blower,
-        tth,
-        detector_trigger,
-        generic_collection_devices.attenuator,
         temperatures_celsius,
         collection_spec,
         exposure_time_per_frame,
