@@ -16,13 +16,13 @@ from crystallography_bluesky.i15_1.plans.generic_collection import (
     get_default_baseline_devices,
     setup_and_teardown_collection,
 )
-from crystallography_bluesky.i15_1.plans.room_temperature_collection import (
+from crystallography_bluesky.i15_1.plans.setup_zebra import (
+    setup_zebra_for_hardware_triggering,
+)
+from crystallography_bluesky.i15_1.plans.single_temperature_collection import (
     CollectionSpecification,
     get_collection_specification,
     inner_collection,
-)
-from crystallography_bluesky.i15_1.plans.setup_zebra import (
-    setup_zebra_for_hardware_triggering,
 )
 
 devices = inject("")
@@ -49,8 +49,6 @@ def _collection(
             time_between_frames,
             [blower.temperature],
         )
-        # TODO: As it better describes the way it is used, rename
-        # room_temperature_collection to be single_temperature_collection
 
 
 def blower_collection(
