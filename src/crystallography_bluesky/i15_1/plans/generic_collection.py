@@ -90,7 +90,7 @@ def setup_and_teardown_collection(
     detectors = [devices.fastcs_eiger, devices.i0]
     metadata = metadata or {}
     metadata.update({"detectors": [detector.name for detector in detectors]})
-    if metadata.get("sample") is not None:
+    if "sample" in metadata.keys():
         metadata["sample_info"] = metadata["sample"]
         del metadata["sample"]
 
