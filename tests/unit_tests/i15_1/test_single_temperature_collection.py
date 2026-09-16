@@ -17,7 +17,7 @@ from crystallography_bluesky.i15_1.plans.generic_collection import (
     DataCollectionScanType,
     GenericCollectionDevices,
 )
-from crystallography_bluesky.i15_1.plans.room_temperature_collection import (
+from crystallography_bluesky.i15_1.plans.single_temperature_collection import (
     COLLECTION_SPEC_FILEPATH,
     CollectionSpecPerPosition,
     _calculate_number_of_frames,
@@ -46,7 +46,7 @@ def test_calculate_number_of_frames_returns_one_if_calculation_would_be_zero():
 
 
 @patch(
-    "crystallography_bluesky.i15_1.plans.room_temperature_collection.setup_and_teardown_collection"
+    "crystallography_bluesky.i15_1.plans.single_temperature_collection.setup_and_teardown_collection"
 )
 def test_data_collection_calls_setup_with_expected_arguments(
     mock_setup: MagicMock,
@@ -256,7 +256,7 @@ def test_data_collection_gets_positions_to_fraction_from_config_server(
 
 
 @patch(
-    "crystallography_bluesky.i15_1.plans.room_temperature_collection.setup_and_teardown_collection"
+    "crystallography_bluesky.i15_1.plans.single_temperature_collection.setup_and_teardown_collection"
 )
 def test_data_collection_adds_expected_info_to_metadata(
     mock_setup: MagicMock,
