@@ -7,6 +7,7 @@ from bluesky import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.devices.beamlines.i15_1.attenuator import AttenuatorPositions
 from dodal.devices.beamlines.i15_1.blower import Blower
+from dodal.devices.zebra.zebra import ArmDemand
 
 from crystallography_bluesky.i15_1.plans.blower_collection import blower_collection
 from crystallography_bluesky.i15_1.plans.generic_collection import (
@@ -152,9 +153,8 @@ def test_blower_collection_collects_at_all_specified_temperatures(
                 msgs,
                 predicate=lambda msg: (
                     msg.command == "set"
-                    and msg.obj.name
-                    == common_collection_devices.zebra.inputs.soft_in_1.name
-                    and msg.args[0] == 1
+                    and msg.obj.name == common_collection_devices.zebra.pc.arm.name
+                    and msg.args[0] == ArmDemand.ARM
                 ),
             )
 

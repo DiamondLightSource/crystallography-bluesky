@@ -164,7 +164,7 @@ def mock_collection_spec_config_client(positions_to_spec):
         )
     )
     with patch(
-        "crystallography_bluesky.i15_1.plans.room_temperature_collection.get_config_client",
+        "crystallography_bluesky.i15_1.plans.single_temperature_collection.get_config_client",
         return_value=mock_client,
     ):
         yield mock_client
