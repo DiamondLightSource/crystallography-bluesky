@@ -121,7 +121,7 @@ def data_collection(
 
     yield from setup_zebra_for_software_triggering(generic_collection_devices.zebra)
 
-    frames_per_angle, total_frames = get_collection_specification(
+    collection_spec, total_frames = get_collection_specification(
         full_collection_time, exposure_time_per_frame
     )
 
@@ -133,7 +133,7 @@ def data_collection(
         tth,
         detector_trigger,
         generic_collection_devices.attenuator,
-        frames_per_angle,
+        collection_spec,
         exposure_time_per_frame,
     )
 
@@ -144,6 +144,8 @@ def data_collection(
     # We're using the tth in the scan so do not want to take the baseline reading
     all_baseline_devices.remove(tth)
 
+    metadata = metadata or {}
+    metadata.update({"variables": {}, "collection_specification": collection_spec})
     yield from setup_and_teardown_collection(
         total_frames,
         exposure_time_per_frame,

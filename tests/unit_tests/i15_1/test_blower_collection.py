@@ -5,11 +5,15 @@ import bluesky.plan_stubs as bps
 import pytest
 from bluesky import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
+from dodal.devices.beamlines.i15_1.attenuator import AttenuatorPositions
 from dodal.devices.beamlines.i15_1.blower import Blower
 
 from crystallography_bluesky.i15_1.plans.blower_collection import blower_collection
 from crystallography_bluesky.i15_1.plans.generic_collection import (
     GenericCollectionDevices,
+)
+from crystallography_bluesky.i15_1.plans.room_temperature_collection import (
+    SpecificationPerPosition,
 )
 
 
@@ -153,3 +157,49 @@ def test_blower_collection_collects_at_all_specified_temperatures(
                     and msg.args[0] == 1
                 ),
             )
+
+
+@patch(
+    "crystallography_bluesky.i15_1.plans.blower_collection.setup_and_teardown_collection"
+)
+async def test_blower_collection_adds_expected_info_to_metadata(
+    mock_setup: MagicMock,
+    common_collection_devices: GenericCollectionDevices,
+    blower: Blower,
+):
+    run_engine = RunEngine()
+    run_engine(
+        blower_collection(
+            time_per_collection=1.0,
+            exposure_time_per_frame=0.01,
+            temperatures_celsius=[25, 50],
+            ramp_rate_c_per_min=100,
+            settle_time=0.5,
+            generic_collection_devices=common_collection_devices,
+            blower=blower,
+        )
+    )
+    _, kwargs = mock_setup.call_args
+    assert kwargs["metadata"] == {
+        "variables": {"temperatures_celsius": [25, 50]},
+        "collection_specification": {
+            10.0: SpecificationPerPosition(
+                frames=5, transmission=AttenuatorPositions.TRANS_0_001
+            ),
+            20.0: SpecificationPerPosition(
+                frames=5, transmission=AttenuatorPositions.TRANS_0_01
+            ),
+            30.0: SpecificationPerPosition(
+                frames=10, transmission=AttenuatorPositions.TRANS_0_1
+            ),
+            40.0: SpecificationPerPosition(
+                frames=20, transmission=AttenuatorPositions.TRANS_10
+            ),
+            50.0: SpecificationPerPosition(
+                frames=30, transmission=AttenuatorPositions.TRANS_50
+            ),
+            60.0: SpecificationPerPosition(
+                frames=30, transmission=AttenuatorPositions.TRANS_100
+            ),
+        },
+    }

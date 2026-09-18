@@ -13,6 +13,7 @@ from crystallography_bluesky.i15_1.plans.generic_collection import (
 )
 from crystallography_bluesky.i15_1.plans.room_temperature_collection import (
     COLLECTION_SPEC_FILEPATH,
+    SpecificationPerPosition,
     _calculate_number_of_frames,
     data_collection,
 )
@@ -169,3 +170,45 @@ def test_data_collection_gets_positions_to_fraction_from_config_server(
     mock_collection_spec_config_client.get_file_contents.assert_called_once_with(
         COLLECTION_SPEC_FILEPATH, CollectionSpecification
     )
+
+
+@patch(
+    "crystallography_bluesky.i15_1.plans.room_temperature_collection.setup_and_teardown_collection"
+)
+def test_data_collection_adds_expected_info_to_metadata(
+    mock_setup: MagicMock,
+    common_collection_devices: GenericCollectionDevices,
+    mock_collection_spec_config_client: MagicMock,
+):
+    run_engine = RunEngineSimulator()
+    run_engine.simulate_plan(
+        data_collection(
+            full_collection_time=0.02,
+            exposure_time_per_frame=0.01,
+            generic_collection_devices=common_collection_devices,
+        )
+    )
+    _, kwargs = mock_setup.call_args
+    assert kwargs["metadata"] == {
+        "variables": {},
+        "collection_specification": {
+            10.0: SpecificationPerPosition(
+                frames=1, transmission=AttenuatorPositions.TRANS_0_001
+            ),
+            20.0: SpecificationPerPosition(
+                frames=1, transmission=AttenuatorPositions.TRANS_0_01
+            ),
+            30.0: SpecificationPerPosition(
+                frames=1, transmission=AttenuatorPositions.TRANS_0_1
+            ),
+            40.0: SpecificationPerPosition(
+                frames=1, transmission=AttenuatorPositions.TRANS_10
+            ),
+            50.0: SpecificationPerPosition(
+                frames=1, transmission=AttenuatorPositions.TRANS_50
+            ),
+            60.0: SpecificationPerPosition(
+                frames=1, transmission=AttenuatorPositions.TRANS_100
+            ),
+        },
+    }

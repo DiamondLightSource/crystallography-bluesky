@@ -94,6 +94,14 @@ def blower_collection(
     # We're using the tth in the scan so do not want to take the baseline reading
     all_baseline_devices.remove(generic_collection_devices.tth)
 
+    metadata = metadata or {}
+    metadata.update(
+        {
+            "variables": {"temperatures_celsius": temperatures_celsius},
+            "collection_specification": collection_spec,
+        }
+    )
+
     yield from setup_and_teardown_collection(
         total_frames,
         exposure_time_per_frame,
