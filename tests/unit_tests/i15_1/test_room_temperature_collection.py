@@ -190,6 +190,7 @@ def test_data_collection_adds_expected_info_to_metadata(
     )
     _, kwargs = mock_setup.call_args
     assert kwargs["metadata"] == {
+        "data_shape": [(6, "collection")],
         "variables": {},
         "collection_specification": {
             10.0: SpecificationPerPosition(

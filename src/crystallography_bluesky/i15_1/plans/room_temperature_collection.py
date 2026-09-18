@@ -145,7 +145,13 @@ def data_collection(
     all_baseline_devices.remove(tth)
 
     metadata = metadata or {}
-    metadata.update({"variables": {}, "collection_specification": collection_spec})
+    metadata.update(
+        {
+            "data_shape": [(total_frames, "collection")],
+            "variables": {},
+            "collection_specification": collection_spec,
+        }
+    )
     yield from setup_and_teardown_collection(
         total_frames,
         exposure_time_per_frame,

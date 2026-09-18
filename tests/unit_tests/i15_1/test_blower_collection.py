@@ -181,6 +181,7 @@ async def test_blower_collection_adds_expected_info_to_metadata(
     )
     _, kwargs = mock_setup.call_args
     assert kwargs["metadata"] == {
+        "data_shape": [(2, "temperatures_celsius"), (100, "collection")],
         "variables": {"temperatures_celsius": [25, 50]},
         "collection_specification": {
             10.0: SpecificationPerPosition(
