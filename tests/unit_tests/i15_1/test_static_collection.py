@@ -3,7 +3,11 @@ from unittest.mock import AsyncMock
 import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
-from dodal.devices.beamlines.i15_1.attenuator import Attenuator, AttenuatorPositions
+from dodal.devices.beamlines.i15_1.attenuators import (
+    FastAttenuatorDemand,
+    SlowAttenuator,
+    SlowAttenuatorPositions,
+)
 from dodal.devices.beamlines.i15_1.laue import LaueMonochrometer
 from dodal.devices.beamlines.i15_1.robot import Robot
 from dodal.devices.tetramm import SummingTetrammDetector
@@ -29,7 +33,8 @@ def test_static_collection_plan_makes_expected_calls(
         static_collection(
             10,
             0.01,
-            AttenuatorPositions.TRANS_10,
+            SlowAttenuatorPositions.TRANS_10,
+            FastAttenuatorDemand.IN,
             devices=common_collection_devices,
             metadata={"some": "metadata"},
         )
@@ -38,8 +43,16 @@ def test_static_collection_plan_makes_expected_calls(
         msgs,
         predicate=lambda msg: (
             msg.command == "set"
-            and msg.obj.name == "attenuator"
-            and msg.args[0] == AttenuatorPositions.TRANS_10
+            and msg.obj.name == "slow_attenuator"
+            and msg.args[0] == SlowAttenuatorPositions.TRANS_10
+        ),
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        predicate=lambda msg: (
+            msg.command == "set"
+            and msg.obj.name == "fast_attenuator"
+            and msg.args[0] == FastAttenuatorDemand.IN
         ),
     )
     msgs = assert_message_and_return_remaining(
@@ -113,7 +126,15 @@ def test_static_collection_plan_makes_expected_calls(
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        predicate=lambda msg: msg.command == "read" and msg.obj.name == "attenuator",
+        predicate=lambda msg: (
+            msg.command == "read" and msg.obj.name == "fast_attenuator"
+        ),
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        predicate=lambda msg: (
+            msg.command == "read" and msg.obj.name == "slow_attenuator"
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
@@ -199,7 +220,11 @@ def test_shutter_opened_before_detectors_kicked_off(
     run_engine = RunEngineSimulator()
     msgs = run_engine.simulate_plan(
         static_collection(
-            10, 0.01, AttenuatorPositions.TRANS_0_1, devices=common_collection_devices
+            10,
+            0.01,
+            SlowAttenuatorPositions.TRANS_0_1,
+            FastAttenuatorDemand.IN,
+            devices=common_collection_devices,
         )
     )
 
@@ -225,7 +250,11 @@ def test_shutter_closed_after_complete(
     run_engine = RunEngineSimulator()
     msgs = run_engine.simulate_plan(
         static_collection(
-            10, 0.01, AttenuatorPositions.TRANS_0_1, devices=common_collection_devices
+            10,
+            0.01,
+            SlowAttenuatorPositions.TRANS_0_1,
+            FastAttenuatorDemand.IN,
+            devices=common_collection_devices,
         )
     )
 
@@ -247,49 +276,35 @@ def test_shutter_closed_after_complete(
     "Needs https://github.com/DiamondLightSource/crystallography-bluesky/issues/78"
 )
 async def test_given_plan_throws_exception_then_shutters_closed(
-    eiger: EigerDetector,
-    i0: SummingTetrammDetector,
-    zebra: Zebra,
-    robot: Robot,
-    tth: Motor,
-    fast_shutter: ZebraFastShutter,
-    run_engine: RunEngine,
-    xtal: LaueMonochrometer,
-    attenuator: Attenuator,
+    run_engine: RunEngine, common_collection_devices: GenericCollectionDevices
 ):
-    devices = GenericCollectionDevices(
-        eiger, i0, zebra, robot, tth, fast_shutter, xtal, attenuator
-    )
     run_engine = RunEngine()
 
-    zebra.inputs.soft_in_1.set = AsyncMock(ValueError)
+    common_collection_devices.zebra.inputs.soft_in_1.set = AsyncMock(ValueError)
 
     with pytest.raises(ValueError):
         run_engine(
-            static_collection(10, 0.01, AttenuatorPositions.TRANS_0_1, devices=devices)
+            static_collection(
+                10,
+                0.01,
+                SlowAttenuatorPositions.TRANS_0_1,
+                FastAttenuatorDemand.IN,
+                devices=common_collection_devices,
+            )
         )
 
-    get_mock_put(fast_shutter._set_pv).assert_called()
-    assert (await fast_shutter.shutter_state.get_value()) == OpenClose.CLOSE
+    get_mock_put(common_collection_devices.fast_shutter._set_pv).assert_called()
+    assert (
+        await common_collection_devices.fast_shutter.shutter_state.get_value()
+    ) == OpenClose.CLOSE
 
 
 @pytest.mark.skip(
     "Needs https://github.com/DiamondLightSource/crystallography-bluesky/issues/78"
 )
 def test_if_plan_fails_during_trigger_then_soft_in_cleaned_up(
-    eiger: EigerDetector,
-    i0: SummingTetrammDetector,
-    zebra: Zebra,
-    robot: Robot,
-    tth: Motor,
-    fast_shutter: ZebraFastShutter,
-    xtal: LaueMonochrometer,
-    attenuator: Attenuator,
+    common_collection_devices: GenericCollectionDevices,
 ):
-    devices = GenericCollectionDevices(
-        eiger, i0, zebra, robot, tth, fast_shutter, xtal, attenuator
-    )
-
     run_engine = RunEngineSimulator()
 
     def raise_exception():
@@ -298,7 +313,13 @@ def test_if_plan_fails_during_trigger_then_soft_in_cleaned_up(
     run_engine.add_handler("sleep", lambda msg: raise_exception())
 
     msgs = run_engine.simulate_plan(
-        static_collection(10, 0.01, AttenuatorPositions.TRANS_0_1, devices=devices)
+        static_collection(
+            10,
+            0.01,
+            SlowAttenuatorPositions.TRANS_0_1,
+            FastAttenuatorDemand.IN,
+            devices=common_collection_devices,
+        )
     )
 
     msgs = assert_message_and_return_remaining(

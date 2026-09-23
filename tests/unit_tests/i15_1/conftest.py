@@ -6,9 +6,9 @@ from bluesky import RunEngine
 from daq_config_server.client import ConfigClient
 from daq_config_server.models.i15_1.collection_specification import (
     CollectionSpecification,
-    CollectionSpecPerPosition,
+    SpecificationPerPosition,
 )
-from dodal.devices.beamlines.i15_1.attenuator import Attenuator
+from dodal.devices.beamlines.i15_1.attenuators import FastAttenuator, SlowAttenuator
 from dodal.devices.beamlines.i15_1.blower import Blower
 from dodal.devices.beamlines.i15_1.laue import LaueMonochrometer
 from dodal.devices.beamlines.i15_1.robot import Robot
@@ -75,11 +75,19 @@ async def tth() -> Motor:
 
 
 @pytest.fixture
-async def attenuator() -> Attenuator:
+async def slow_attenuator() -> SlowAttenuator:
     async with init_devices(mock=True):
-        attenuator = Attenuator("", "")
+        slow_attenuator = SlowAttenuator("", "")
 
-    return attenuator
+    return slow_attenuator
+
+
+@pytest.fixture
+async def fast_attenuator() -> FastAttenuator:
+    async with init_devices(mock=True):
+        fast_attenuator = FastAttenuator("", "")
+
+    return fast_attenuator
 
 
 @pytest.fixture
@@ -123,10 +131,19 @@ async def common_collection_devices(
     tth: Motor,
     fast_shutter: ZebraFastShutter,
     xtal: LaueMonochrometer,
-    attenuator: Attenuator,
+    slow_attenuator: SlowAttenuator,
+    fast_attenuator: FastAttenuator,
 ) -> GenericCollectionDevices:
     return GenericCollectionDevices(
-        eiger, i0, zebra, robot, tth, fast_shutter, xtal, attenuator
+        eiger,
+        i0,
+        zebra,
+        robot,
+        tth,
+        fast_shutter,
+        xtal,
+        fast_attenuator,
+        slow_attenuator,
     )
 
 
@@ -141,12 +158,12 @@ async def blower() -> Blower:
 @pytest.fixture
 def positions_to_spec():
     return {
-        10: (0.05, 0.001),
-        20: (0.05, 0.01),
-        30: (0.1, 0.1),
-        40: (0.2, 10),
-        50: (0.3, 50),
-        60: (0.3, 100),
+        10: (0.05, 0.001, "IN"),
+        20: (0.05, 0.01, "IN"),
+        30: (0.1, 0.1, "IN"),
+        40: (0.2, 10, "OUT"),
+        50: (0.3, 50, "OUT"),
+        60: (0.3, 100, "OUT"),
     }
 
 
@@ -156,8 +173,10 @@ def mock_collection_spec_config_client(positions_to_spec):
     mock_client.get_file_contents = MagicMock(
         wraps=lambda _, __: CollectionSpecification(
             tth_angle_to_specification={
-                pos: CollectionSpecPerPosition(
-                    exposure_time=spec[0], transmission=spec[1]
+                pos: SpecificationPerPosition(
+                    exposure_time=spec[0],
+                    slow_attenuator_transmission=spec[1],
+                    fast_attenuator_position=spec[2],
                 )
                 for pos, spec in positions_to_spec.items()
             }

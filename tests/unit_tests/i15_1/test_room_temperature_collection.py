@@ -6,7 +6,10 @@ from bluesky.simulators import RunEngineSimulator, assert_message_and_return_rem
 from daq_config_server.models.i15_1.collection_specification import (
     CollectionSpecification,
 )
-from dodal.devices.beamlines.i15_1.attenuator import AttenuatorPositions
+from dodal.devices.beamlines.i15_1.attenuators import (
+    FastAttenuatorDemand,
+    SlowAttenuatorPositions,
+)
 
 from crystallography_bluesky.i15_1.plans.generic_collection import (
     GenericCollectionDevices,
@@ -79,7 +82,8 @@ def test_data_collection_calls_setup_with_expected_arguments(
         == [
             common_collection_devices.robot.spinner,
             common_collection_devices.xtal,
-            common_collection_devices.attenuator,
+            common_collection_devices.fast_attenuator,
+            common_collection_devices.slow_attenuator,
         ]
         + baseline_devices
     )
@@ -123,7 +127,7 @@ def test_data_collection_takes_one_frame_per_position_for_short_collection(
 
 def test_data_collection_changes_transmission_per_position(
     common_collection_devices: GenericCollectionDevices,
-    positions_to_spec: dict[float, tuple[float, float]],
+    positions_to_spec: dict[float, tuple[float, float, str]],
     mock_collection_spec_config_client,
 ):
     run_engine = RunEngineSimulator()
@@ -146,10 +150,19 @@ def test_data_collection_changes_transmission_per_position(
         )
         msgs = assert_message_and_return_remaining(
             msgs,
-            predicate=lambda msg, transmission=spec[1]: (
+            predicate=lambda msg, slow_attenuator_pos=spec[1]: (
                 msg.command == "set"
-                and msg.obj.name == "attenuator"
-                and msg.args[0] == AttenuatorPositions.from_trans_float(transmission)
+                and msg.obj.name == "slow_attenuator"
+                and msg.args[0]
+                == SlowAttenuatorPositions.from_trans_float(slow_attenuator_pos)
+            ),
+        )
+        msgs = assert_message_and_return_remaining(
+            msgs,
+            predicate=lambda msg, fast_attenuator_pos=spec[2]: (
+                msg.command == "set"
+                and msg.obj.name == "fast_attenuator"
+                and msg.args[0] == FastAttenuatorDemand[fast_attenuator_pos]
             ),
         )
 
