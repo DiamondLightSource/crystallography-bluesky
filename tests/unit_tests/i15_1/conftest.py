@@ -6,7 +6,7 @@ from bluesky import RunEngine
 from daq_config_server.client import ConfigClient
 from daq_config_server.models.i15_1.collection_specification import (
     CollectionSpecification,
-    SpecificationPerPosition,
+    CollectionSpecPerPosition,
 )
 from dodal.devices.beamlines.i15_1.attenuator import Attenuator
 from dodal.devices.beamlines.i15_1.blower import Blower
@@ -156,7 +156,7 @@ def mock_collection_spec_config_client(positions_to_spec):
     mock_client.get_file_contents = MagicMock(
         wraps=lambda _, __: CollectionSpecification(
             tth_angle_to_specification={
-                pos: SpecificationPerPosition(
+                pos: CollectionSpecPerPosition(
                     exposure_time=spec[0], transmission=spec[1]
                 )
                 for pos, spec in positions_to_spec.items()

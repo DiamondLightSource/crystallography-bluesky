@@ -31,13 +31,13 @@ from crystallography_bluesky.i15_1.plans.setup_zebra import (
 
 
 @dataclass
-class SpecificationPerPosition:
+class CollectionSpecPerPosition:
     frames: int
     slow_attenuator_position: SlowAttenuatorPositions
     fast_attenuator: FastAttenuatorDemand
 
 
-CollectionSpecification: TypeAlias = dict[float, SpecificationPerPosition]
+CollectionSpecification: TypeAlias = dict[float, CollectionSpecPerPosition]
 
 
 COLLECTION_SPEC_FILEPATH = (
@@ -77,7 +77,7 @@ def get_collection_specification(
         frames = _calculate_number_of_frames(
             spec.exposure_time, full_collection_time, exposure_time_per_frame
         )
-        collection_spec[angle] = SpecificationPerPosition(
+        collection_spec[angle] = CollectionSpecPerPosition(
             frames,
             SlowAttenuatorPositions.from_trans_float(spec.slow_attenuator_transmission),
             FastAttenuatorDemand[spec.fast_attenuator_position],
