@@ -5,17 +5,11 @@ from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.devices.beamlines.i15_1.attenuators import (
     FastAttenuatorDemand,
-    SlowAttenuator,
     SlowAttenuatorPositions,
 )
-from dodal.devices.beamlines.i15_1.laue import LaueMonochrometer
-from dodal.devices.beamlines.i15_1.robot import Robot
-from dodal.devices.tetramm import SummingTetrammDetector
-from dodal.devices.zebra.zebra import ArmDemand, Zebra
-from dodal.devices.zebra.zebra_controlled_shutter import OpenClose, ZebraFastShutter
+from dodal.devices.zebra.zebra import ArmDemand
+from dodal.devices.zebra.zebra_controlled_shutter import OpenClose
 from ophyd_async.core import get_mock_put
-from ophyd_async.epics.motor import Motor
-from ophyd_async.fastcs.eiger import EigerDetector
 
 from crystallography_bluesky.i15_1.plans.generic_collection import (
     GenericCollectionDevices,

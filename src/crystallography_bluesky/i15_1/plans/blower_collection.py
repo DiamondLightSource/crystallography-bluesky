@@ -4,11 +4,9 @@ from typing import Any
 from bluesky import plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
-from dodal.devices.beamlines.i15_1.attenuators import FastAttenuatorDemand
 from dodal.devices.beamlines.i15_1.blower import Blower
-from dodal.devices.motors import Motor
 from dodal.log import LOGGER
-from ophyd_async.core import SignalRW, StandardReadable
+from ophyd_async.core import StandardReadable
 
 from crystallography_bluesky.i15_1.plans.generic_collection import (
     GenericCollectionDevices,
