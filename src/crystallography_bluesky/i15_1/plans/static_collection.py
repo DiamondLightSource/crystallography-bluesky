@@ -3,7 +3,10 @@ from typing import Any
 import bluesky.plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
-from dodal.devices.beamlines.i15_1.attenuator import AttenuatorPositions
+from dodal.devices.beamlines.i15_1.attenuators import (
+    FastAttenuatorDemand,
+    SlowAttenuatorPositions,
+)
 from dodal.devices.zebra.zebra import ArmDemand
 from ophyd_async.core import StandardReadable
 
@@ -22,7 +25,8 @@ devices = inject("")
 def static_collection(
     frames: int,
     exposure_time: float,
-    attenuation: AttenuatorPositions,
+    slow_attenuator_position: SlowAttenuatorPositions,
+    fast_attenuator_position: FastAttenuatorDemand,
     time_between_frames: float = 0.1,
     devices: GenericCollectionDevices = devices,
     baseline_devices: list[StandardReadable] | None = None,
@@ -33,7 +37,10 @@ def static_collection(
     Args:
         frames (int): Number of frames to capture
         exposure_time (float): Exposure time of each frame
-        attenuation (AttenuatorPositions): The attenuation to run the collection with
+        slow_attenuator_position (SlowAttenuatorPositions): The slow attenuator setting
+                                                            to use.
+        fast_attenuator_position (FastAttenuatorDemand): The fast attenuator setting
+                                                         to use.
         time_between_frames (float): The time between each frame
         devices (GenericCollectionDevices, optional): The standard devices needed for
                 the collection.
@@ -42,7 +49,12 @@ def static_collection(
     """
     DEFAULT_BASELINE_DEVICES = get_default_baseline_devices(devices)
 
-    yield from bps.mv(devices.attenuator, attenuation)
+    yield from bps.mv(
+        devices.slow_attenuator,
+        slow_attenuator_position,
+        devices.fast_attenuator,
+        fast_attenuator_position,
+    )
 
     yield from setup_zebra_for_hardware_triggering(
         devices.zebra, frames, time_between_frames

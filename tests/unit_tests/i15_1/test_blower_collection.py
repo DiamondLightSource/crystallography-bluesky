@@ -5,7 +5,10 @@ import bluesky.plan_stubs as bps
 import pytest
 from bluesky import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
-from dodal.devices.beamlines.i15_1.attenuator import AttenuatorPositions
+from dodal.devices.beamlines.i15_1.attenuators import (
+    FastAttenuatorDemand,
+    SlowAttenuatorPositions,
+)
 from dodal.devices.beamlines.i15_1.blower import Blower
 
 from crystallography_bluesky.i15_1.plans.blower_collection import blower_collection
@@ -13,7 +16,7 @@ from crystallography_bluesky.i15_1.plans.generic_collection import (
     GenericCollectionDevices,
 )
 from crystallography_bluesky.i15_1.plans.room_temperature_collection import (
-    SpecificationPerPosition,
+    CollectionSpecPerPosition,
 )
 
 
@@ -184,23 +187,35 @@ async def test_blower_collection_adds_expected_info_to_metadata(
         "data_shape": [(2, "temperatures_celsius"), (100, "collection")],
         "variables": {"temperatures_celsius": [25, 50]},
         "collection_specification": {
-            10.0: SpecificationPerPosition(
-                frames=5, transmission=AttenuatorPositions.TRANS_0_001
+            10.0: CollectionSpecPerPosition(
+                frames=5,
+                slow_attenuator_position=SlowAttenuatorPositions.TRANS_0_001,
+                fast_attenuator=FastAttenuatorDemand.IN,
             ),
-            20.0: SpecificationPerPosition(
-                frames=5, transmission=AttenuatorPositions.TRANS_0_01
+            20.0: CollectionSpecPerPosition(
+                frames=5,
+                slow_attenuator_position=SlowAttenuatorPositions.TRANS_0_01,
+                fast_attenuator=FastAttenuatorDemand.IN,
             ),
-            30.0: SpecificationPerPosition(
-                frames=10, transmission=AttenuatorPositions.TRANS_0_1
+            30.0: CollectionSpecPerPosition(
+                frames=10,
+                slow_attenuator_position=SlowAttenuatorPositions.TRANS_0_1,
+                fast_attenuator=FastAttenuatorDemand.IN,
             ),
-            40.0: SpecificationPerPosition(
-                frames=20, transmission=AttenuatorPositions.TRANS_10
+            40.0: CollectionSpecPerPosition(
+                frames=20,
+                slow_attenuator_position=SlowAttenuatorPositions.TRANS_10,
+                fast_attenuator=FastAttenuatorDemand.OUT,
             ),
-            50.0: SpecificationPerPosition(
-                frames=30, transmission=AttenuatorPositions.TRANS_50
+            50.0: CollectionSpecPerPosition(
+                frames=30,
+                slow_attenuator_position=SlowAttenuatorPositions.TRANS_50,
+                fast_attenuator=FastAttenuatorDemand.OUT,
             ),
-            60.0: SpecificationPerPosition(
-                frames=30, transmission=AttenuatorPositions.TRANS_100
+            60.0: CollectionSpecPerPosition(
+                frames=30,
+                slow_attenuator_position=SlowAttenuatorPositions.TRANS_100,
+                fast_attenuator=FastAttenuatorDemand.OUT,
             ),
         },
     }
