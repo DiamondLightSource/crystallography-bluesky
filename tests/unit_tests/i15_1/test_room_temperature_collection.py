@@ -16,7 +16,7 @@ from crystallography_bluesky.i15_1.plans.generic_collection import (
 )
 from crystallography_bluesky.i15_1.plans.room_temperature_collection import (
     COLLECTION_SPEC_FILEPATH,
-    SpecificationPerPosition,
+    CollectionSpecPerPosition,
     _calculate_number_of_frames,
     data_collection,
 )
@@ -206,23 +206,35 @@ def test_data_collection_adds_expected_info_to_metadata(
         "data_shape": [(6, "collection")],
         "variables": {},
         "collection_specification": {
-            10.0: SpecificationPerPosition(
-                frames=1, transmission=AttenuatorPositions.TRANS_0_001
+            10.0: CollectionSpecPerPosition(
+                frames=1,
+                slow_attenuator_position=SlowAttenuatorPositions.TRANS_0_001,
+                fast_attenuator=FastAttenuatorDemand.IN,
             ),
-            20.0: SpecificationPerPosition(
-                frames=1, transmission=AttenuatorPositions.TRANS_0_01
+            20.0: CollectionSpecPerPosition(
+                frames=1,
+                slow_attenuator_position=SlowAttenuatorPositions.TRANS_0_01,
+                fast_attenuator=FastAttenuatorDemand.IN,
             ),
-            30.0: SpecificationPerPosition(
-                frames=1, transmission=AttenuatorPositions.TRANS_0_1
+            30.0: CollectionSpecPerPosition(
+                frames=1,
+                slow_attenuator_position=SlowAttenuatorPositions.TRANS_0_1,
+                fast_attenuator=FastAttenuatorDemand.IN,
             ),
-            40.0: SpecificationPerPosition(
-                frames=1, transmission=AttenuatorPositions.TRANS_10
+            40.0: CollectionSpecPerPosition(
+                frames=1,
+                slow_attenuator_position=SlowAttenuatorPositions.TRANS_10,
+                fast_attenuator=FastAttenuatorDemand.OUT,
             ),
-            50.0: SpecificationPerPosition(
-                frames=1, transmission=AttenuatorPositions.TRANS_50
+            50.0: CollectionSpecPerPosition(
+                frames=1,
+                slow_attenuator_position=SlowAttenuatorPositions.TRANS_50,
+                fast_attenuator=FastAttenuatorDemand.OUT,
             ),
-            60.0: SpecificationPerPosition(
-                frames=1, transmission=AttenuatorPositions.TRANS_100
+            60.0: CollectionSpecPerPosition(
+                frames=1,
+                slow_attenuator_position=SlowAttenuatorPositions.TRANS_100,
+                fast_attenuator=FastAttenuatorDemand.OUT,
             ),
         },
     }
