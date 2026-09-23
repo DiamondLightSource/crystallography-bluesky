@@ -162,6 +162,14 @@ def data_collection(
     # We're using the tth in the scan so do not want to take the baseline reading
     all_baseline_devices.remove(tth)
 
+    metadata = metadata or {}
+    metadata.update(
+        {
+            "data_shape": [(total_frames, "collection")],
+            "variables": {},
+            "collection_specification": collection_spec,
+        }
+    )
     yield from setup_and_teardown_collection(
         total_frames,
         exposure_time_per_frame,

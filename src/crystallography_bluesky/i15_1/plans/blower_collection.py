@@ -71,6 +71,10 @@ def blower_collection(
     collection_spec, total_frames = get_collection_specification(
         time_per_collection, exposure_time_per_frame
     )
+    data_shape: list[tuple[int, str]] = [
+        (len(temperatures_celsius), "temperatures_celsius"),
+        (total_frames, "collection"),
+    ]
 
     total_frames *= len(temperatures_celsius)
 
@@ -89,6 +93,15 @@ def blower_collection(
 
     # We're using the tth in the scan so do not want to take the baseline reading
     all_baseline_devices.remove(generic_collection_devices.tth)
+
+    metadata = metadata or {}
+    metadata.update(
+        {
+            "variables": {"temperatures_celsius": temperatures_celsius},
+            "collection_specification": collection_spec,
+            "data_shape": data_shape,
+        }
+    )
 
     yield from setup_and_teardown_collection(
         total_frames,
