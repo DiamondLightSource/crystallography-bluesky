@@ -41,6 +41,7 @@ def _collection(
         yield from inner_collection(
             generic_collection_devices.tth,
             detector_trigger,
+            generic_collection_devices.fast_shutter,
             generic_collection_devices.slow_attenuator,
             generic_collection_devices.fast_attenuator,
             collection_spec,
