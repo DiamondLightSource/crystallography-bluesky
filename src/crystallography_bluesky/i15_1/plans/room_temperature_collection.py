@@ -17,6 +17,7 @@ from dodal.devices.beamlines.i15_1.attenuators import (
     SlowAttenuatorPositions,
 )
 from dodal.devices.motors import Motor
+from dodal.devices.zebra.zebra_controlled_shutter import OpenClose, ZebraFastShutter
 from dodal.log import LOGGER
 from ophyd_async.core import SignalRW, StandardReadable
 
@@ -94,6 +95,7 @@ def get_collection_specification(
 def inner_collection(
     tth: Motor,
     detector_trigger: SignalRW,
+    fast_shutter: ZebraFastShutter,
     slow_attenuator: SlowAttenuator,
     fast_attenuator: FastAttenuator,
     collection_spec: CollectionSpecification,
@@ -104,6 +106,7 @@ def inner_collection(
         signals_to_read_per_point = []
     signals_to_read_per_point.append(tth)
     for position, point_spec in collection_spec.items():
+        yield from bps.mv(fast_shutter, OpenClose.CLOSE)
         yield from bps.mv(
             tth,
             position,
@@ -112,6 +115,7 @@ def inner_collection(
             fast_attenuator,
             point_spec.fast_attenuator,
         )
+        yield from bps.mv(fast_shutter, OpenClose.OPEN)
         current_tth = yield from bps.rd(tth)
         LOGGER.info(
             f"Triggering i0 and eiger {point_spec.frames} times at tth of {current_tth}"
@@ -149,6 +153,7 @@ def data_collection(
         inner_collection,
         tth,
         detector_trigger,
+        generic_collection_devices.fast_shutter,
         generic_collection_devices.slow_attenuator,
         generic_collection_devices.fast_attenuator,
         collection_spec,

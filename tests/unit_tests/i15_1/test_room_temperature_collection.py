@@ -10,6 +10,7 @@ from dodal.devices.beamlines.i15_1.attenuators import (
     FastAttenuatorDemand,
     SlowAttenuatorPositions,
 )
+from dodal.devices.zebra.zebra_controlled_shutter import OpenClose
 
 from crystallography_bluesky.i15_1.plans.generic_collection import (
     GenericCollectionDevices,
@@ -145,6 +146,14 @@ def test_data_collection_changes_transmission_per_position(
             msgs,
             predicate=lambda msg, position=position: (
                 msg.command == "set"
+                and msg.obj.name == "fast_shutter"
+                and msg.args[0] == OpenClose.CLOSE
+            ),
+        )
+        msgs = assert_message_and_return_remaining(
+            msgs,
+            predicate=lambda msg, position=position: (
+                msg.command == "set"
                 and msg.obj.name == "tth"
                 and msg.args[0] == position
             ),
@@ -164,6 +173,14 @@ def test_data_collection_changes_transmission_per_position(
                 msg.command == "set"
                 and msg.obj.name == "fast_attenuator"
                 and msg.args[0] == FastAttenuatorDemand[fast_attenuator_pos]
+            ),
+        )
+        msgs = assert_message_and_return_remaining(
+            msgs,
+            predicate=lambda msg, position=position: (
+                msg.command == "set"
+                and msg.obj.name == "fast_shutter"
+                and msg.args[0] == OpenClose.OPEN
             ),
         )
 
