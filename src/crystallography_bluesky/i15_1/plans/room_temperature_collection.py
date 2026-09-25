@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+import json
 from functools import partial
 from math import ceil
 from typing import Any, TypeAlias
@@ -20,6 +20,7 @@ from dodal.devices.motors import Motor
 from dodal.devices.zebra.zebra_controlled_shutter import OpenClose, ZebraFastShutter
 from dodal.log import LOGGER
 from ophyd_async.core import SignalRW, StandardReadable
+from pydantic import BaseModel
 
 from crystallography_bluesky.i15_1.plans.generic_collection import (
     GenericCollectionDevices,
@@ -31,14 +32,16 @@ from crystallography_bluesky.i15_1.plans.setup_zebra import (
 )
 
 
-@dataclass
-class CollectionSpecPerPosition:
+class CollectionSpecPerPosition(BaseModel):
+    # The structure of this is put in the nexus file and subsequently
+    # used by analysis. If we change it we need to change it there too
+    tth: float
     frames: int
     slow_attenuator_position: SlowAttenuatorPositions
     fast_attenuator: FastAttenuatorDemand
 
 
-CollectionSpecification: TypeAlias = dict[float, CollectionSpecPerPosition]
+CollectionSpecification: TypeAlias = list[CollectionSpecPerPosition]
 
 
 COLLECTION_SPEC_FILEPATH = (
@@ -72,16 +75,21 @@ def get_collection_specification(
         CollectionSpecFromConfig,
     ).tth_angle_to_specification
 
-    collection_spec: CollectionSpecification = {}
+    collection_spec: CollectionSpecification = []
     total_frames = 0
     for angle, spec in collection_spec_from_config.items():
         frames = _calculate_number_of_frames(
             spec.exposure_time, full_collection_time, exposure_time_per_frame
         )
-        collection_spec[angle] = CollectionSpecPerPosition(
-            frames,
-            SlowAttenuatorPositions.from_trans_float(spec.slow_attenuator_transmission),
-            FastAttenuatorDemand[spec.fast_attenuator_position],
+        collection_spec.append(
+            CollectionSpecPerPosition(
+                tth=angle,
+                frames=frames,
+                slow_attenuator_position=SlowAttenuatorPositions.from_trans_float(
+                    spec.slow_attenuator_transmission
+                ),
+                fast_attenuator=FastAttenuatorDemand[spec.fast_attenuator_position],
+            )
         )
         total_frames += frames
 
@@ -105,11 +113,11 @@ def inner_collection(
     if not signals_to_read_per_point:
         signals_to_read_per_point = []
     signals_to_read_per_point.append(tth)
-    for position, point_spec in collection_spec.items():
+    for point_spec in collection_spec:
         yield from bps.mv(fast_shutter, OpenClose.CLOSE)
         yield from bps.mv(
             tth,
-            position,
+            point_spec.tth,
             slow_attenuator,
             point_spec.slow_attenuator_position,
             fast_attenuator,
@@ -170,9 +178,12 @@ def data_collection(
     metadata = metadata or {}
     metadata.update(
         {
-            "data_shape": [(total_frames, "collection")],
-            "variables": {},
-            "collection_specification": collection_spec,
+            "collection_specification": json.dumps(
+                [
+                    collection_spec_per_position.model_dump()
+                    for collection_spec_per_position in collection_spec
+                ]
+            ),
         }
     )
     yield from setup_and_teardown_collection(
