@@ -1,5 +1,6 @@
+import json
 from functools import partial
-from typing import Any
+from typing import Any, TypeAlias
 
 from bluesky import plan_stubs as bps
 from bluesky.utils import MsgGenerator
@@ -7,6 +8,7 @@ from dodal.common import inject
 from dodal.devices.beamlines.i15_1.blower import Blower
 from dodal.log import LOGGER
 from ophyd_async.core import StandardReadable
+from pydantic import BaseModel
 
 from crystallography_bluesky.i15_1.plans.generic_collection import (
     GenericCollectionDevices,
@@ -26,25 +28,34 @@ devices = inject("")
 blower = inject("blower")
 
 
+class CollectionSpecPerTemp(BaseModel):
+    # The structure of this is put in the nexus file and subsequently
+    # used by analysis. If we change it we need to change it there too
+    temperature_celsius: float
+    collection_specification: CollectionSpecification
+
+
+TemperatureCollectionSpecification: TypeAlias = list[CollectionSpecPerTemp]
+
+
 def _collection(
     generic_collection_devices: GenericCollectionDevices,
     blower: Blower,
-    temperatures_celsius: list[float],
-    collection_spec: CollectionSpecification,
+    collection_spec: TemperatureCollectionSpecification,
     exposure_time_per_frame: float,
 ):
     detector_trigger = generic_collection_devices.zebra.inputs.soft_in_1
 
-    for temperature in temperatures_celsius:
-        LOGGER.info(f"Moving to temperature {temperature}")
-        yield from bps.mv(blower.temperature, temperature)
+    for collection in collection_spec:
+        LOGGER.info(f"Moving to temperature {collection.temperature_celsius}")
+        yield from bps.mv(blower.temperature, collection.temperature_celsius)
         yield from inner_collection(
             generic_collection_devices.tth,
             detector_trigger,
             generic_collection_devices.fast_shutter,
             generic_collection_devices.slow_attenuator,
             generic_collection_devices.fast_attenuator,
-            collection_spec,
+            collection.collection_specification,
             exposure_time_per_frame,
             [blower.temperature],
         )
@@ -67,12 +78,16 @@ def blower_collection(
     yield from bps.abs_set(blower.settle_time_s, settle_time)
     yield from bps.abs_set(blower.ramp_rate_c_per_sec, ramp_rate_c_per_min / 60)
 
-    collection_spec, total_frames = get_collection_specification(
+    single_collection_spec, total_frames = get_collection_specification(
         time_per_collection, exposure_time_per_frame
     )
-    data_shape: list[tuple[int, str]] = [
-        (len(temperatures_celsius), "temperatures_celsius"),
-        (total_frames, "collection"),
+
+    temperature_collection_spec = [
+        CollectionSpecPerTemp(
+            temperature_celsius=temperature,
+            collection_specification=single_collection_spec,
+        )
+        for temperature in temperatures_celsius
     ]
 
     total_frames *= len(temperatures_celsius)
@@ -81,8 +96,7 @@ def blower_collection(
         _collection,
         generic_collection_devices,
         blower,
-        temperatures_celsius,
-        collection_spec,
+        temperature_collection_spec,
         exposure_time_per_frame,
     )
 
@@ -96,9 +110,12 @@ def blower_collection(
     metadata = metadata or {}
     metadata.update(
         {
-            "variables": {"temperatures_celsius": temperatures_celsius},
-            "collection_specification": collection_spec,
-            "data_shape": data_shape,
+            "collection_specification": json.dumps(
+                [
+                    collection_spec_per_temperature.model_dump()
+                    for collection_spec_per_temperature in temperature_collection_spec
+                ],
+            )
         }
     )
 

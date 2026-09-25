@@ -1,3 +1,4 @@
+import json
 from unittest.mock import MagicMock, patch
 
 import bluesky.plan_stubs as bps
@@ -220,38 +221,44 @@ def test_data_collection_adds_expected_info_to_metadata(
     )
     _, kwargs = mock_setup.call_args
     assert kwargs["metadata"] == {
-        "data_shape": [(6, "collection")],
-        "variables": {},
-        "collection_specification": {
-            10.0: CollectionSpecPerPosition(
-                frames=1,
-                slow_attenuator_position=SlowAttenuatorPositions.TRANS_0_001,
-                fast_attenuator=FastAttenuatorDemand.IN,
-            ),
-            20.0: CollectionSpecPerPosition(
-                frames=1,
-                slow_attenuator_position=SlowAttenuatorPositions.TRANS_0_01,
-                fast_attenuator=FastAttenuatorDemand.IN,
-            ),
-            30.0: CollectionSpecPerPosition(
-                frames=1,
-                slow_attenuator_position=SlowAttenuatorPositions.TRANS_0_1,
-                fast_attenuator=FastAttenuatorDemand.IN,
-            ),
-            40.0: CollectionSpecPerPosition(
-                frames=1,
-                slow_attenuator_position=SlowAttenuatorPositions.TRANS_10,
-                fast_attenuator=FastAttenuatorDemand.OUT,
-            ),
-            50.0: CollectionSpecPerPosition(
-                frames=1,
-                slow_attenuator_position=SlowAttenuatorPositions.TRANS_50,
-                fast_attenuator=FastAttenuatorDemand.OUT,
-            ),
-            60.0: CollectionSpecPerPosition(
-                frames=1,
-                slow_attenuator_position=SlowAttenuatorPositions.TRANS_100,
-                fast_attenuator=FastAttenuatorDemand.OUT,
-            ),
-        },
+        "collection_specification": json.dumps(
+            [
+                CollectionSpecPerPosition(
+                    tth=10.0,
+                    frames=1,
+                    slow_attenuator_position=SlowAttenuatorPositions.TRANS_0_001,
+                    fast_attenuator=FastAttenuatorDemand.IN,
+                ).model_dump(),
+                CollectionSpecPerPosition(
+                    tth=20.0,
+                    frames=1,
+                    slow_attenuator_position=SlowAttenuatorPositions.TRANS_0_01,
+                    fast_attenuator=FastAttenuatorDemand.IN,
+                ).model_dump(),
+                CollectionSpecPerPosition(
+                    tth=30.0,
+                    frames=1,
+                    slow_attenuator_position=SlowAttenuatorPositions.TRANS_0_1,
+                    fast_attenuator=FastAttenuatorDemand.IN,
+                ).model_dump(),
+                CollectionSpecPerPosition(
+                    tth=40.0,
+                    frames=1,
+                    slow_attenuator_position=SlowAttenuatorPositions.TRANS_10,
+                    fast_attenuator=FastAttenuatorDemand.OUT,
+                ).model_dump(),
+                CollectionSpecPerPosition(
+                    tth=50.0,
+                    frames=1,
+                    slow_attenuator_position=SlowAttenuatorPositions.TRANS_50,
+                    fast_attenuator=FastAttenuatorDemand.OUT,
+                ).model_dump(),
+                CollectionSpecPerPosition(
+                    tth=60.0,
+                    frames=1,
+                    slow_attenuator_position=SlowAttenuatorPositions.TRANS_100,
+                    fast_attenuator=FastAttenuatorDemand.OUT,
+                ).model_dump(),
+            ]
+        ),
     }
