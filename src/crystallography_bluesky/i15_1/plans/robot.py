@@ -8,6 +8,7 @@ from dodal.devices.beamlines.i15_1.robot import (
     SAMPLE_LOCATION_EMPTY,
     Robot,
     SampleLocation,
+    SpinnerState,
 )
 from dodal.devices.beamlines.i15_1.safe_or_beam_positioner import (
     SafeOrBeamPosition,
@@ -48,6 +49,8 @@ def robot_load(
 
     sample = SampleLocation(puck, position)
     yield from bps.abs_set(robot, sample, wait=True)
+
+    yield from bps.abs_set(robot.spinner, SpinnerState.ON, wait=True)
 
 
 def prepare_beamline_for_robot_load(
