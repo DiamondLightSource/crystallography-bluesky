@@ -10,9 +10,15 @@ from daq_config_server.models.i15_1.collection_specification import (
 )
 from dodal.common import inject
 from dodal.common.beamlines.beamline_utils import get_config_client
-from dodal.devices.beamlines.i15_1.attenuator import Attenuator, AttenuatorPositions
+from dodal.devices.beamlines.i15_1.attenuators import (
+    FastAttenuator,
+    FastAttenuatorDemand,
+    SlowAttenuator,
+    SlowAttenuatorPositions,
+)
 from dodal.devices.motors import Motor
 from dodal.devices.zebra.zebra import ArmDemand, Zebra
+from dodal.devices.zebra.zebra_controlled_shutter import OpenClose, ZebraFastShutter
 from dodal.log import LOGGER
 from ophyd_async.core import StandardReadable, wait_for_value
 
@@ -28,12 +34,13 @@ from crystallography_bluesky.i15_1.plans.setup_zebra import (
 
 
 @dataclass
-class SpecificationPerPosition:
+class CollectionSpecPerPosition:
     frames: int
-    transmission: AttenuatorPositions
+    slow_attenuator_position: SlowAttenuatorPositions
+    fast_attenuator: FastAttenuatorDemand
 
 
-CollectionSpecification: TypeAlias = dict[float, SpecificationPerPosition]
+CollectionSpecification: TypeAlias = dict[float, CollectionSpecPerPosition]
 
 
 COLLECTION_SPEC_FILEPATH = (
@@ -73,8 +80,10 @@ def get_collection_specification(
         frames = _calculate_number_of_frames(
             spec.exposure_time, full_collection_time, exposure_time_per_frame
         )
-        collection_spec[angle] = SpecificationPerPosition(
-            frames, AttenuatorPositions.from_trans_float(spec.transmission)
+        collection_spec[angle] = CollectionSpecPerPosition(
+            frames,
+            SlowAttenuatorPositions.from_trans_float(spec.slow_attenuator_transmission),
+            FastAttenuatorDemand[spec.fast_attenuator_position],
         )
         total_frames += frames
 
@@ -88,7 +97,9 @@ def get_collection_specification(
 def inner_collection(
     tth: Motor,
     zebra: Zebra,
-    attenuator: Attenuator,
+    fast_shutter: ZebraFastShutter,
+    slow_attenuator: SlowAttenuator,
+    fast_attenuator: FastAttenuator,
     collection_spec: CollectionSpecification,
     time_between_frames: float,
     signals_to_read_per_point: list[StandardReadable] | None = None,
@@ -97,11 +108,21 @@ def inner_collection(
         signals_to_read_per_point = []
     signals_to_read_per_point.append(tth)
     for position, point_spec in collection_spec.items():
-        yield from bps.mv(tth, position, attenuator, point_spec.transmission)
+        yield from bps.mv(fast_shutter, OpenClose.CLOSE)
+        yield from bps.mv(
+            tth,
+            position,
+            slow_attenuator,
+            point_spec.slow_attenuator_position,
+            fast_attenuator,
+            point_spec.fast_attenuator,
+        )
+        yield from bps.mv(fast_shutter, OpenClose.OPEN)
         current_tth = yield from bps.rd(tth)
         LOGGER.info(
             f"Triggering i0 and eiger {point_spec.frames} times at tth of {current_tth}"
-            f" and attenuation of {point_spec.transmission}"
+            f", attenuation of {point_spec.slow_attenuator_position} and "
+            f"fast attenuator {point_spec.fast_attenuator}"
         )
 
         # Set number of frame for this position
@@ -178,7 +199,9 @@ def data_collection(
         inner_collection,
         tth,
         generic_collection_devices.zebra,
-        generic_collection_devices.attenuator,
+        generic_collection_devices.fast_shutter,
+        generic_collection_devices.slow_attenuator,
+        generic_collection_devices.fast_attenuator,
         collection_spec,
         time_between_frames,
     )

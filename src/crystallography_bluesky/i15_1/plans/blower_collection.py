@@ -4,10 +4,7 @@ from typing import Any
 from bluesky import plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
-from dodal.devices.beamlines.i15_1.attenuator import Attenuator
 from dodal.devices.beamlines.i15_1.blower import Blower
-from dodal.devices.motors import Motor
-from dodal.devices.zebra.zebra import Zebra
 from dodal.log import LOGGER
 from ophyd_async.core import StandardReadable
 
@@ -30,10 +27,8 @@ blower = inject("blower")
 
 
 def _collection(
+    generic_collection_devices: GenericCollectionDevices,
     blower: Blower,
-    tth: Motor,
-    zebra: Zebra,
-    attenuator: Attenuator,
     temperatures_celsius: list[float],
     collection_spec: CollectionSpecification,
     time_between_frames: float,
@@ -42,9 +37,11 @@ def _collection(
         LOGGER.info(f"Moving to temperature {temperature}")
         yield from bps.mv(blower.temperature, temperature)
         yield from inner_collection(
-            tth,
-            zebra,
-            attenuator,
+            generic_collection_devices.tth,
+            generic_collection_devices.zebra,
+            generic_collection_devices.fast_shutter,
+            generic_collection_devices.slow_attenuator,
+            generic_collection_devices.fast_attenuator,
             collection_spec,
             time_between_frames,
             [blower.temperature],
@@ -91,14 +88,10 @@ def blower_collection(
 
     total_frames *= len(temperatures_celsius)
 
-    tth = generic_collection_devices.tth
-
     collection = partial(
         _collection,
+        generic_collection_devices,
         blower,
-        tth,
-        generic_collection_devices.zebra,
-        generic_collection_devices.attenuator,
         temperatures_celsius,
         collection_spec,
         exposure_time_per_frame,
