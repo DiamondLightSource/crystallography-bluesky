@@ -158,6 +158,7 @@ def data_collection(
         generic_collection_devices.fast_attenuator,
         collection_spec,
         exposure_time_per_frame,
+        signals_to_read_per_point=[generic_collection_devices.synchrotron],
     )
 
     all_baseline_devices = get_default_baseline_devices(generic_collection_devices) + (

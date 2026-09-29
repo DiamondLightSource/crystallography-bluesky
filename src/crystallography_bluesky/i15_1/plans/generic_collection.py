@@ -9,6 +9,7 @@ from dodal.common import inject
 from dodal.devices.beamlines.i15_1.attenuators import FastAttenuator, SlowAttenuator
 from dodal.devices.beamlines.i15_1.laue import LaueMonochrometer
 from dodal.devices.beamlines.i15_1.robot import Robot
+from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.tetramm import SummingTetrammDetector
 from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import OpenClose, ZebraFastShutter
@@ -35,6 +36,7 @@ class GenericCollectionDevices:
     xtal: LaueMonochrometer
     fast_attenuator: FastAttenuator
     slow_attenuator: SlowAttenuator
+    synchrotron: Synchrotron
 
 
 def get_default_baseline_devices(all_devices: GenericCollectionDevices):
@@ -166,6 +168,7 @@ def generic_per_step_collection(
     def software_triggered_collection():
         LOGGER.info(f"Triggering i0 and eiger {frames} times")
         for _ in range(frames):
+            yield from bps.rd(devices.synchrotron)
             yield from bps.abs_set(devices.zebra.inputs.soft_in_1, 1, wait=True)
             yield from bps.sleep(exposure_time)
             yield from bps.abs_set(devices.zebra.inputs.soft_in_1, 0, wait=True)
