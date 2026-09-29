@@ -24,7 +24,7 @@ dependencies = [
     "requests",
     "scanspec",
     "deepdiff",
-    "heliotrapi >= v0.3.0",
+    "heliotrapi >= v0.3.3",
     "ophyd-async[ca,pva] >=0.21.2",
     "bluesky >= 1.13.1",
     "daq-config-server @ git+https://github.com/DiamondLightSource/daq-config-server.git@main",
