@@ -1,4 +1,6 @@
+import json
 from dataclasses import dataclass
+from enum import StrEnum
 from functools import partial
 from math import ceil
 from typing import Any, TypeAlias
@@ -48,6 +50,13 @@ COLLECTION_SPEC_FILEPATH = (
 )
 
 devices = inject("")
+
+
+class ScanType(StrEnum):
+    DATA_COLLECTION = "Data Collection"
+    AIR = "Air"
+    EMPTY_CAPILLARY = "Empty Capillary"
+    STANDARD_SAMPLE = "Standard Sample"
 
 
 def _calculate_number_of_frames(
@@ -171,10 +180,14 @@ def inner_collection(
 def data_collection(
     full_collection_time: float,
     exposure_time_per_frame: float,
+    scan_type: ScanType = ScanType.DATA_COLLECTION,
     generic_collection_devices: GenericCollectionDevices = devices,
     baseline_devices: list[StandardReadable] | None = None,
-    metadata: dict[str, Any] | None = None,
+    metadata: dict[str, Any] | str | None = None,
 ) -> MsgGenerator:
+    if isinstance(metadata, str):
+        metadata = json.loads(metadata)
+        assert isinstance(metadata, dict)
 
     minimum_dead_time = 0.0001  # Minimum value independent of timebase
     trigger_pulse_width = 0.0001  # Assumes zebra is set to seconds timebase
@@ -217,6 +230,7 @@ def data_collection(
     metadata = metadata or {}
     metadata.update(
         {
+            "scan_type": scan_type,
             "data_shape": [(total_frames, "collection")],
             "variables": {},
             "collection_specification": collection_spec,
