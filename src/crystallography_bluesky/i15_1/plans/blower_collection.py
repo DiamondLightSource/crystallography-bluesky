@@ -19,7 +19,7 @@ from crystallography_bluesky.i15_1.plans.room_temperature_collection import (
     inner_collection,
 )
 from crystallography_bluesky.i15_1.plans.setup_zebra import (
-    setup_zebra_for_software_triggering,
+    setup_zebra_for_hardware_triggering,
 )
 
 devices = inject("")
@@ -31,23 +31,23 @@ def _collection(
     blower: Blower,
     temperatures_celsius: list[float],
     collection_spec: CollectionSpecification,
-    exposure_time_per_frame: float,
+    time_between_frames: float,
 ):
-    detector_trigger = generic_collection_devices.zebra.inputs.soft_in_1
-
     for temperature in temperatures_celsius:
         LOGGER.info(f"Moving to temperature {temperature}")
         yield from bps.mv(blower.temperature, temperature)
         yield from inner_collection(
             generic_collection_devices.tth,
-            detector_trigger,
+            generic_collection_devices.zebra,
             generic_collection_devices.fast_shutter,
             generic_collection_devices.slow_attenuator,
             generic_collection_devices.fast_attenuator,
             collection_spec,
-            exposure_time_per_frame,
+            time_between_frames,
             [blower.temperature],
         )
+        # TODO: As it better describes the way it is used, rename
+        # room_temperature_collection to be single_temperature_collection
 
 
 def blower_collection(
@@ -62,10 +62,11 @@ def blower_collection(
     metadata: dict[str, Any] | None = None,
 ) -> MsgGenerator:
 
-    yield from setup_zebra_for_software_triggering(generic_collection_devices.zebra)
-
     yield from bps.abs_set(blower.settle_time_s, settle_time)
     yield from bps.abs_set(blower.ramp_rate_c_per_sec, ramp_rate_c_per_min / 60)
+
+    minimum_dead_time = 0.0001  # Minimum value independent of timebase
+    trigger_pulse_width = 0.0001  # Assumes zebra is set to seconds timebase
 
     collection_spec, total_frames = get_collection_specification(
         time_per_collection, exposure_time_per_frame
@@ -74,6 +75,16 @@ def blower_collection(
         (len(temperatures_celsius), "temperatures_celsius"),
         (total_frames, "collection"),
     ]
+
+    first_frames_value = next(iter(collection_spec.values())).frames
+    time_between_frames = exposure_time_per_frame + minimum_dead_time
+
+    yield from setup_zebra_for_hardware_triggering(
+        generic_collection_devices.zebra,
+        first_frames_value,
+        time_between_frames,
+        trigger_pulse_width,
+    )
 
     total_frames *= len(temperatures_celsius)
 
