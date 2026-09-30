@@ -35,7 +35,7 @@ class AuxiliaryScanType(StrEnum):
 
 
 class DataCollectionScanType(StrEnum):
-    DATA_COLLECTION = "Data collection"
+    DATA_COLLECTION = "Data Collection"
 
 
 class CentringScanType(StrEnum):
