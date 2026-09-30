@@ -193,7 +193,9 @@ def generic_per_step_collection(
     def software_triggered_collection():
         LOGGER.info(f"Triggering i0 and eiger {frames} times")
         for _ in range(frames):
-            yield from bps.rd(devices.synchrotron)
+            yield from bps.create(name="synchrotron")
+            yield from bps.read(devices.synchrotron)
+            yield from bps.save()
             yield from bps.abs_set(devices.zebra.inputs.soft_in_1, 1, wait=True)
             yield from bps.sleep(exposure_time)
             yield from bps.abs_set(devices.zebra.inputs.soft_in_1, 0, wait=True)
