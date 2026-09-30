@@ -14,8 +14,8 @@ from dodal.devices.zebra.zebra import ArmDemand
 from dodal.devices.zebra.zebra_controlled_shutter import OpenClose
 
 from crystallography_bluesky.i15_1.plans.generic_collection import (
+    DataCollectionScanType,
     GenericCollectionDevices,
-    ScanType,
 )
 from crystallography_bluesky.i15_1.plans.room_temperature_collection import (
     COLLECTION_SPEC_FILEPATH,
@@ -66,7 +66,7 @@ def test_data_collection_calls_setup_with_expected_arguments(
         data_collection(
             full_collection_time=2,
             exposure_time_per_frame=0.01,
-            scan_type=ScanType.DATA_COLLECTION,
+            scan_type=DataCollectionScanType.DATA_COLLECTION,
             generic_collection_devices=common_collection_devices,
             baseline_devices=baseline_devices,  # type:ignore
         )
@@ -82,7 +82,7 @@ def test_data_collection_calls_setup_with_expected_arguments(
     assert setup_call_args[1] == 0.01
     assert setup_call_args[2] is common_collection_devices
     assert callable(setup_call_args[3])
-    assert setup_call_args[4] == ScanType.DATA_COLLECTION
+    assert setup_call_args[4] == DataCollectionScanType.DATA_COLLECTION
     assert (
         setup_call_args[5]
         == [
@@ -105,7 +105,7 @@ def test_data_collection_takes_one_frame_per_position_for_short_collection(
         data_collection(
             full_collection_time=0.02,
             exposure_time_per_frame=0.01,
-            scan_type=ScanType.DATA_COLLECTION,
+            scan_type=DataCollectionScanType.DATA_COLLECTION,
             generic_collection_devices=common_collection_devices,
         )
     )
@@ -145,7 +145,7 @@ def test_data_collection_changes_transmission_per_position(
         data_collection(
             full_collection_time=full_collection_time,
             exposure_time_per_frame=exposure_time_per_frame,
-            scan_type=ScanType.DATA_COLLECTION,
+            scan_type=DataCollectionScanType.DATA_COLLECTION,
             generic_collection_devices=common_collection_devices,
         )
     )
@@ -246,7 +246,7 @@ def test_data_collection_gets_positions_to_fraction_from_config_server(
         data_collection(
             full_collection_time=0.02,
             exposure_time_per_frame=0.01,
-            scan_type=ScanType.DATA_COLLECTION,
+            scan_type=DataCollectionScanType.DATA_COLLECTION,
             generic_collection_devices=common_collection_devices,
         )
     )
@@ -268,7 +268,7 @@ def test_data_collection_adds_expected_info_to_metadata(
         data_collection(
             full_collection_time=0.02,
             exposure_time_per_frame=0.01,
-            scan_type=ScanType.DATA_COLLECTION,
+            scan_type=DataCollectionScanType.DATA_COLLECTION,
             generic_collection_devices=common_collection_devices,
         )
     )

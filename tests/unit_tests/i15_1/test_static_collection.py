@@ -12,8 +12,9 @@ from dodal.devices.zebra.zebra_controlled_shutter import OpenClose
 from ophyd_async.core import get_mock_put
 
 from crystallography_bluesky.i15_1.plans.generic_collection import (
+    AuxiliaryScanType,
+    DataCollectionScanType,
     GenericCollectionDevices,
-    ScanType,
 )
 from crystallography_bluesky.i15_1.plans.static_collection import (
     static_collection,
@@ -30,7 +31,7 @@ def test_static_collection_plan_makes_expected_calls(
             0.01,
             SlowAttenuatorPositions.TRANS_10,
             FastAttenuatorDemand.IN,
-            ScanType.STANDARD_SAMPLE,
+            AuxiliaryScanType.STANDARD_SAMPLE,
             devices=common_collection_devices,
             metadata={"some": "metadata"},
         )
@@ -225,7 +226,7 @@ def test_shutter_opened_before_detectors_kicked_off(
             0.01,
             SlowAttenuatorPositions.TRANS_0_1,
             FastAttenuatorDemand.IN,
-            ScanType.DATA_COLLECTION,
+            DataCollectionScanType.DATA_COLLECTION,
             devices=common_collection_devices,
         )
     )
@@ -256,7 +257,7 @@ def test_shutter_closed_after_complete(
             0.01,
             SlowAttenuatorPositions.TRANS_0_1,
             FastAttenuatorDemand.IN,
-            ScanType.DATA_COLLECTION,
+            DataCollectionScanType.DATA_COLLECTION,
             devices=common_collection_devices,
         )
     )
@@ -292,7 +293,7 @@ async def test_given_plan_throws_exception_then_shutters_closed(
                 0.01,
                 SlowAttenuatorPositions.TRANS_0_1,
                 FastAttenuatorDemand.IN,
-                ScanType.DATA_COLLECTION,
+                DataCollectionScanType.DATA_COLLECTION,
                 devices=common_collection_devices,
             )
         )
@@ -322,7 +323,7 @@ def test_if_plan_fails_during_trigger_then_soft_in_cleaned_up(
             0.01,
             SlowAttenuatorPositions.TRANS_0_1,
             FastAttenuatorDemand.IN,
-            ScanType.DATA_COLLECTION,
+            DataCollectionScanType.DATA_COLLECTION,
             devices=common_collection_devices,
         )
     )

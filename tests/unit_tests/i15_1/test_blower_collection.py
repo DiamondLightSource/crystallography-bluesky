@@ -14,8 +14,9 @@ from dodal.devices.zebra.zebra import ArmDemand
 
 from crystallography_bluesky.i15_1.plans.blower_collection import blower_collection
 from crystallography_bluesky.i15_1.plans.generic_collection import (
+    AuxiliaryScanType,
+    DataCollectionScanType,
     GenericCollectionDevices,
-    ScanType,
 )
 from crystallography_bluesky.i15_1.plans.room_temperature_collection import (
     CollectionSpecPerPosition,
@@ -63,7 +64,7 @@ def test_blower_collection_calls_setup_with_expected_frame_counts(
             temperatures_celsius=temperatures,
             ramp_rate_c_per_min=10,
             settle_time=0.5,
-            scan_type=ScanType.DATA_COLLECTION,
+            scan_type=DataCollectionScanType.DATA_COLLECTION,
             generic_collection_devices=common_collection_devices,
             blower=blower,
         )
@@ -97,7 +98,7 @@ async def test_blower_collection_sets_blower_ramp_rate_from_per_minute_to_per_se
             temperatures_celsius=[25, 50],
             ramp_rate_c_per_min=ramp_rate_per_min,
             settle_time=0.5,
-            scan_type=ScanType.DATA_COLLECTION,
+            scan_type=DataCollectionScanType.DATA_COLLECTION,
             generic_collection_devices=common_collection_devices,
             blower=blower,
         )
@@ -122,7 +123,7 @@ def test_blower_collection_collects_at_all_specified_temperatures(
             temperatures_celsius=temperatures,
             ramp_rate_c_per_min=60,
             settle_time=0.1,
-            scan_type=ScanType.DATA_COLLECTION,
+            scan_type=DataCollectionScanType.DATA_COLLECTION,
             generic_collection_devices=common_collection_devices,
             blower=blower,
         )
@@ -182,7 +183,7 @@ async def test_blower_collection_adds_expected_info_to_metadata(
             temperatures_celsius=[25, 50],
             ramp_rate_c_per_min=100,
             settle_time=0.5,
-            scan_type=ScanType.EMPTY_CAPILLARY,
+            scan_type=AuxiliaryScanType.EMPTY_CAPILLARY,
             generic_collection_devices=common_collection_devices,
             blower=blower,
         )

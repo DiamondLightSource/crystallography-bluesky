@@ -23,8 +23,9 @@ from dodal.log import LOGGER
 from ophyd_async.core import StandardReadable, wait_for_value
 
 from crystallography_bluesky.i15_1.plans.generic_collection import (
+    AuxiliaryScanType,
+    DataCollectionScanType,
     GenericCollectionDevices,
-    ScanType,
     get_default_baseline_devices,
     setup_and_teardown_collection,
 )
@@ -172,7 +173,7 @@ def inner_collection(
 def data_collection(
     full_collection_time: float,
     exposure_time_per_frame: float,
-    scan_type: ScanType,
+    scan_type: DataCollectionScanType | AuxiliaryScanType,
     generic_collection_devices: GenericCollectionDevices = devices,
     baseline_devices: list[StandardReadable] | None = None,
     metadata: dict[str, Any] | None = None,

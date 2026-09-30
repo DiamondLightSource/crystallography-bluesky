@@ -5,6 +5,8 @@ import pytest
 from bluesky import RunEngine
 
 from crystallography_bluesky.i15_1.plans.generic_collection import (
+    CentringScanType,
+    DataCollectionScanType,
     GenericCollectionDevices,
     ScanType,
     setup_and_teardown_collection,
@@ -13,7 +15,10 @@ from crystallography_bluesky.i15_1.plans.generic_collection import (
 
 @pytest.mark.parametrize(
     "sample_metadata, scan_type",
-    [({"c": "d"}, ScanType.DATA_COLLECTION), (None, ScanType.CENTRING)],
+    [
+        ({"c": "d"}, DataCollectionScanType.DATA_COLLECTION),
+        (None, CentringScanType.CENTRING),
+    ],
 )
 def test_setup_and_tear_down_collection_changes_sample_md_key_and_adds_expected_md(
     sample_metadata: dict[str, Any] | None,

@@ -1,6 +1,6 @@
 from collections.abc import Callable
 from enum import StrEnum
-from typing import Any
+from typing import Any, TypeAlias
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -34,12 +34,15 @@ class AuxiliaryScanType(StrEnum):
     STANDARD_SAMPLE = "Standard Sample"
 
 
-class ScanType(StrEnum):
-    DATA_COLLECTION = "Data Collection"
+class DataCollectionScanType(StrEnum):
+    DATA_COLLECTION = "Data collection"
+
+
+class CentringScanType(StrEnum):
     CENTRING = "Centring"
-    AIR = AuxiliaryScanType.AIR
-    EMPTY_CAPILLARY = AuxiliaryScanType.EMPTY_CAPILLARY
-    STANDARD_SAMPLE = AuxiliaryScanType.STANDARD_SAMPLE
+
+
+ScanType: TypeAlias = DataCollectionScanType | CentringScanType | AuxiliaryScanType
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})

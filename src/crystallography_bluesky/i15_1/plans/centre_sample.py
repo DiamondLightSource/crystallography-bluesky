@@ -13,8 +13,8 @@ from crystallography_bluesky.i15_1.callbacks.analysis_callback import (
     TriggerAnalysisCallback,
 )
 from crystallography_bluesky.i15_1.plans.generic_collection import (
+    CentringScanType,
     GenericCollectionDevices,
-    ScanType,
     generic_per_step_collection,
 )
 
@@ -83,7 +83,7 @@ def centre_sample(
             exposure_time,
             per_step,
             generic_collection_devices,
-            ScanType.CENTRING,
+            CentringScanType.CENTRING,
             baseline_devices,
             metadata=metadata,
         ),
