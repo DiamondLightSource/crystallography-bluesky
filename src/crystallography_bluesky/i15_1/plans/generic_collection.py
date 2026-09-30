@@ -28,6 +28,7 @@ devices = inject("")
 
 # This is a copy of AuxiliaryScanType in the queue.
 # Can unify once the i15-1 plugin lives here.
+# https://github.com/DiamondLightSource/daq-queuing-service/issues/131
 class AuxiliaryScanType(StrEnum):
     AIR = "Air"
     EMPTY_CAPILLARY = "Empty Capillary"
