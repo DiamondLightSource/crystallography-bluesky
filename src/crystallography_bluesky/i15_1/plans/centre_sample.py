@@ -50,14 +50,11 @@ def centre_sample(
         baseline_devices (list[StandardReadable] | None, optional): Any other devices to
                 record metadata from. Defaults to None.
     """
-    eiger = generic_collection_devices.fastcs_eiger
 
     analysis_callback = TriggerAnalysisCallback(
         I15_1_ANALYSIS_URL,
-        # This should be the real analysis workflow once we are getting real data
-        # Currently returns the midpoint of the scan
-        "fake_sample_alignment_i15_1",
-        dataset_path=f"/entry/instrument/{eiger.name}/{eiger.name}",
+        "sample_alignment_i15_1",
+        beamline="i15-1",
     )
 
     yield from bps.mv(
