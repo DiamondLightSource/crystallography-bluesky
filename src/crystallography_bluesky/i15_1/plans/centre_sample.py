@@ -67,7 +67,10 @@ def centre_sample(
         generic_collection_devices.tth,
         tth_angle,
     )
-    step_size = (end_z - start_z) / steps
+
+    # Use steps - 1 as we want to take data at the start location and the end location
+    # e.g. fence post counting
+    step_size = (end_z - start_z) / (steps - 1)
 
     def per_step():
         yield from bps.create(name="hexapod")
