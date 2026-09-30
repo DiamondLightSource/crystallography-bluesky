@@ -6,13 +6,18 @@ from bluesky import RunEngine
 
 from crystallography_bluesky.i15_1.plans.generic_collection import (
     GenericCollectionDevices,
+    ScanType,
     setup_and_teardown_collection,
 )
 
 
-@pytest.mark.parametrize("sample_metadata", [{"c": "d"}, None])
-def test_setup_and_tear_down_collection_changes_sample_md_key_and_adds_detectors(
+@pytest.mark.parametrize(
+    "sample_metadata, scan_type",
+    [({"c": "d"}, ScanType.DATA_COLLECTION), (None, ScanType.CENTRING)],
+)
+def test_setup_and_tear_down_collection_changes_sample_md_key_and_adds_expected_md(
     sample_metadata: dict[str, Any] | None,
+    scan_type: ScanType,
     run_engine: RunEngine,
     common_collection_devices: GenericCollectionDevices,
 ):
@@ -25,6 +30,7 @@ def test_setup_and_tear_down_collection_changes_sample_md_key_and_adds_detectors
                 exposure_time=0.01,
                 devices=common_collection_devices,
                 collection=MagicMock(),
+                scan_type=scan_type,
                 metadata={
                     "experiment_definition": {"a": "b"},
                     "sample": sample_metadata,
@@ -37,5 +43,6 @@ def test_setup_and_tear_down_collection_changes_sample_md_key_and_adds_detectors
             "experiment_definition": {"a": "b"},
             "sample_info": sample_metadata,
             "detectors": ["fastcs-eiger", "i0"],
+            "scan_type": scan_type,
         }
     )
