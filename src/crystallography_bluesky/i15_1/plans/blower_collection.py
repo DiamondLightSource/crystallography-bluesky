@@ -10,6 +10,7 @@ from ophyd_async.core import StandardReadable
 
 from crystallography_bluesky.i15_1.plans.generic_collection import (
     GenericCollectionDevices,
+    ScanType,
     get_default_baseline_devices,
     setup_and_teardown_collection,
 )
@@ -56,6 +57,7 @@ def blower_collection(
     temperatures_celsius: list[float],
     ramp_rate_c_per_min: float,
     settle_time: float,
+    scan_type: ScanType,
     generic_collection_devices: GenericCollectionDevices = devices,
     blower: Blower = blower,
     baseline_devices: list[StandardReadable] | None = None,
@@ -118,6 +120,7 @@ def blower_collection(
         exposure_time_per_frame,
         generic_collection_devices,
         collection,
+        scan_type,
         all_baseline_devices,
         metadata=metadata,
     )

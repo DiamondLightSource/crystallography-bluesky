@@ -108,7 +108,12 @@ def test_centre_sample_plan_makes_expected_calls(
         msgs,
         predicate=lambda msg: (
             msg.command == "open_run"
-            and msg.kwargs == {"some": "metadata", "detectors": ["fastcs-eiger", "i0"]}
+            and msg.kwargs
+            == {
+                "some": "metadata",
+                "detectors": ["fastcs-eiger", "i0"],
+                "scan_type": "Centring",
+            }
         ),
     )
     msgs = assert_message_and_return_remaining(

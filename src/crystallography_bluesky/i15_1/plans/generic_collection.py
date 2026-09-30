@@ -1,5 +1,6 @@
 from collections.abc import Callable
-from typing import Any
+from enum import StrEnum
+from typing import Any, TypeAlias
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -23,6 +24,26 @@ from crystallography_bluesky.i15_1.plans.setup_zebra import (
 )
 
 devices = inject("")
+
+
+# This is a copy of AuxiliaryScanType in the queue.
+# Can unify once the i15-1 plugin lives here.
+# https://github.com/DiamondLightSource/daq-queuing-service/issues/131
+class AuxiliaryScanType(StrEnum):
+    AIR = "Air"
+    EMPTY_CAPILLARY = "Empty Capillary"
+    STANDARD_SAMPLE = "Standard Sample"
+
+
+class DataCollectionScanType(StrEnum):
+    DATA_COLLECTION = "Data Collection"
+
+
+class CentringScanType(StrEnum):
+    CENTRING = "Centring"
+
+
+ScanType: TypeAlias = DataCollectionScanType | CentringScanType | AuxiliaryScanType
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
@@ -54,6 +75,7 @@ def setup_and_teardown_collection(
     exposure_time: float,
     devices: GenericCollectionDevices,
     collection: Callable[[], MsgGenerator],
+    scan_type: ScanType,
     baseline_devices: list[StandardReadable] | None = None,
     metadata: dict[str, Any] | None = None,
 ) -> MsgGenerator:
@@ -93,7 +115,9 @@ def setup_and_teardown_collection(
 
     detectors = [devices.fastcs_eiger, devices.i0]
     metadata = metadata or {}
-    metadata.update({"detectors": [detector.name for detector in detectors]})
+    metadata.update(
+        {"detectors": [detector.name for detector in detectors], "scan_type": scan_type}
+    )
     if "sample" in metadata.keys():
         metadata["sample_info"] = metadata["sample"]
         del metadata["sample"]
@@ -144,6 +168,7 @@ def generic_per_step_collection(
     exposure_time: float,
     per_step: Callable[[], MsgGenerator],
     devices: GenericCollectionDevices,
+    scan_type: ScanType,
     baseline_devices: list[StandardReadable] | None = None,
     metadata: dict[str, Any] | None = None,
 ) -> MsgGenerator:
@@ -183,6 +208,7 @@ def generic_per_step_collection(
         exposure_time=exposure_time,
         devices=devices,
         collection=software_triggered_collection,
+        scan_type=scan_type,
         baseline_devices=all_baseline_devices,
         metadata=metadata,
     )
