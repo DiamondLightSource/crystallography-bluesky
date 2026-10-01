@@ -190,7 +190,7 @@ def positions_to_spec():
 def mock_collection_spec_config_client(positions_to_spec):
     mock_client = MagicMock()
     mock_client.get_file_contents = MagicMock(
-        wraps=lambda _, __: CollectionSpecification(
+        return_value=CollectionSpecification(
             tth_angle_to_specification={
                 pos: SpecificationPerPosition(
                     exposure_time=spec[0],

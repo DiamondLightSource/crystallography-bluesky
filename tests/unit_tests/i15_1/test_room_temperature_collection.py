@@ -251,7 +251,7 @@ def test_data_collection_gets_positions_to_fraction_from_config_server(
         )
     )
     mock_collection_spec_config_client.get_file_contents.assert_called_once_with(
-        COLLECTION_SPEC_FILEPATH, CollectionSpecification
+        COLLECTION_SPEC_FILEPATH, CollectionSpecification, reset_cached_result=True
     )
 
 
