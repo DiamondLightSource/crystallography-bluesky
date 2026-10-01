@@ -9,6 +9,7 @@ from daq_config_server.models.i15_1.collection_specification import (
     SpecificationPerPosition,
 )
 from dodal.devices.beamlines.i15_1.attenuators import FastAttenuator, SlowAttenuator
+from dodal.devices.beamlines.i15_1.beam_health import BeamHealth
 from dodal.devices.beamlines.i15_1.blower import Blower
 from dodal.devices.beamlines.i15_1.laue import LaueMonochrometer
 from dodal.devices.beamlines.i15_1.robot import Robot
@@ -128,6 +129,13 @@ async def synchrotron() -> Synchrotron:
     async with init_devices(mock=True):
         synchrotron = Synchrotron()
     return synchrotron
+
+
+@pytest.fixture
+async def beam_health() -> BeamHealth:
+    async with init_devices(mock=True):
+        beam_health = BeamHealth("")
+    return beam_health
 
 
 @pytest.fixture

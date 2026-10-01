@@ -9,6 +9,7 @@ from .robot import (
 from .room_temperature_collection import data_collection as room_temperature_collection
 from .snapshots import take_snapshot
 from .static_collection import static_collection
+from .wait_for_beam import wait_for_beam
 
 __all__ = [
     "robot_load",
@@ -20,4 +21,5 @@ __all__ = [
     "centre_sample",
     "room_temperature_collection",
     "blower_collection",
+    "wait_for_beam",
 ]
