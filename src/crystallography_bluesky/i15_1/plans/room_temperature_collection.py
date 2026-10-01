@@ -74,6 +74,7 @@ def get_collection_specification(
     collection_spec_from_config = config_client.get_file_contents(
         COLLECTION_SPEC_FILEPATH,
         CollectionSpecFromConfig,
+        reset_cached_result=True,
     ).tth_angle_to_specification
 
     collection_spec: CollectionSpecification = {}
