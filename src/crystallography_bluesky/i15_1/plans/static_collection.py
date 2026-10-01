@@ -64,7 +64,9 @@ def static_collection(
     )
 
     def collection():
+        yield from bps.create(name="synchrotron")
         yield from bps.read(devices.synchrotron)
+        yield from bps.save()
         yield from bps.abs_set(devices.zebra.pc.arm, ArmDemand.ARM, wait=True)
         yield from bps.sleep(frames * time_between_frames)
 
