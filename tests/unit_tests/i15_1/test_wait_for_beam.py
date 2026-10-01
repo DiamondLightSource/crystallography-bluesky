@@ -11,7 +11,7 @@ from crystallography_bluesky.i15_1.plans import wait_for_beam
 def test_wait_for_beam_returns_immediately_if_beam_is_healthy(
     beam_health: BeamHealth,
 ):
-    set_mock_value(beam_health._healthy_float, 1.0)
+    set_mock_value(beam_health._healthy, 1.0)
     run_engine = RunEngine()
     with patch(
         "crystallography_bluesky.i15_1.plans.wait_for_beam.bps.sleep"
@@ -30,7 +30,7 @@ def test_wait_for_beam_waits_until_beam_healthy_to_return(
         yield from bps.null()
         i += 1
         if i == 10:
-            set_mock_value(beam_health._healthy_float, 1.0)
+            set_mock_value(beam_health._healthy, 1.0)
 
     run_engine = RunEngine()
     with patch(
