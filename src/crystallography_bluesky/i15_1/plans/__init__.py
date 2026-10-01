@@ -1,3 +1,4 @@
+from .bad_plan import bad_plan
 from .blower_collection import blower_collection
 from .centre_sample import centre_sample
 from .robot import (
@@ -22,4 +23,5 @@ __all__ = [
     "room_temperature_collection",
     "blower_collection",
     "wait_for_beam",
+    "bad_plan",
 ]
