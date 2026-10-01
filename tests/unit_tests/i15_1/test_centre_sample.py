@@ -65,7 +65,7 @@ def test_centre_sample_plan_makes_expected_calls(
         centre_sample(
             9,
             20,
-            10,
+            12,
             0.01,
             common_collection_devices,
             hexapod,
@@ -92,7 +92,7 @@ def test_centre_sample_plan_makes_expected_calls(
         predicate=lambda msg: (
             msg.command == "set"
             and msg.obj.name == "fastcs-eiger-detector-ntrigger"
-            and msg.args[0] == 10
+            and msg.args[0] == 12
         ),
     )
 
@@ -161,7 +161,7 @@ def test_centre_sample_plan_makes_expected_calls(
         predicate=lambda msg: msg.command == "kickoff" and msg.obj.name == "i0",
     )
 
-    for _ in range(10):
+    for _ in range(12):
         msgs = assert_message_and_return_remaining(
             msgs,
             predicate=lambda msg: (
@@ -178,7 +178,11 @@ def test_centre_sample_plan_makes_expected_calls(
         # to test better as all moves are relative
         msgs = assert_message_and_return_remaining(
             msgs,
-            predicate=lambda msg: msg.command == "set" and msg.obj.name == "hexapod-z",
+            predicate=lambda msg: (
+                msg.command == "set"
+                and msg.obj.name == "hexapod-z"
+                and msg.args[0] == 1.0
+            ),
         )
 
     msgs = assert_message_and_return_remaining(
