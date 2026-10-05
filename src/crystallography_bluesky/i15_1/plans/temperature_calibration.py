@@ -1,3 +1,4 @@
+from bluesky.utils import MsgGenerator
 from daq_config_server.models.i15_1.standards_puck import (
     STANDARD_CAPILLARY,
     STANDARD_SAMPLE,
@@ -50,7 +51,7 @@ def temperature_calibration(
     hexapod=hexapod,
     blower: Blower = blower,
     cobra: Cobra = cobra,
-):
+) -> MsgGenerator:
     config_client = get_config_client()
     standards_puck = config_client.get_file_contents(
         STANDARDS_PUCK_CONFIG_PATH, desired_return_type=StandardsPuck

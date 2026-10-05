@@ -23,12 +23,6 @@ from crystallography_bluesky.i15_1.plans.room_temperature_collection import (
 )
 
 
-@pytest.fixture(autouse=True)
-def always_mock_collection_spec_config_client(
-    mock_collection_spec_config_client,
-): ...
-
-
 @pytest.mark.parametrize(
     "temperatures, time_per_collection, exposure_per_frame, expected_frames",
     (
