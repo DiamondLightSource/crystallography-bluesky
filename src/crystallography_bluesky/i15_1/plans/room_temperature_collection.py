@@ -20,7 +20,7 @@ from dodal.devices.motors import Motor
 from dodal.devices.zebra.zebra import ArmDemand, Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import OpenClose, ZebraFastShutter
 from dodal.log import LOGGER
-from ophyd_async.core import StandardReadable, wait_for_value
+from ophyd_async.core import SignalR, StandardReadable, wait_for_value
 
 from crystallography_bluesky.i15_1.plans.generic_collection import (
     AuxiliaryScanType,
@@ -104,7 +104,7 @@ def inner_collection(
     fast_attenuator: FastAttenuator,
     collection_spec: CollectionSpecification,
     time_between_frames: float,
-    signals_to_read_per_point: list[StandardReadable] | None = None,
+    signals_to_read_per_point: list[StandardReadable | SignalR] | None = None,
 ):
     if not signals_to_read_per_point:
         signals_to_read_per_point = []
