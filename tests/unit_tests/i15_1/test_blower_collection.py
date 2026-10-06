@@ -9,7 +9,7 @@ from dodal.devices.beamlines.i15_1.attenuators import (
     FastAttenuatorDemand,
     SlowAttenuatorPositions,
 )
-from dodal.devices.beamlines.i15_1.blower import Blower
+from dodal.devices.beamlines.i15_1.blower import CalibratedBlower
 from dodal.devices.zebra.zebra import ArmDemand
 
 from crystallography_bluesky.i15_1.plans.blower_collection import blower_collection
@@ -21,12 +21,6 @@ from crystallography_bluesky.i15_1.plans.generic_collection import (
 from crystallography_bluesky.i15_1.plans.room_temperature_collection import (
     CollectionSpecPerPosition,
 )
-
-
-@pytest.fixture(autouse=True)
-def always_mock_collection_spec_config_client(
-    mock_collection_spec_config_client,
-): ...
 
 
 @pytest.mark.parametrize(
@@ -44,7 +38,7 @@ def always_mock_collection_spec_config_client(
 def test_blower_collection_calls_setup_with_expected_frame_counts(
     mock_setup: MagicMock,
     common_collection_devices: GenericCollectionDevices,
-    blower: Blower,
+    calibrated_blower: CalibratedBlower,
     temperatures,
     time_per_collection,
     exposure_per_frame,
@@ -66,7 +60,7 @@ def test_blower_collection_calls_setup_with_expected_frame_counts(
             settle_time=0.5,
             scan_type=DataCollectionScanType.DATA_COLLECTION,
             generic_collection_devices=common_collection_devices,
-            blower=blower,
+            blower=calibrated_blower,
         )
     )
 
@@ -80,7 +74,7 @@ def test_blower_collection_calls_setup_with_expected_frame_counts(
 async def test_blower_collection_sets_blower_ramp_rate_from_per_minute_to_per_second(
     mock_setup: MagicMock,
     common_collection_devices: GenericCollectionDevices,
-    blower: Blower,
+    calibrated_blower: CalibratedBlower,
 ):
     """Test that blower ramp rate is converted from per_min to per_sec."""
     ramp_rate_per_min = 120  # 2 degrees per second
@@ -100,17 +94,17 @@ async def test_blower_collection_sets_blower_ramp_rate_from_per_minute_to_per_se
             settle_time=0.5,
             scan_type=DataCollectionScanType.DATA_COLLECTION,
             generic_collection_devices=common_collection_devices,
-            blower=blower,
+            blower=calibrated_blower,
         )
     )
 
     expected_per_sec = ramp_rate_per_min / 60
-    assert await blower.ramp_rate_c_per_sec.get_value() == expected_per_sec
+    assert await calibrated_blower.ramp_rate_c_per_sec.get_value() == expected_per_sec
 
 
 def test_blower_collection_collects_at_all_specified_temperatures(
     common_collection_devices: GenericCollectionDevices,
-    blower: Blower,
+    calibrated_blower: CalibratedBlower,
 ):
     """Test that data collection occurs at each specified temperature."""
     temperatures = [25.0, 50.0, 75.0]
@@ -125,7 +119,7 @@ def test_blower_collection_collects_at_all_specified_temperatures(
             settle_time=0.1,
             scan_type=DataCollectionScanType.DATA_COLLECTION,
             generic_collection_devices=common_collection_devices,
-            blower=blower,
+            blower=calibrated_blower,
         )
     )
 
@@ -173,7 +167,7 @@ def test_blower_collection_collects_at_all_specified_temperatures(
 async def test_blower_collection_adds_expected_info_to_metadata(
     mock_setup: MagicMock,
     common_collection_devices: GenericCollectionDevices,
-    blower: Blower,
+    calibrated_blower: CalibratedBlower,
 ):
     run_engine = RunEngine()
     run_engine(
@@ -185,7 +179,7 @@ async def test_blower_collection_adds_expected_info_to_metadata(
             settle_time=0.5,
             scan_type=AuxiliaryScanType.EMPTY_CAPILLARY,
             generic_collection_devices=common_collection_devices,
-            blower=blower,
+            blower=calibrated_blower,
         )
     )
     _, kwargs = mock_setup.call_args
@@ -224,4 +218,69 @@ async def test_blower_collection_adds_expected_info_to_metadata(
                 fast_attenuator=FastAttenuatorDemand.OUT,
             ),
         },
+        "blower_calibration": {
+            "real_to_setpoint": {
+                "coefficients": pytest.approx(
+                    (
+                        1.3632771786784056e-06,
+                        -0.00012637763892185146,
+                        1.2595608567266412,
+                        -8.873849368257947,
+                    )
+                )
+            },
+            "rows": [
+                [50.0, 0.62034],
+                [100.0, 16.89903],
+                [150.0, 26.49641],
+                [200.0, 33.91664],
+                [250.0, 47.85712],
+                [300.0, 62.41245],
+                [350.0, 80.13215],
+                [400.0, 96.91991],
+                [450.0, 115.6384],
+                [500.0, 135.89034],
+                [550.0, 155.75917],
+            ],
+            "column_names": ["setpoint", "negative_error"],
+        },
     }
+
+
+def test_by_default_blower_collection_reads_raw_and_calibrated_temperature(
+    common_collection_devices: GenericCollectionDevices,
+    calibrated_blower: CalibratedBlower,
+):
+    """Test that temperatures read at each tth."""
+    temperatures = [25.0, 50.0, 75.0]
+
+    run_engine = RunEngineSimulator()
+    msgs = run_engine.simulate_plan(
+        blower_collection(
+            time_per_collection=1.0,
+            exposure_time_per_frame=0.01,
+            temperatures_celsius=temperatures,
+            ramp_rate_c_per_min=60,
+            settle_time=0.1,
+            scan_type=DataCollectionScanType.DATA_COLLECTION,
+            generic_collection_devices=common_collection_devices,
+            blower=calibrated_blower,
+        )
+    )
+    frames = int(1.0 / 0.01)
+    for _ in temperatures:
+        for _ in range(frames):
+            msgs = assert_message_and_return_remaining(
+                msgs,
+                predicate=lambda msg: (
+                    msg.command == "read"
+                    and msg.obj.name == calibrated_blower.temperature.name
+                ),
+            )
+            msgs = assert_message_and_return_remaining(
+                msgs,
+                predicate=lambda msg: (
+                    msg.command == "read"
+                    and msg.obj.name == calibrated_blower.raw_temperature.name
+                ),
+            )

@@ -52,7 +52,6 @@ def test_data_collection_calls_setup_with_expected_arguments(
     mock_setup: MagicMock,
     common_collection_devices: GenericCollectionDevices,
     positions_to_spec: dict[float, tuple[float, float]],
-    mock_collection_spec_config_client,
 ):
     baseline_devices = [common_collection_devices.tth]
 
@@ -98,7 +97,6 @@ def test_data_collection_calls_setup_with_expected_arguments(
 def test_data_collection_takes_one_frame_per_position_for_short_collection(
     common_collection_devices: GenericCollectionDevices,
     positions_to_spec: dict[float, tuple[float, float]],
-    mock_collection_spec_config_client,
 ):
     run_engine = RunEngineSimulator()
     msgs = run_engine.simulate_plan(
@@ -135,7 +133,6 @@ def test_data_collection_takes_one_frame_per_position_for_short_collection(
 def test_data_collection_changes_transmission_per_position(
     common_collection_devices: GenericCollectionDevices,
     positions_to_spec: dict[float, tuple[float, float, str]],
-    mock_collection_spec_config_client,
 ):
     full_collection_time = 1
     exposure_time_per_frame = 0.01
@@ -239,7 +236,7 @@ def test_data_collection_changes_transmission_per_position(
 
 def test_data_collection_gets_positions_to_fraction_from_config_server(
     common_collection_devices: GenericCollectionDevices,
-    mock_collection_spec_config_client: MagicMock,
+    mock_config_client: MagicMock,
 ):
     run_engine = RunEngineSimulator()
     run_engine.simulate_plan(
@@ -250,7 +247,7 @@ def test_data_collection_gets_positions_to_fraction_from_config_server(
             generic_collection_devices=common_collection_devices,
         )
     )
-    mock_collection_spec_config_client.get_file_contents.assert_called_once_with(
+    mock_config_client.get_file_contents.assert_called_once_with(
         COLLECTION_SPEC_FILEPATH, CollectionSpecification
     )
 
@@ -259,9 +256,7 @@ def test_data_collection_gets_positions_to_fraction_from_config_server(
     "crystallography_bluesky.i15_1.plans.room_temperature_collection.setup_and_teardown_collection"
 )
 def test_data_collection_adds_expected_info_to_metadata(
-    mock_setup: MagicMock,
-    common_collection_devices: GenericCollectionDevices,
-    mock_collection_spec_config_client: MagicMock,
+    mock_setup: MagicMock, common_collection_devices: GenericCollectionDevices
 ):
     run_engine = RunEngineSimulator()
     run_engine.simulate_plan(

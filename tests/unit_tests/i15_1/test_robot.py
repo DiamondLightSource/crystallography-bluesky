@@ -1,13 +1,11 @@
 import pytest
 from bluesky.run_engine import RunEngine
-from daq_config_server.client import ConfigClient
-from daq_config_server.models.i15_1.xpdf_parameters import TemperatureControllerParams
 from dodal.devices.beamlines.i15_1.blower import Blower
 from dodal.devices.beamlines.i15_1.cobra import Cobra
 from dodal.devices.beamlines.i15_1.hexapod import Hexapod
 from dodal.devices.beamlines.i15_1.robot import Robot, SpinnerState
 from dodal.devices.interlocks import IntPLCInterlock, PSSInterlock
-from ophyd_async.core import get_mock_put, init_devices, set_mock_value
+from ophyd_async.core import get_mock_put, set_mock_value
 
 from crystallography_bluesky.i15_1.plans import (
     move_hexapod_to_home_position,
@@ -15,73 +13,6 @@ from crystallography_bluesky.i15_1.plans import (
     robot_unload,
 )
 from crystallography_bluesky.i15_1.plans.robot import prepare_beamline_for_robot_load
-
-
-@pytest.fixture
-async def blower() -> Blower:
-    async with init_devices(mock=True):
-        blower = Blower("", "", "", ConfigClient.from_url(""), "")
-
-    def mock_config():
-        return TemperatureControllerParams(
-            beam_position=40.7,
-            safe_position=6.0,
-            settle_time=0,
-            tolerance=5.0,
-            units="C",
-            ramp_units="/min",
-            use_calibration=True,
-            use_fast_cool=None,
-            calibration_file="blower_cal_10_03_2026.txt",
-        )
-
-    blower.get_config = mock_config
-    return blower
-
-
-@pytest.fixture
-async def cobra() -> Cobra:
-    async with init_devices(mock=True):
-        cobra = Cobra("", ConfigClient.from_url(""), "")
-
-    def mock_config():
-        return TemperatureControllerParams(
-            beam_position=400.5,
-            safe_position=5.0,
-            settle_time=600,
-            tolerance=5.0,
-            units="K",
-            ramp_units="/h",
-            use_calibration=True,
-            use_fast_cool=True,
-            calibration_file="cobra_calibration_2025-09-11.txt",
-        )
-
-    cobra.get_config = mock_config
-    return cobra
-
-
-@pytest.fixture
-async def hutch_interlock() -> PSSInterlock:
-    async with init_devices(mock=True):
-        hutch_interlock = PSSInterlock("", "")
-    set_mock_value(hutch_interlock.status, 0)
-    return hutch_interlock
-
-
-@pytest.fixture
-async def gonio_interlock() -> IntPLCInterlock:
-    async with init_devices(mock=True):
-        gonio_interlock = IntPLCInterlock("", "")
-    set_mock_value(gonio_interlock.status, 65535)
-    return gonio_interlock
-
-
-@pytest.fixture
-async def hexapod() -> Hexapod:
-    async with init_devices(mock=True):
-        hexapod = Hexapod("", "")
-    return hexapod
 
 
 async def test_plan_loads_robot(
