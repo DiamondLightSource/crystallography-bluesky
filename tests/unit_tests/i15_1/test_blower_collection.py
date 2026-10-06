@@ -242,6 +242,7 @@ async def test_blower_collection_adds_expected_info_to_metadata(
                 [500.0, 135.89034],
                 [550.0, 155.75917],
             ],
+            "column_names": ["setpoint", "negative_error"],
         },
     }
 
