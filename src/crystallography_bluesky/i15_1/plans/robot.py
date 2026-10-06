@@ -37,6 +37,7 @@ def robot_load(
     cobra: Cobra = cobra,
 ) -> MsgGenerator[None]:
     gonio_status = yield from bps.rd(gonio_interlock.is_safe)
+    print(gonio_status)
     assert gonio_status is True, "Goniometer interlock status was not safe to operate."
 
     hutch_status = yield from bps.rd(hutch_interlock.is_safe)

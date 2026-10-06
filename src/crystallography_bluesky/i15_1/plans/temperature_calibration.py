@@ -61,7 +61,7 @@ def temperature_calibration(
     )
 
     yield from robot_load(
-        puck=1,
+        puck=standards_puck.position_on_table,
         position=pin_position,
         robot=robot,
         hutch_interlock=hutch_interlock,
@@ -80,5 +80,6 @@ def temperature_calibration(
         AuxiliaryScanType.STANDARD_SAMPLE,
         generic_collection_devices,
         blower,
+        signals_to_read_per_point=[blower.raw_temperature],
     )
-    yield from robot_unload()
+    yield from robot_unload(robot, hutch_interlock, gonio_interlock, hexapod)
