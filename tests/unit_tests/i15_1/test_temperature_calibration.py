@@ -102,7 +102,7 @@ def do_nothing(*_, **__):
     "crystallography_bluesky.i15_1.plans.temperature_calibration.robot_unload",
     do_nothing,
 )
-def test_by_default_blower_collection_reads_raw_temperature_per_point(
+def test_by_default_blower_collection_reads_only_raw_temperature_per_point(
     common_collection_devices: GenericCollectionDevices,
     robot: Robot,
     hutch_interlock: PSSInterlock,
@@ -115,6 +115,7 @@ def test_by_default_blower_collection_reads_raw_temperature_per_point(
     temperatures = [25.0, 50.0, 75.0]
 
     run_engine = RunEngineSimulator()
+
     msgs = run_engine.simulate_plan(
         temperature_calibration(
             capillary="fq1.0",
@@ -132,6 +133,10 @@ def test_by_default_blower_collection_reads_raw_temperature_per_point(
             blower=blower,
             cobra=cobra,
         )
+    )
+    assert not any(
+        msg.command == "read" and msg.obj.name == blower.temperature.name
+        for msg in msgs
     )
 
     frames = int(1.0 / 0.01)
