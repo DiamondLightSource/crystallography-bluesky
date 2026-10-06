@@ -4,7 +4,7 @@ from typing import Any
 from bluesky import plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
-from dodal.devices.beamlines.i15_1.blower import Blower
+from dodal.devices.beamlines.i15_1.blower import Blower, CalibratedBlower
 from dodal.log import LOGGER
 from ophyd_async.core import SignalR, StandardReadable
 
@@ -121,6 +121,10 @@ def blower_collection(
             "data_shape": data_shape,
         }
     )
+    if isinstance(blower, CalibratedBlower):
+        metadata.update(
+            {"blower_calibration": blower.temperature_calibration.model_dump()}
+        )
 
     yield from setup_and_teardown_collection(
         total_frames,
