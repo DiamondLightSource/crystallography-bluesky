@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -189,7 +190,7 @@ def positions_to_spec():
 def mock_collection_spec_config_client(positions_to_spec):
     mock_client = MagicMock()
     mock_client.get_file_contents = MagicMock(
-        wraps=lambda _, __: CollectionSpecification(
+        return_value=CollectionSpecification(
             tth_angle_to_specification={
                 pos: SpecificationPerPosition(
                     exposure_time=spec[0],
@@ -202,6 +203,28 @@ def mock_collection_spec_config_client(positions_to_spec):
     )
     with patch(
         "crystallography_bluesky.i15_1.plans.room_temperature_collection.get_config_client",
+        return_value=mock_client,
+    ):
+        yield mock_client
+
+
+@pytest.fixture
+def geometry_calibration() -> dict[str, Any]:
+    return {
+        # Example - a real one looks very different
+        "content": "Goniometer calibration v2",
+        "detector": "Eiger2 CdTe 500k",
+        "param": [0.25197546889062006],
+        "param_names": ["dist"],
+    }
+
+
+@pytest.fixture(autouse=True)
+def mock_geometry_calibration_config_client(geometry_calibration: dict[str, Any]):
+    mock_client = MagicMock()
+    mock_client.get_file_contents = MagicMock(return_value=geometry_calibration)
+    with patch(
+        "crystallography_bluesky.i15_1.plans.generic_collection.get_config_client",
         return_value=mock_client,
     ):
         yield mock_client

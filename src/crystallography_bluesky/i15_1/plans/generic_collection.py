@@ -7,6 +7,7 @@ import bluesky.preprocessors as bpp
 import pydantic
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
+from dodal.common.beamlines.beamline_utils import get_config_client
 from dodal.devices.beamlines.i15_1.attenuators import FastAttenuator, SlowAttenuator
 from dodal.devices.beamlines.i15_1.laue import LaueMonochrometer
 from dodal.devices.beamlines.i15_1.robot import Robot
@@ -21,6 +22,10 @@ from ophyd_async.fastcs.eiger import EigerDetector
 
 from crystallography_bluesky.i15_1.plans.setup_zebra import (
     setup_zebra_for_software_triggering,
+)
+
+GEOMETRY_CALIBRATION_FILEPATH = (
+    "/dls_sw/i15-1/software/daq_configuration/geometry/geometry_calibration.json"
 )
 
 devices = inject("")
@@ -70,6 +75,16 @@ def get_default_baseline_devices(all_devices: GenericCollectionDevices):
     ]
 
 
+def get_geometry_calibration():
+    config_client = get_config_client()
+    geometry_calibration = config_client.get_file_contents(
+        GEOMETRY_CALIBRATION_FILEPATH,
+        desired_return_type=dict,
+        reset_cached_result=True,
+    )
+    return geometry_calibration
+
+
 def setup_and_teardown_collection(
     frames: int,
     exposure_time: float,
@@ -116,7 +131,12 @@ def setup_and_teardown_collection(
     detectors = [devices.fastcs_eiger, devices.i0]
     metadata = metadata or {}
     metadata.update(
-        {"detectors": [detector.name for detector in detectors], "scan_type": scan_type}
+        {
+            "detectors": [detector.name for detector in detectors],
+            "scan_type": scan_type,
+            "geometry_calibration": get_geometry_calibration(),
+            "exposure_time_per_frame": exposure_time,
+        }
     )
     if "sample" in metadata.keys():
         metadata["sample_info"] = metadata["sample"]
