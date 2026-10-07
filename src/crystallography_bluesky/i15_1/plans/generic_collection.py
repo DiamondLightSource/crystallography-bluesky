@@ -75,14 +75,13 @@ def get_default_baseline_devices(all_devices: GenericCollectionDevices):
     ]
 
 
-def get_geometry_calibration():
+def get_geometry_calibration() -> str:
     config_client = get_config_client()
-    geometry_calibration = config_client.get_file_contents(
+    return config_client.get_file_contents(
         GEOMETRY_CALIBRATION_FILEPATH,
-        desired_return_type=dict,
+        desired_return_type=str,
         reset_cached_result=True,
     )
-    return geometry_calibration
 
 
 def setup_and_teardown_collection(
