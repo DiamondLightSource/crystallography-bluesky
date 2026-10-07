@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock, patch
@@ -209,14 +210,16 @@ def mock_collection_spec_config_client(positions_to_spec):
 
 
 @pytest.fixture
-def geometry_calibration() -> dict[str, Any]:
-    return {
-        # Example - a real one looks very different
-        "content": "Goniometer calibration v2",
-        "detector": "Eiger2 CdTe 500k",
-        "param": [0.25197546889062006],
-        "param_names": ["dist"],
-    }
+def geometry_calibration() -> str:
+    return json.dumps(
+        {
+            # Example - a real one looks very different
+            "content": "Goniometer calibration v2",
+            "detector": "Eiger2 CdTe 500k",
+            "param": [0.25197546889062006],
+            "param_names": ["dist"],
+        }
+    )
 
 
 @pytest.fixture(autouse=True)
