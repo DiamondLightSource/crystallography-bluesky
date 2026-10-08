@@ -7,7 +7,9 @@ from .robot import (
     robot_load,
     robot_unload,
 )
-from .room_temperature_collection import data_collection as room_temperature_collection
+from .single_temperature_collection import (
+    data_collection as single_temperature_collection,
+)
 from .snapshots import take_snapshot
 from .static_collection import static_collection
 from .wait_for_beam import wait_for_beam
@@ -20,7 +22,7 @@ __all__ = [
     "take_snapshot",
     "static_collection",
     "centre_sample",
-    "room_temperature_collection",
+    "single_temperature_collection",
     "blower_collection",
     "wait_for_beam",
     "bad_plan",

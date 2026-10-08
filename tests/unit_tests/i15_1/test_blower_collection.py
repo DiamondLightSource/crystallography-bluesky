@@ -18,7 +18,7 @@ from crystallography_bluesky.i15_1.plans.generic_collection import (
     DataCollectionScanType,
     GenericCollectionDevices,
 )
-from crystallography_bluesky.i15_1.plans.room_temperature_collection import (
+from crystallography_bluesky.i15_1.plans.single_temperature_collection import (
     CollectionSpecPerPosition,
 )
 
