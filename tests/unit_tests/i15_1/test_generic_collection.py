@@ -1,3 +1,4 @@
+import json
 from typing import Any
 from unittest.mock import MagicMock, patch
 
@@ -50,11 +51,13 @@ def test_setup_and_tear_down_collection_changes_sample_md_key_and_adds_expected_
             "detectors": ["fastcs-eiger", "i0"],
             "scan_type": scan_type,
             "exposure_time_per_frame": 0.01,
-            "geometry_calibration": {
-                "content": "Goniometer calibration v2",
-                "detector": "Eiger2 CdTe 500k",
-                "param": [0.25197546889062006],
-                "param_names": ["dist"],
-            },
+            "geometry_calibration": json.dumps(
+                {
+                    "content": "Goniometer calibration v2",
+                    "detector": "Eiger2 CdTe 500k",
+                    "param": [0.25197546889062006],
+                    "param_names": ["dist"],
+                }
+            ),
         }
     )
