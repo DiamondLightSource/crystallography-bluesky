@@ -14,7 +14,6 @@ from dodal.devices.beamlines.i15_1.blower import Blower
 from dodal.devices.zebra.zebra import ArmDemand
 
 from crystallography_bluesky.i15_1.plans.blower_collection import (
-    CollectionSpecPerTemp,
     blower_collection,
 )
 from crystallography_bluesky.i15_1.plans.generic_collection import (
@@ -234,11 +233,88 @@ async def test_blower_collection_adds_expected_info_to_metadata(
     assert kwargs["metadata"] == {
         "collection_specification": json.dumps(
             [
-                CollectionSpecPerTemp(
-                    temperature_celsius=temperature,
-                    collection_specification=single_collection_spec,
-                ).model_dump()
-                for temperature in [25, 50]
+                {
+                    "temperature_celsius": 25.0,
+                    "collection_specification": [
+                        {
+                            "tth": 10.0,
+                            "frames": 5,
+                            "slow_attenuator_position": "0.001%",
+                            "fast_attenuator": "In",
+                        },
+                        {
+                            "tth": 20.0,
+                            "frames": 5,
+                            "slow_attenuator_position": "0.01%",
+                            "fast_attenuator": "In",
+                        },
+                        {
+                            "tth": 30.0,
+                            "frames": 10,
+                            "slow_attenuator_position": "0.1%",
+                            "fast_attenuator": "In",
+                        },
+                        {
+                            "tth": 40.0,
+                            "frames": 20,
+                            "slow_attenuator_position": "10%",
+                            "fast_attenuator": "Out",
+                        },
+                        {
+                            "tth": 50.0,
+                            "frames": 30,
+                            "slow_attenuator_position": "50%",
+                            "fast_attenuator": "Out",
+                        },
+                        {
+                            "tth": 60.0,
+                            "frames": 30,
+                            "slow_attenuator_position": "100%",
+                            "fast_attenuator": "Out",
+                        },
+                    ],
+                },
+                {
+                    "temperature_celsius": 50.0,
+                    "collection_specification": [
+                        {
+                            "tth": 10.0,
+                            "frames": 5,
+                            "slow_attenuator_position": "0.001%",
+                            "fast_attenuator": "In",
+                        },
+                        {
+                            "tth": 20.0,
+                            "frames": 5,
+                            "slow_attenuator_position": "0.01%",
+                            "fast_attenuator": "In",
+                        },
+                        {
+                            "tth": 30.0,
+                            "frames": 10,
+                            "slow_attenuator_position": "0.1%",
+                            "fast_attenuator": "In",
+                        },
+                        {
+                            "tth": 40.0,
+                            "frames": 20,
+                            "slow_attenuator_position": "10%",
+                            "fast_attenuator": "Out",
+                        },
+                        {
+                            "tth": 50.0,
+                            "frames": 30,
+                            "slow_attenuator_position": "50%",
+                            "fast_attenuator": "Out",
+                        },
+                        {
+                            "tth": 60.0,
+                            "frames": 30,
+                            "slow_attenuator_position": "100%",
+                            "fast_attenuator": "Out",
+                        },
+                    ],
+                },
             ]
         ),
     }
