@@ -1,4 +1,3 @@
-import json
 from functools import partial
 from math import ceil
 from typing import Any, Literal, Self, TypeAlias
@@ -255,15 +254,13 @@ def data_collection(
     metadata = metadata or {}
     metadata.update(
         {
-            "collection_specification": json.dumps(
-                [
-                    CollectionSpecPerTemp(
-                        temperature_celsius="RT",
-                        temperature_unit=None,
-                        collection_specification=collection_spec,
-                    ).model_dump()
-                ]
-            ),
+            "collection_specification": [
+                CollectionSpecPerTemp(
+                    temperature_celsius="RT",
+                    temperature_unit=None,
+                    collection_specification=collection_spec,
+                )
+            ]
         }
     )
     yield from setup_and_teardown_collection(

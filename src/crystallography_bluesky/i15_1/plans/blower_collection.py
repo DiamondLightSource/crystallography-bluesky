@@ -1,4 +1,3 @@
-import json
 from functools import partial
 from typing import Any
 
@@ -109,16 +108,7 @@ def blower_collection(
     all_baseline_devices.remove(generic_collection_devices.tth)
 
     metadata = metadata or {}
-    metadata.update(
-        {
-            "collection_specification": json.dumps(
-                [
-                    collection_spec_per_temperature.model_dump()
-                    for collection_spec_per_temperature in temperature_collection_spec
-                ],
-            )
-        }
-    )
+    metadata.update({"collection_specification": temperature_collection_spec})
 
     yield from setup_and_teardown_collection(
         total_frames,
