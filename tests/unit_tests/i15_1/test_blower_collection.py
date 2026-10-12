@@ -235,6 +235,7 @@ async def test_blower_collection_adds_expected_info_to_metadata(
             [
                 {
                     "temperature_celsius": 25.0,
+                    "temperature_unit": "C",
                     "collection_specification": [
                         {
                             "tth": 10.0,
@@ -276,6 +277,7 @@ async def test_blower_collection_adds_expected_info_to_metadata(
                 },
                 {
                     "temperature_celsius": 50.0,
+                    "temperature_unit": "C",
                     "collection_specification": [
                         {
                             "tth": 10.0,

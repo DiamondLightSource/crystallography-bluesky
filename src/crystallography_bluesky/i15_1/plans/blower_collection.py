@@ -1,6 +1,6 @@
 import json
 from functools import partial
-from typing import Any, TypeAlias
+from typing import Any, Literal, TypeAlias
 
 from bluesky import plan_stubs as bps
 from bluesky.utils import MsgGenerator
@@ -33,6 +33,7 @@ class CollectionSpecPerTemp(BaseModel):
     # The structure of this is put in the nexus file and subsequently
     # used by analysis. If we change it we need to change it there too
     temperature_celsius: float
+    temperature_unit: Literal["C", "K"]
     collection_specification: CollectionSpecification
 
 
@@ -86,6 +87,7 @@ def blower_collection(
         CollectionSpecPerTemp(
             temperature_celsius=temperature,
             collection_specification=single_collection_spec,
+            temperature_unit="C",
         )
         for temperature in temperatures_celsius
     ]
