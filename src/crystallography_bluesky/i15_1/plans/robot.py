@@ -1,4 +1,4 @@
-from typing import Hashable
+from collections.abc import Hashable
 
 from bluesky import plan_stubs as bps
 from bluesky.utils import MsgGenerator

@@ -137,7 +137,7 @@ async def test_load_robot_plan_starts_spinner(
     assert await robot.spinner.get_value() == SpinnerState.ON
 
 
-async def test_prepare_beamline_for_robot_action_moves_cobra_and_blower_into_safe_position(
+async def test_prepare_beamline_for_robot_action_moves_sample_env_into_safe_position(
     blower: Blower,
     cobra: Cobra,
     hutch_interlock: PSSInterlock,
