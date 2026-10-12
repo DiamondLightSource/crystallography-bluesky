@@ -6,10 +6,6 @@ import bluesky.plan_stubs as bps
 import pytest
 from bluesky import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
-from dodal.devices.beamlines.i15_1.attenuators import (
-    FastAttenuatorDemand,
-    SlowAttenuatorPositions,
-)
 from dodal.devices.beamlines.i15_1.blower import Blower
 from dodal.devices.zebra.zebra import ArmDemand
 
@@ -20,9 +16,6 @@ from crystallography_bluesky.i15_1.plans.generic_collection import (
     AuxiliaryScanType,
     DataCollectionScanType,
     GenericCollectionDevices,
-)
-from crystallography_bluesky.i15_1.plans.single_temperature_collection import (
-    CollectionSpecPerPosition,
 )
 
 
@@ -192,44 +185,6 @@ async def test_blower_collection_adds_expected_info_to_metadata(
         )
     )
     _, kwargs = mock_setup.call_args
-    single_collection_spec = [
-        CollectionSpecPerPosition(
-            tth=10.0,
-            frames=5,
-            slow_attenuator_position=SlowAttenuatorPositions.TRANS_0_001,
-            fast_attenuator=FastAttenuatorDemand.IN,
-        ),
-        CollectionSpecPerPosition(
-            tth=20.0,
-            frames=5,
-            slow_attenuator_position=SlowAttenuatorPositions.TRANS_0_01,
-            fast_attenuator=FastAttenuatorDemand.IN,
-        ),
-        CollectionSpecPerPosition(
-            tth=30.0,
-            frames=10,
-            slow_attenuator_position=SlowAttenuatorPositions.TRANS_0_1,
-            fast_attenuator=FastAttenuatorDemand.IN,
-        ),
-        CollectionSpecPerPosition(
-            tth=40.0,
-            frames=20,
-            slow_attenuator_position=SlowAttenuatorPositions.TRANS_10,
-            fast_attenuator=FastAttenuatorDemand.OUT,
-        ),
-        CollectionSpecPerPosition(
-            tth=50.0,
-            frames=30,
-            slow_attenuator_position=SlowAttenuatorPositions.TRANS_50,
-            fast_attenuator=FastAttenuatorDemand.OUT,
-        ),
-        CollectionSpecPerPosition(
-            tth=60.0,
-            frames=30,
-            slow_attenuator_position=SlowAttenuatorPositions.TRANS_100,
-            fast_attenuator=FastAttenuatorDemand.OUT,
-        ),
-    ]
     assert kwargs["metadata"] == {
         "collection_specification": json.dumps(
             [

@@ -1,6 +1,6 @@
 import json
 from functools import partial
-from typing import Any, Literal, TypeAlias
+from typing import Any
 
 from bluesky import plan_stubs as bps
 from bluesky.utils import MsgGenerator
@@ -8,7 +8,6 @@ from dodal.common import inject
 from dodal.devices.beamlines.i15_1.blower import Blower
 from dodal.log import LOGGER
 from ophyd_async.core import StandardReadable
-from pydantic import BaseModel
 
 from crystallography_bluesky.i15_1.plans.generic_collection import (
     GenericCollectionDevices,
@@ -20,24 +19,14 @@ from crystallography_bluesky.i15_1.plans.setup_zebra import (
     setup_zebra_for_hardware_triggering,
 )
 from crystallography_bluesky.i15_1.plans.single_temperature_collection import (
-    CollectionSpecification,
+    CollectionSpecPerTemp,
+    TemperatureCollectionSpecification,
     get_collection_specification,
     inner_collection,
 )
 
 devices = inject("")
 blower = inject("blower")
-
-
-class CollectionSpecPerTemp(BaseModel):
-    # The structure of this is put in the nexus file and subsequently
-    # used by analysis. If we change it we need to change it there too
-    temperature_celsius: float
-    temperature_unit: Literal["C", "K"]
-    collection_specification: CollectionSpecification
-
-
-TemperatureCollectionSpecification: TypeAlias = list[CollectionSpecPerTemp]
 
 
 def _collection(

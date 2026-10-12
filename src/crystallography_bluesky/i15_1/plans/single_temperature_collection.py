@@ -1,7 +1,7 @@
 import json
 from functools import partial
 from math import ceil
-from typing import Any, TypeAlias
+from typing import Any, Literal, Self, TypeAlias
 
 import bluesky.plan_stubs as bps
 from bluesky.utils import MsgGenerator
@@ -21,7 +21,7 @@ from dodal.devices.zebra.zebra import ArmDemand, Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import OpenClose, ZebraFastShutter
 from dodal.log import LOGGER
 from ophyd_async.core import StandardReadable, wait_for_value
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 from crystallography_bluesky.i15_1.plans.generic_collection import (
     AuxiliaryScanType,
@@ -47,6 +47,32 @@ class CollectionSpecPerPosition(BaseModel):
 
 CollectionSpecification: TypeAlias = list[CollectionSpecPerPosition]
 
+
+class CollectionSpecPerTemp(BaseModel):
+    # The structure of this is put in the nexus file and subsequently
+    # used by analysis. If we change it we need to change it there too
+    temperature_celsius: float | Literal["RT"]
+    temperature_unit: Literal["C", "K"] | None
+    collection_specification: CollectionSpecification
+
+    @model_validator(mode="after")
+    def temperature_must_have_units(self) -> Self:
+        if isinstance(self.temperature_celsius, float):
+            assert self.temperature_unit is not None, (
+                "Must provide a temperature unit if a temperature is given"
+            )
+        return self
+
+    @model_validator(mode="after")
+    def no_temperature_must_not_have_units(self) -> Self:
+        if self.temperature_celsius == "RT":
+            assert self.temperature_unit is None, (
+                "Must not provide a temperature unit if no temperature float is given"
+            )
+        return self
+
+
+TemperatureCollectionSpecification: TypeAlias = list[CollectionSpecPerTemp]
 
 COLLECTION_SPEC_FILEPATH = (
     "/dls_sw/i15-1/software/daq_configuration/collection_specification.txt"
@@ -231,8 +257,11 @@ def data_collection(
         {
             "collection_specification": json.dumps(
                 [
-                    collection_spec_per_position.model_dump()
-                    for collection_spec_per_position in collection_spec
+                    CollectionSpecPerTemp(
+                        temperature_celsius="RT",
+                        temperature_unit=None,
+                        collection_specification=collection_spec,
+                    ).model_dump()
                 ]
             ),
         }
