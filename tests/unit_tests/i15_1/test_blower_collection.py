@@ -1,3 +1,4 @@
+import json
 from functools import partial
 from unittest.mock import MagicMock, patch
 
@@ -15,9 +16,6 @@ from crystallography_bluesky.i15_1.plans.generic_collection import (
     AuxiliaryScanType,
     DataCollectionScanType,
     GenericCollectionDevices,
-)
-from crystallography_bluesky.i15_1.plans.single_temperature_collection import (
-    CollectionSpecPerTemp,
 )
 
 
@@ -188,8 +186,8 @@ async def test_blower_collection_adds_expected_info_to_metadata(
     )
     _, kwargs = mock_setup.call_args
     assert kwargs["metadata"] == {
-        "collection_specification": [
-            CollectionSpecPerTemp.model_validate(
+        "collection_specification": json.dumps(
+            [
                 {
                     "temperature_celsius": 25.0,
                     "temperature_unit": "C",
@@ -231,9 +229,7 @@ async def test_blower_collection_adds_expected_info_to_metadata(
                             "fast_attenuator": "Out",
                         },
                     ],
-                }
-            ),
-            CollectionSpecPerTemp.model_validate(
+                },
                 {
                     "temperature_celsius": 50.0,
                     "temperature_unit": "C",
@@ -275,7 +271,7 @@ async def test_blower_collection_adds_expected_info_to_metadata(
                             "fast_attenuator": "Out",
                         },
                     ],
-                }
-            ),
-        ]
+                },
+            ]
+        )
     }
