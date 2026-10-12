@@ -1,4 +1,6 @@
+import json
 from pathlib import Path
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -9,10 +11,12 @@ from daq_config_server.models.i15_1.collection_specification import (
     SpecificationPerPosition,
 )
 from dodal.devices.beamlines.i15_1.attenuators import FastAttenuator, SlowAttenuator
+from dodal.devices.beamlines.i15_1.beam_health import BeamHealth
 from dodal.devices.beamlines.i15_1.blower import Blower
 from dodal.devices.beamlines.i15_1.laue import LaueMonochrometer
 from dodal.devices.beamlines.i15_1.robot import Robot
 from dodal.devices.motors import XYZStage
+from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.tetramm import SummingTetrammDetector
 from dodal.devices.zebra.zebra import Zebra, ZebraMapping
 from dodal.devices.zebra.zebra_constants_mapping import ZebraOutputs
@@ -123,6 +127,20 @@ async def xtal() -> LaueMonochrometer:
 
 
 @pytest.fixture
+async def synchrotron() -> Synchrotron:
+    async with init_devices(mock=True):
+        synchrotron = Synchrotron()
+    return synchrotron
+
+
+@pytest.fixture
+async def beam_health() -> BeamHealth:
+    async with init_devices(mock=True):
+        beam_health = BeamHealth("")
+    return beam_health
+
+
+@pytest.fixture
 async def common_collection_devices(
     eiger: EigerDetector,
     i0: SummingTetrammDetector,
@@ -133,6 +151,7 @@ async def common_collection_devices(
     xtal: LaueMonochrometer,
     slow_attenuator: SlowAttenuator,
     fast_attenuator: FastAttenuator,
+    synchrotron: Synchrotron,
 ) -> GenericCollectionDevices:
     return GenericCollectionDevices(
         eiger,
@@ -144,6 +163,7 @@ async def common_collection_devices(
         xtal,
         fast_attenuator,
         slow_attenuator,
+        synchrotron,
     )
 
 
@@ -171,7 +191,7 @@ def positions_to_spec():
 def mock_collection_spec_config_client(positions_to_spec):
     mock_client = MagicMock()
     mock_client.get_file_contents = MagicMock(
-        wraps=lambda _, __: CollectionSpecification(
+        return_value=CollectionSpecification(
             tth_angle_to_specification={
                 pos: SpecificationPerPosition(
                     exposure_time=spec[0],
@@ -183,7 +203,31 @@ def mock_collection_spec_config_client(positions_to_spec):
         )
     )
     with patch(
-        "crystallography_bluesky.i15_1.plans.room_temperature_collection.get_config_client",
+        "crystallography_bluesky.i15_1.plans.single_temperature_collection.get_config_client",
+        return_value=mock_client,
+    ):
+        yield mock_client
+
+
+@pytest.fixture
+def geometry_calibration() -> str:
+    return json.dumps(
+        {
+            # Example - a real one looks very different
+            "content": "Goniometer calibration v2",
+            "detector": "Eiger2 CdTe 500k",
+            "param": [0.25197546889062006],
+            "param_names": ["dist"],
+        }
+    )
+
+
+@pytest.fixture(autouse=True)
+def mock_geometry_calibration_config_client(geometry_calibration: dict[str, Any]):
+    mock_client = MagicMock()
+    mock_client.get_file_contents = MagicMock(return_value=geometry_calibration)
+    with patch(
+        "crystallography_bluesky.i15_1.plans.generic_collection.get_config_client",
         return_value=mock_client,
     ):
         yield mock_client

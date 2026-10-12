@@ -11,12 +11,14 @@ from dodal.devices.beamlines.i15_1.attenuators import (
     FastAttenuatorDemand,
     SlowAttenuatorPositions,
 )
+from dodal.devices.zebra.zebra import ArmDemand
 from dodal.devices.zebra.zebra_controlled_shutter import OpenClose
 
 from crystallography_bluesky.i15_1.plans.generic_collection import (
+    DataCollectionScanType,
     GenericCollectionDevices,
 )
-from crystallography_bluesky.i15_1.plans.room_temperature_collection import (
+from crystallography_bluesky.i15_1.plans.single_temperature_collection import (
     COLLECTION_SPEC_FILEPATH,
     CollectionSpecPerPosition,
     _calculate_number_of_frames,
@@ -45,7 +47,7 @@ def test_calculate_number_of_frames_returns_one_if_calculation_would_be_zero():
 
 
 @patch(
-    "crystallography_bluesky.i15_1.plans.room_temperature_collection.setup_and_teardown_collection"
+    "crystallography_bluesky.i15_1.plans.single_temperature_collection.setup_and_teardown_collection"
 )
 def test_data_collection_calls_setup_with_expected_arguments(
     mock_setup: MagicMock,
@@ -65,6 +67,7 @@ def test_data_collection_calls_setup_with_expected_arguments(
         data_collection(
             full_collection_time=2,
             exposure_time_per_frame=0.01,
+            scan_type=DataCollectionScanType.DATA_COLLECTION,
             generic_collection_devices=common_collection_devices,
             baseline_devices=baseline_devices,  # type:ignore
         )
@@ -80,8 +83,9 @@ def test_data_collection_calls_setup_with_expected_arguments(
     assert setup_call_args[1] == 0.01
     assert setup_call_args[2] is common_collection_devices
     assert callable(setup_call_args[3])
+    assert setup_call_args[4] == DataCollectionScanType.DATA_COLLECTION
     assert (
-        setup_call_args[4]
+        setup_call_args[5]
         == [
             common_collection_devices.robot.spinner,
             common_collection_devices.xtal,
@@ -102,6 +106,7 @@ def test_data_collection_takes_one_frame_per_position_for_short_collection(
         data_collection(
             full_collection_time=0.02,
             exposure_time_per_frame=0.01,
+            scan_type=DataCollectionScanType.DATA_COLLECTION,
             generic_collection_devices=common_collection_devices,
         )
     )
@@ -111,14 +116,14 @@ def test_data_collection_takes_one_frame_per_position_for_short_collection(
     ]
     assert tth_positions == list(positions_to_spec.keys())
 
-    detector_high_triggers = [
+    detector_arms = [
         msg
         for msg in msgs
         if msg.command == "set"
-        and msg.obj.name == "zebra-inputs-soft_in_1"
-        and msg.args[0] == 1
+        and msg.obj.name == "zebra-pc-arm"
+        and msg.args[0] == ArmDemand.ARM
     ]
-    assert len(detector_high_triggers) == len(positions_to_spec)
+    assert len(detector_arms) == len(positions_to_spec)
 
     tth_stream_creates = [
         msg
@@ -133,16 +138,27 @@ def test_data_collection_changes_transmission_per_position(
     positions_to_spec: dict[float, tuple[float, float, str]],
     mock_collection_spec_config_client,
 ):
+    full_collection_time = 1
+    exposure_time_per_frame = 0.01
+
     run_engine = RunEngineSimulator()
     msgs = run_engine.simulate_plan(
         data_collection(
-            full_collection_time=1,
-            exposure_time_per_frame=0.01,
+            full_collection_time=full_collection_time,
+            exposure_time_per_frame=exposure_time_per_frame,
+            scan_type=DataCollectionScanType.DATA_COLLECTION,
             generic_collection_devices=common_collection_devices,
         )
     )
 
     for position, spec in positions_to_spec.items():
+        fraction_of_time = spec[0]
+        frames = _calculate_number_of_frames(
+            fraction_of_time=fraction_of_time,
+            full_collection_time=full_collection_time,
+            exposure_time_per_frame=exposure_time_per_frame,
+        )
+
         msgs = assert_message_and_return_remaining(
             msgs,
             predicate=lambda msg, position=position: (
@@ -185,6 +201,42 @@ def test_data_collection_changes_transmission_per_position(
             ),
         )
 
+        msgs = assert_message_and_return_remaining(
+            msgs,
+            predicate=lambda msg, frames=frames: (
+                msg.command == "set"
+                and msg.obj.name == common_collection_devices.zebra.pc.pulse_max.name
+                and msg.args[0] == frames
+            ),
+        )
+
+        gate_width = frames * (exposure_time_per_frame + 0.0001)
+
+        msgs = assert_message_and_return_remaining(
+            msgs,
+            predicate=lambda msg, gate_width=gate_width: (
+                msg.command == "set"
+                and msg.obj.name == common_collection_devices.zebra.pc.gate_width.name
+                and msg.args[0] == gate_width
+            ),
+        )
+
+        msgs = assert_message_and_return_remaining(
+            msgs,
+            predicate=lambda msg, frames=frames: (
+                msg.command == "set"
+                and msg.obj.name == common_collection_devices.zebra.pc.arm.name
+                and msg.args[0] == ArmDemand.ARM
+            ),
+        )
+
+        msgs = assert_message_and_return_remaining(
+            msgs,
+            predicate=lambda msg, frames=frames: (
+                msg.command == "wait_for" and msg.obj is None
+            ),
+        )
+
 
 def test_data_collection_gets_positions_to_fraction_from_config_server(
     common_collection_devices: GenericCollectionDevices,
@@ -195,16 +247,17 @@ def test_data_collection_gets_positions_to_fraction_from_config_server(
         data_collection(
             full_collection_time=0.02,
             exposure_time_per_frame=0.01,
+            scan_type=DataCollectionScanType.DATA_COLLECTION,
             generic_collection_devices=common_collection_devices,
         )
     )
     mock_collection_spec_config_client.get_file_contents.assert_called_once_with(
-        COLLECTION_SPEC_FILEPATH, CollectionSpecification
+        COLLECTION_SPEC_FILEPATH, CollectionSpecification, reset_cached_result=True
     )
 
 
 @patch(
-    "crystallography_bluesky.i15_1.plans.room_temperature_collection.setup_and_teardown_collection"
+    "crystallography_bluesky.i15_1.plans.single_temperature_collection.setup_and_teardown_collection"
 )
 def test_data_collection_adds_expected_info_to_metadata(
     mock_setup: MagicMock,
@@ -216,6 +269,7 @@ def test_data_collection_adds_expected_info_to_metadata(
         data_collection(
             full_collection_time=0.02,
             exposure_time_per_frame=0.01,
+            scan_type=DataCollectionScanType.DATA_COLLECTION,
             generic_collection_devices=common_collection_devices,
         )
     )

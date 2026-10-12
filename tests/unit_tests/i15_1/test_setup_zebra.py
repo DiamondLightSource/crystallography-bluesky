@@ -18,6 +18,10 @@ def test_setup_zebra_for_hardware_triggering_sets_expected_pvs(
     get_mock_put(zebra.pc.pulse_start).assert_called_once_with(0)
     get_mock_put(zebra.pc.pulse_width).assert_called_once_with(0.05)
     get_mock_put(zebra.pc.pulse_step).assert_called_once_with(0.1)
+
+    get_mock_put(zebra.pc.num_gates).assert_called_once_with(1)
+    get_mock_put(zebra.pc.gate_source).assert_called_once_with(TrigSource.TIME)
+    get_mock_put(zebra.pc.gate_start).assert_called_once_with(0.0)
     get_mock_put(zebra.pc.gate_width).assert_called_once_with(10)
 
     get_mock_put(

@@ -11,15 +11,18 @@ from dodal.devices.beamlines.i15_1.attenuators import (
     SlowAttenuatorPositions,
 )
 from dodal.devices.beamlines.i15_1.blower import Blower
+from dodal.devices.zebra.zebra import ArmDemand
 
 from crystallography_bluesky.i15_1.plans.blower_collection import (
     CollectionSpecPerTemp,
     blower_collection,
 )
 from crystallography_bluesky.i15_1.plans.generic_collection import (
+    AuxiliaryScanType,
+    DataCollectionScanType,
     GenericCollectionDevices,
 )
-from crystallography_bluesky.i15_1.plans.room_temperature_collection import (
+from crystallography_bluesky.i15_1.plans.single_temperature_collection import (
     CollectionSpecPerPosition,
 )
 
@@ -65,6 +68,7 @@ def test_blower_collection_calls_setup_with_expected_frame_counts(
             temperatures_celsius=temperatures,
             ramp_rate_c_per_min=10,
             settle_time=0.5,
+            scan_type=DataCollectionScanType.DATA_COLLECTION,
             generic_collection_devices=common_collection_devices,
             blower=blower,
         )
@@ -98,6 +102,7 @@ async def test_blower_collection_sets_blower_ramp_rate_from_per_minute_to_per_se
             temperatures_celsius=[25, 50],
             ramp_rate_c_per_min=ramp_rate_per_min,
             settle_time=0.5,
+            scan_type=DataCollectionScanType.DATA_COLLECTION,
             generic_collection_devices=common_collection_devices,
             blower=blower,
         )
@@ -122,6 +127,7 @@ def test_blower_collection_collects_at_all_specified_temperatures(
             temperatures_celsius=temperatures,
             ramp_rate_c_per_min=60,
             settle_time=0.1,
+            scan_type=DataCollectionScanType.DATA_COLLECTION,
             generic_collection_devices=common_collection_devices,
             blower=blower,
         )
@@ -159,9 +165,8 @@ def test_blower_collection_collects_at_all_specified_temperatures(
                 msgs,
                 predicate=lambda msg: (
                     msg.command == "set"
-                    and msg.obj.name
-                    == common_collection_devices.zebra.inputs.soft_in_1.name
-                    and msg.args[0] == 1
+                    and msg.obj.name == common_collection_devices.zebra.pc.arm.name
+                    and msg.args[0] == ArmDemand.ARM
                 ),
             )
 
@@ -182,6 +187,7 @@ async def test_blower_collection_adds_expected_info_to_metadata(
             temperatures_celsius=[25, 50],
             ramp_rate_c_per_min=100,
             settle_time=0.5,
+            scan_type=AuxiliaryScanType.EMPTY_CAPILLARY,
             generic_collection_devices=common_collection_devices,
             blower=blower,
         )

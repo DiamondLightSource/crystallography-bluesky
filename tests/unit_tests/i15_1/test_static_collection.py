@@ -1,3 +1,4 @@
+import json
 from unittest.mock import AsyncMock
 
 import pytest
@@ -12,6 +13,8 @@ from dodal.devices.zebra.zebra_controlled_shutter import OpenClose
 from ophyd_async.core import get_mock_put
 
 from crystallography_bluesky.i15_1.plans.generic_collection import (
+    AuxiliaryScanType,
+    DataCollectionScanType,
     GenericCollectionDevices,
 )
 from crystallography_bluesky.i15_1.plans.static_collection import (
@@ -29,6 +32,7 @@ def test_static_collection_plan_makes_expected_calls(
             0.01,
             SlowAttenuatorPositions.TRANS_10,
             FastAttenuatorDemand.IN,
+            AuxiliaryScanType.STANDARD_SAMPLE,
             devices=common_collection_devices,
             metadata={"some": "metadata"},
         )
@@ -97,7 +101,21 @@ def test_static_collection_plan_makes_expected_calls(
         msgs,
         predicate=lambda msg: (
             msg.command == "open_run"
-            and msg.kwargs == {"some": "metadata", "detectors": ["fastcs-eiger", "i0"]}
+            and msg.kwargs
+            == {
+                "some": "metadata",
+                "detectors": ["fastcs-eiger", "i0"],
+                "scan_type": "Standard Sample",
+                "exposure_time_per_frame": 0.01,
+                "geometry_calibration": json.dumps(
+                    {
+                        "content": "Goniometer calibration v2",
+                        "detector": "Eiger2 CdTe 500k",
+                        "param": [0.25197546889062006],
+                        "param_names": ["dist"],
+                    }
+                ),
+            }
         ),
     )
     msgs = assert_message_and_return_remaining(
@@ -218,6 +236,7 @@ def test_shutter_opened_before_detectors_kicked_off(
             0.01,
             SlowAttenuatorPositions.TRANS_0_1,
             FastAttenuatorDemand.IN,
+            DataCollectionScanType.DATA_COLLECTION,
             devices=common_collection_devices,
         )
     )
@@ -248,6 +267,7 @@ def test_shutter_closed_after_complete(
             0.01,
             SlowAttenuatorPositions.TRANS_0_1,
             FastAttenuatorDemand.IN,
+            DataCollectionScanType.DATA_COLLECTION,
             devices=common_collection_devices,
         )
     )
@@ -283,6 +303,7 @@ async def test_given_plan_throws_exception_then_shutters_closed(
                 0.01,
                 SlowAttenuatorPositions.TRANS_0_1,
                 FastAttenuatorDemand.IN,
+                DataCollectionScanType.DATA_COLLECTION,
                 devices=common_collection_devices,
             )
         )
@@ -312,6 +333,7 @@ def test_if_plan_fails_during_trigger_then_soft_in_cleaned_up(
             0.01,
             SlowAttenuatorPositions.TRANS_0_1,
             FastAttenuatorDemand.IN,
+            DataCollectionScanType.DATA_COLLECTION,
             devices=common_collection_devices,
         )
     )

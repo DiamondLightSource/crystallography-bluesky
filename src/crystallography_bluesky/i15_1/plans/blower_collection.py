@@ -12,16 +12,17 @@ from pydantic import BaseModel
 
 from crystallography_bluesky.i15_1.plans.generic_collection import (
     GenericCollectionDevices,
+    ScanType,
     get_default_baseline_devices,
     setup_and_teardown_collection,
 )
-from crystallography_bluesky.i15_1.plans.room_temperature_collection import (
+from crystallography_bluesky.i15_1.plans.setup_zebra import (
+    setup_zebra_for_hardware_triggering,
+)
+from crystallography_bluesky.i15_1.plans.single_temperature_collection import (
     CollectionSpecification,
     get_collection_specification,
     inner_collection,
-)
-from crystallography_bluesky.i15_1.plans.setup_zebra import (
-    setup_zebra_for_software_triggering,
 )
 
 devices = inject("")
@@ -44,14 +45,12 @@ def _collection(
     collection_spec: TemperatureCollectionSpecification,
     exposure_time_per_frame: float,
 ):
-    detector_trigger = generic_collection_devices.zebra.inputs.soft_in_1
-
     for collection in collection_spec:
         LOGGER.info(f"Moving to temperature {collection.temperature_celsius}")
         yield from bps.mv(blower.temperature, collection.temperature_celsius)
         yield from inner_collection(
             generic_collection_devices.tth,
-            detector_trigger,
+            generic_collection_devices.zebra,
             generic_collection_devices.fast_shutter,
             generic_collection_devices.slow_attenuator,
             generic_collection_devices.fast_attenuator,
@@ -67,13 +66,12 @@ def blower_collection(
     temperatures_celsius: list[float],
     ramp_rate_c_per_min: float,
     settle_time: float,
+    scan_type: ScanType,
     generic_collection_devices: GenericCollectionDevices = devices,
     blower: Blower = blower,
     baseline_devices: list[StandardReadable] | None = None,
     metadata: dict[str, Any] | None = None,
 ) -> MsgGenerator:
-
-    yield from setup_zebra_for_software_triggering(generic_collection_devices.zebra)
 
     yield from bps.abs_set(blower.settle_time_s, settle_time)
     yield from bps.abs_set(blower.ramp_rate_c_per_sec, ramp_rate_c_per_min / 60)
@@ -81,6 +79,8 @@ def blower_collection(
     single_collection_spec, total_frames = get_collection_specification(
         time_per_collection, exposure_time_per_frame
     )
+    minimum_dead_time = 0.0001  # Minimum value independent of timebase
+    trigger_pulse_width = 0.0001  # Assumes zebra is set to seconds timebase
 
     temperature_collection_spec = [
         CollectionSpecPerTemp(
@@ -89,6 +89,16 @@ def blower_collection(
         )
         for temperature in temperatures_celsius
     ]
+
+    first_frames_value = next(iter(single_collection_spec)).frames
+    time_between_frames = exposure_time_per_frame + minimum_dead_time
+
+    yield from setup_zebra_for_hardware_triggering(
+        generic_collection_devices.zebra,
+        first_frames_value,
+        time_between_frames,
+        trigger_pulse_width,
+    )
 
     total_frames *= len(temperatures_celsius)
 
@@ -124,6 +134,7 @@ def blower_collection(
         exposure_time_per_frame,
         generic_collection_devices,
         collection,
+        scan_type,
         all_baseline_devices,
         metadata=metadata,
     )

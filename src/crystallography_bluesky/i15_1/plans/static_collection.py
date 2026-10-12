@@ -11,6 +11,8 @@ from dodal.devices.zebra.zebra import ArmDemand
 from ophyd_async.core import StandardReadable
 
 from crystallography_bluesky.i15_1.plans.generic_collection import (
+    AuxiliaryScanType,
+    DataCollectionScanType,
     GenericCollectionDevices,
     get_default_baseline_devices,
     setup_and_teardown_collection,
@@ -27,6 +29,7 @@ def static_collection(
     exposure_time: float,
     slow_attenuator_position: SlowAttenuatorPositions,
     fast_attenuator_position: FastAttenuatorDemand,
+    scan_type: DataCollectionScanType | AuxiliaryScanType,
     time_between_frames: float = 0.1,
     devices: GenericCollectionDevices = devices,
     baseline_devices: list[StandardReadable] | None = None,
@@ -61,6 +64,7 @@ def static_collection(
     )
 
     def collection():
+        yield from bps.read(devices.synchrotron)
         yield from bps.abs_set(devices.zebra.pc.arm, ArmDemand.ARM, wait=True)
         yield from bps.sleep(frames * time_between_frames)
 
@@ -69,6 +73,7 @@ def static_collection(
         exposure_time=exposure_time,
         devices=devices,
         collection=collection,
+        scan_type=scan_type,
         baseline_devices=DEFAULT_BASELINE_DEVICES + (baseline_devices or []),
         metadata=metadata,
     )

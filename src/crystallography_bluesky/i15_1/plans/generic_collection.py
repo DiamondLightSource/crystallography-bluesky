@@ -1,14 +1,17 @@
 from collections.abc import Callable
-from typing import Any
+from enum import StrEnum
+from typing import Any, TypeAlias
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import pydantic
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
+from dodal.common.beamlines.beamline_utils import get_config_client
 from dodal.devices.beamlines.i15_1.attenuators import FastAttenuator, SlowAttenuator
 from dodal.devices.beamlines.i15_1.laue import LaueMonochrometer
 from dodal.devices.beamlines.i15_1.robot import Robot
+from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.tetramm import SummingTetrammDetector
 from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import OpenClose, ZebraFastShutter
@@ -21,7 +24,31 @@ from crystallography_bluesky.i15_1.plans.setup_zebra import (
     setup_zebra_for_software_triggering,
 )
 
+GEOMETRY_CALIBRATION_FILEPATH = (
+    "/dls_sw/i15-1/software/daq_configuration/geometry/geometry_calibration.json"
+)
+
 devices = inject("")
+
+
+# This is a copy of AuxiliaryScanType in the queue.
+# Can unify once the i15-1 plugin lives here.
+# https://github.com/DiamondLightSource/daq-queuing-service/issues/131
+class AuxiliaryScanType(StrEnum):
+    AIR = "Air"
+    EMPTY_CAPILLARY = "Empty Capillary"
+    STANDARD_SAMPLE = "Standard Sample"
+
+
+class DataCollectionScanType(StrEnum):
+    DATA_COLLECTION = "Data Collection"
+
+
+class CentringScanType(StrEnum):
+    CENTRING = "Centring"
+
+
+ScanType: TypeAlias = DataCollectionScanType | CentringScanType | AuxiliaryScanType
 
 
 @pydantic.dataclasses.dataclass(config={"arbitrary_types_allowed": True})
@@ -35,6 +62,7 @@ class GenericCollectionDevices:
     xtal: LaueMonochrometer
     fast_attenuator: FastAttenuator
     slow_attenuator: SlowAttenuator
+    synchrotron: Synchrotron
 
 
 def get_default_baseline_devices(all_devices: GenericCollectionDevices):
@@ -47,11 +75,21 @@ def get_default_baseline_devices(all_devices: GenericCollectionDevices):
     ]
 
 
+def get_geometry_calibration() -> str:
+    config_client = get_config_client()
+    return config_client.get_file_contents(
+        GEOMETRY_CALIBRATION_FILEPATH,
+        desired_return_type=str,
+        reset_cached_result=True,
+    )
+
+
 def setup_and_teardown_collection(
     frames: int,
     exposure_time: float,
     devices: GenericCollectionDevices,
     collection: Callable[[], MsgGenerator],
+    scan_type: ScanType,
     baseline_devices: list[StandardReadable] | None = None,
     metadata: dict[str, Any] | None = None,
 ) -> MsgGenerator:
@@ -91,7 +129,14 @@ def setup_and_teardown_collection(
 
     detectors = [devices.fastcs_eiger, devices.i0]
     metadata = metadata or {}
-    metadata.update({"detectors": [detector.name for detector in detectors]})
+    metadata.update(
+        {
+            "detectors": [detector.name for detector in detectors],
+            "scan_type": scan_type,
+            "geometry_calibration": get_geometry_calibration(),
+            "exposure_time_per_frame": exposure_time,
+        }
+    )
     if "sample" in metadata.keys():
         metadata["sample_info"] = metadata["sample"]
         del metadata["sample"]
@@ -142,6 +187,7 @@ def generic_per_step_collection(
     exposure_time: float,
     per_step: Callable[[], MsgGenerator],
     devices: GenericCollectionDevices,
+    scan_type: ScanType,
     baseline_devices: list[StandardReadable] | None = None,
     metadata: dict[str, Any] | None = None,
 ) -> MsgGenerator:
@@ -166,6 +212,7 @@ def generic_per_step_collection(
     def software_triggered_collection():
         LOGGER.info(f"Triggering i0 and eiger {frames} times")
         for _ in range(frames):
+            yield from bps.rd(devices.synchrotron)
             yield from bps.abs_set(devices.zebra.inputs.soft_in_1, 1, wait=True)
             yield from bps.sleep(exposure_time)
             yield from bps.abs_set(devices.zebra.inputs.soft_in_1, 0, wait=True)
@@ -180,6 +227,7 @@ def generic_per_step_collection(
         exposure_time=exposure_time,
         devices=devices,
         collection=software_triggered_collection,
+        scan_type=scan_type,
         baseline_devices=all_baseline_devices,
         metadata=metadata,
     )

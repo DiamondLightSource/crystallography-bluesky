@@ -5,7 +5,7 @@ from daq_config_server.models.i15_1.xpdf_parameters import TemperatureController
 from dodal.devices.beamlines.i15_1.blower import Blower
 from dodal.devices.beamlines.i15_1.cobra import Cobra
 from dodal.devices.beamlines.i15_1.hexapod import Hexapod
-from dodal.devices.beamlines.i15_1.robot import Robot
+from dodal.devices.beamlines.i15_1.robot import Robot, SpinnerState
 from dodal.devices.interlocks import IntPLCInterlock, PSSInterlock
 from ophyd_async.core import get_mock_put, init_devices, set_mock_value
 
@@ -108,6 +108,31 @@ async def test_plan_loads_robot(
 
     assert await robot.puck_sel.get_value() == 1
     assert await robot.pos_sel.get_value() == 2
+
+
+async def test_load_robot_plan_starts_spinner(
+    robot: Robot,
+    hutch_interlock: PSSInterlock,
+    gonio_interlock: IntPLCInterlock,
+    hexapod: Hexapod,
+    blower: Blower,
+    cobra: Cobra,
+):
+    RE = RunEngine()
+    RE(
+        robot_load(
+            1,
+            2,
+            robot,
+            hutch_interlock,
+            gonio_interlock,
+            hexapod,
+            blower,
+            cobra,
+        )
+    )
+
+    assert await robot.spinner.get_value() == SpinnerState.ON
 
 
 async def test_prepare_beamline_for_robot_load(blower: Blower, cobra: Cobra):
