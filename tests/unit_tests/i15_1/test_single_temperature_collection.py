@@ -1,3 +1,4 @@
+import json
 from unittest.mock import MagicMock, patch
 
 import bluesky.plan_stubs as bps
@@ -19,7 +20,6 @@ from crystallography_bluesky.i15_1.plans.generic_collection import (
 )
 from crystallography_bluesky.i15_1.plans.single_temperature_collection import (
     COLLECTION_SPEC_FILEPATH,
-    CollectionSpecPerPosition,
     _calculate_number_of_frames,
     data_collection,
 )
@@ -274,38 +274,50 @@ def test_data_collection_adds_expected_info_to_metadata(
     )
     _, kwargs = mock_setup.call_args
     assert kwargs["metadata"] == {
-        "data_shape": [(6, "collection")],
-        "variables": {},
-        "collection_specification": {
-            10.0: CollectionSpecPerPosition(
-                frames=1,
-                slow_attenuator_position=SlowAttenuatorPositions.TRANS_0_001,
-                fast_attenuator=FastAttenuatorDemand.IN,
-            ),
-            20.0: CollectionSpecPerPosition(
-                frames=1,
-                slow_attenuator_position=SlowAttenuatorPositions.TRANS_0_01,
-                fast_attenuator=FastAttenuatorDemand.IN,
-            ),
-            30.0: CollectionSpecPerPosition(
-                frames=1,
-                slow_attenuator_position=SlowAttenuatorPositions.TRANS_0_1,
-                fast_attenuator=FastAttenuatorDemand.IN,
-            ),
-            40.0: CollectionSpecPerPosition(
-                frames=1,
-                slow_attenuator_position=SlowAttenuatorPositions.TRANS_10,
-                fast_attenuator=FastAttenuatorDemand.OUT,
-            ),
-            50.0: CollectionSpecPerPosition(
-                frames=1,
-                slow_attenuator_position=SlowAttenuatorPositions.TRANS_50,
-                fast_attenuator=FastAttenuatorDemand.OUT,
-            ),
-            60.0: CollectionSpecPerPosition(
-                frames=1,
-                slow_attenuator_position=SlowAttenuatorPositions.TRANS_100,
-                fast_attenuator=FastAttenuatorDemand.OUT,
-            ),
-        },
+        "collection_specification": json.dumps(
+            [
+                {
+                    "temperature_celsius": "RT",
+                    "temperature_unit": None,
+                    "collection_specification": [
+                        {
+                            "tth": 10.0,
+                            "frames": 1,
+                            "slow_attenuator_position": "0.001%",
+                            "fast_attenuator": "In",
+                        },
+                        {
+                            "tth": 20.0,
+                            "frames": 1,
+                            "slow_attenuator_position": "0.01%",
+                            "fast_attenuator": "In",
+                        },
+                        {
+                            "tth": 30.0,
+                            "frames": 1,
+                            "slow_attenuator_position": "0.1%",
+                            "fast_attenuator": "In",
+                        },
+                        {
+                            "tth": 40.0,
+                            "frames": 1,
+                            "slow_attenuator_position": "10%",
+                            "fast_attenuator": "Out",
+                        },
+                        {
+                            "tth": 50.0,
+                            "frames": 1,
+                            "slow_attenuator_position": "50%",
+                            "fast_attenuator": "Out",
+                        },
+                        {
+                            "tth": 60.0,
+                            "frames": 1,
+                            "slow_attenuator_position": "100%",
+                            "fast_attenuator": "Out",
+                        },
+                    ],
+                }
+            ]
+        )
     }
