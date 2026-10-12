@@ -3,7 +3,7 @@ from .blower_collection import blower_collection
 from .centre_sample import centre_sample
 from .robot import (
     move_hexapod_to_home_position,
-    prepare_beamline_for_robot_load,
+    prepare_beamline_for_robot_action,
     robot_load,
     robot_unload,
 )
@@ -17,7 +17,7 @@ from .wait_for_beam import wait_for_beam
 __all__ = [
     "robot_load",
     "move_hexapod_to_home_position",
-    "prepare_beamline_for_robot_load",
+    "prepare_beamline_for_robot_action",
     "robot_unload",
     "take_snapshot",
     "static_collection",
