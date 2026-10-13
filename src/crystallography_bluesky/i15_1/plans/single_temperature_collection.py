@@ -1,7 +1,7 @@
-from dataclasses import dataclass
+import json
 from functools import partial
 from math import ceil
-from typing import Any, TypeAlias
+from typing import Any, Literal, Self, TypeAlias
 
 import bluesky.plan_stubs as bps
 from bluesky.utils import MsgGenerator
@@ -21,6 +21,7 @@ from dodal.devices.zebra.zebra import ArmDemand, Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import OpenClose, ZebraFastShutter
 from dodal.log import LOGGER
 from ophyd_async.core import SignalR, StandardReadable, wait_for_value
+from pydantic import BaseModel, model_validator
 
 from crystallography_bluesky.i15_1.plans.generic_collection import (
     AuxiliaryScanType,
@@ -35,15 +36,43 @@ from crystallography_bluesky.i15_1.plans.setup_zebra import (
 )
 
 
-@dataclass
-class CollectionSpecPerPosition:
+class CollectionSpecPerPosition(BaseModel):
+    # The structure of this is put in the nexus file and subsequently
+    # used by analysis. If we change it we need to change it there too
+    tth: float
     frames: int
     slow_attenuator_position: SlowAttenuatorPositions
     fast_attenuator: FastAttenuatorDemand
 
 
-CollectionSpecification: TypeAlias = dict[float, CollectionSpecPerPosition]
+CollectionSpecification: TypeAlias = list[CollectionSpecPerPosition]
 
+
+class CollectionSpecPerTemp(BaseModel):
+    # The structure of this is put in the nexus file and subsequently
+    # used by analysis. If we change it we need to change it there too
+    temperature_celsius: float | Literal["RT"]
+    temperature_unit: Literal["C", "K"] | None
+    collection_specification: CollectionSpecification
+
+    @model_validator(mode="after")
+    def temperature_must_have_units(self) -> Self:
+        if isinstance(self.temperature_celsius, float):
+            assert self.temperature_unit is not None, (
+                "Must provide a temperature unit if a temperature is given"
+            )
+        return self
+
+    @model_validator(mode="after")
+    def no_temperature_must_not_have_units(self) -> Self:
+        if self.temperature_celsius == "RT":
+            assert self.temperature_unit is None, (
+                "Must not provide a temperature unit if no temperature float is given"
+            )
+        return self
+
+
+TemperatureCollectionSpecification: TypeAlias = list[CollectionSpecPerTemp]
 
 COLLECTION_SPEC_FILEPATH = (
     "/dls_sw/i15-1/software/daq_configuration/collection_specification.txt"
@@ -74,18 +103,24 @@ def get_collection_specification(
     collection_spec_from_config = config_client.get_file_contents(
         COLLECTION_SPEC_FILEPATH,
         CollectionSpecFromConfig,
+        reset_cached_result=True,
     ).tth_angle_to_specification
 
-    collection_spec: CollectionSpecification = {}
+    collection_spec: CollectionSpecification = []
     total_frames = 0
     for angle, spec in collection_spec_from_config.items():
         frames = _calculate_number_of_frames(
             spec.exposure_time, full_collection_time, exposure_time_per_frame
         )
-        collection_spec[angle] = CollectionSpecPerPosition(
-            frames,
-            SlowAttenuatorPositions.from_trans_float(spec.slow_attenuator_transmission),
-            FastAttenuatorDemand[spec.fast_attenuator_position],
+        collection_spec.append(
+            CollectionSpecPerPosition(
+                tth=angle,
+                frames=frames,
+                slow_attenuator_position=SlowAttenuatorPositions.from_trans_float(
+                    spec.slow_attenuator_transmission
+                ),
+                fast_attenuator=FastAttenuatorDemand[spec.fast_attenuator_position],
+            )
         )
         total_frames += frames
 
@@ -109,11 +144,11 @@ def inner_collection(
     if not signals_to_read_per_point:
         signals_to_read_per_point = []
     signals_to_read_per_point.append(tth)
-    for position, point_spec in collection_spec.items():
+    for point_spec in collection_spec:
         yield from bps.mv(fast_shutter, OpenClose.CLOSE)
         yield from bps.mv(
             tth,
-            position,
+            point_spec.tth,
             slow_attenuator,
             point_spec.slow_attenuator_position,
             fast_attenuator,
@@ -186,7 +221,7 @@ def data_collection(
         full_collection_time, exposure_time_per_frame
     )
 
-    first_frames_value = next(iter(collection_spec.values())).frames
+    first_frames_value = next(iter(collection_spec)).frames
     time_between_frames = exposure_time_per_frame + minimum_dead_time
 
     yield from setup_zebra_for_hardware_triggering(
@@ -219,10 +254,16 @@ def data_collection(
 
     metadata = metadata or {}
     metadata.update(
-        {
-            "data_shape": [(total_frames, "collection")],
-            "variables": {},
-            "collection_specification": collection_spec,
+        {  # Need to serialise because nexus writer can't handle lists
+            "collection_specification": json.dumps(
+                [
+                    CollectionSpecPerTemp(
+                        temperature_celsius="RT",
+                        temperature_unit=None,
+                        collection_specification=collection_spec,
+                    ).model_dump()
+                ]
+            )
         }
     )
     yield from setup_and_teardown_collection(

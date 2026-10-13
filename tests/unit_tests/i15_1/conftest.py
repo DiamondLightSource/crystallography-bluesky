@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 from typing import Literal
 from unittest.mock import MagicMock, patch
@@ -45,9 +46,10 @@ from ophyd_async.epics.motor import Motor
 from ophyd_async.fastcs.eiger import EigerDetector
 
 from crystallography_bluesky.i15_1.plans.generic_collection import (
+    GEOMETRY_CALIBRATION_FILEPATH,
     GenericCollectionDevices,
 )
-from crystallography_bluesky.i15_1.plans.room_temperature_collection import (
+from crystallography_bluesky.i15_1.plans.single_temperature_collection import (
     COLLECTION_SPEC_FILEPATH,
 )
 from crystallography_bluesky.i15_1.plans.temperature_calibration import (
@@ -339,11 +341,25 @@ def blower_calibration():
 
 
 @pytest.fixture
+def geometry_calibration() -> str:
+    return json.dumps(
+        {
+            # Example - a real one looks very different
+            "content": "Goniometer calibration v2",
+            "detector": "Eiger2 CdTe 500k",
+            "param": [0.25197546889062006],
+            "param_names": ["dist"],
+        }
+    )
+
+
+@pytest.fixture
 def mock_config(
     positions_to_spec: dict[int, tuple[float, float, Literal["IN", "OUT"]]],
     standards_puck: StandardsPuck,
     temperature_controller_params: TemperatureControllersConfig,
     blower_calibration: TemperatureCalibration,
+    geometry_calibration: str,
 ) -> PathToMockDataDict:
     return {
         COLLECTION_SPEC_FILEPATH: CollectionSpecification(
@@ -359,6 +375,7 @@ def mock_config(
         STANDARDS_PUCK_CONFIG_PATH: standards_puck,
         XPDF_PARAMETERS_FILEPATH: temperature_controller_params,
         BLOWER_TEMPERATURE_CALIBRATION_FILEPATH: blower_calibration,
+        GEOMETRY_CALIBRATION_FILEPATH: geometry_calibration,
     }
 
 
@@ -368,11 +385,15 @@ def mock_config_client(mock_config: PathToMockDataDict):
     client.get_file_contents = MagicMock(wraps=client.get_file_contents)
     with (
         patch(
-            "crystallography_bluesky.i15_1.plans.room_temperature_collection.get_config_client",
+            "crystallography_bluesky.i15_1.plans.single_temperature_collection.get_config_client",
             return_value=client,
         ),
         patch(
             "crystallography_bluesky.i15_1.plans.temperature_calibration.get_config_client",
+            return_value=client,
+        ),
+        patch(
+            "crystallography_bluesky.i15_1.plans.generic_collection.get_config_client",
             return_value=client,
         ),
     ):

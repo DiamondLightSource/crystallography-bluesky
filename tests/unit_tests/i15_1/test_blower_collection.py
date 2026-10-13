@@ -1,3 +1,4 @@
+import json
 from functools import partial
 from unittest.mock import MagicMock, patch
 
@@ -5,21 +6,16 @@ import bluesky.plan_stubs as bps
 import pytest
 from bluesky import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
-from dodal.devices.beamlines.i15_1.attenuators import (
-    FastAttenuatorDemand,
-    SlowAttenuatorPositions,
-)
 from dodal.devices.beamlines.i15_1.blower import CalibratedBlower
 from dodal.devices.zebra.zebra import ArmDemand
 
-from crystallography_bluesky.i15_1.plans.blower_collection import blower_collection
+from crystallography_bluesky.i15_1.plans.blower_collection import (
+    blower_collection,
+)
 from crystallography_bluesky.i15_1.plans.generic_collection import (
     AuxiliaryScanType,
     DataCollectionScanType,
     GenericCollectionDevices,
-)
-from crystallography_bluesky.i15_1.plans.room_temperature_collection import (
-    CollectionSpecPerPosition,
 )
 
 
@@ -184,40 +180,94 @@ async def test_blower_collection_adds_expected_info_to_metadata(
     )
     _, kwargs = mock_setup.call_args
     assert kwargs["metadata"] == {
-        "data_shape": [(2, "temperatures_celsius"), (100, "collection")],
-        "variables": {"temperatures_celsius": [25, 50]},
-        "collection_specification": {
-            10.0: CollectionSpecPerPosition(
-                frames=5,
-                slow_attenuator_position=SlowAttenuatorPositions.TRANS_0_001,
-                fast_attenuator=FastAttenuatorDemand.IN,
-            ),
-            20.0: CollectionSpecPerPosition(
-                frames=5,
-                slow_attenuator_position=SlowAttenuatorPositions.TRANS_0_01,
-                fast_attenuator=FastAttenuatorDemand.IN,
-            ),
-            30.0: CollectionSpecPerPosition(
-                frames=10,
-                slow_attenuator_position=SlowAttenuatorPositions.TRANS_0_1,
-                fast_attenuator=FastAttenuatorDemand.IN,
-            ),
-            40.0: CollectionSpecPerPosition(
-                frames=20,
-                slow_attenuator_position=SlowAttenuatorPositions.TRANS_10,
-                fast_attenuator=FastAttenuatorDemand.OUT,
-            ),
-            50.0: CollectionSpecPerPosition(
-                frames=30,
-                slow_attenuator_position=SlowAttenuatorPositions.TRANS_50,
-                fast_attenuator=FastAttenuatorDemand.OUT,
-            ),
-            60.0: CollectionSpecPerPosition(
-                frames=30,
-                slow_attenuator_position=SlowAttenuatorPositions.TRANS_100,
-                fast_attenuator=FastAttenuatorDemand.OUT,
-            ),
-        },
+        "collection_specification": json.dumps(
+            [
+                {
+                    "temperature_celsius": 25.0,
+                    "temperature_unit": "C",
+                    "collection_specification": [
+                        {
+                            "tth": 10.0,
+                            "frames": 5,
+                            "slow_attenuator_position": "0.001%",
+                            "fast_attenuator": "In",
+                        },
+                        {
+                            "tth": 20.0,
+                            "frames": 5,
+                            "slow_attenuator_position": "0.01%",
+                            "fast_attenuator": "In",
+                        },
+                        {
+                            "tth": 30.0,
+                            "frames": 10,
+                            "slow_attenuator_position": "0.1%",
+                            "fast_attenuator": "In",
+                        },
+                        {
+                            "tth": 40.0,
+                            "frames": 20,
+                            "slow_attenuator_position": "10%",
+                            "fast_attenuator": "Out",
+                        },
+                        {
+                            "tth": 50.0,
+                            "frames": 30,
+                            "slow_attenuator_position": "50%",
+                            "fast_attenuator": "Out",
+                        },
+                        {
+                            "tth": 60.0,
+                            "frames": 30,
+                            "slow_attenuator_position": "100%",
+                            "fast_attenuator": "Out",
+                        },
+                    ],
+                },
+                {
+                    "temperature_celsius": 50.0,
+                    "temperature_unit": "C",
+                    "collection_specification": [
+                        {
+                            "tth": 10.0,
+                            "frames": 5,
+                            "slow_attenuator_position": "0.001%",
+                            "fast_attenuator": "In",
+                        },
+                        {
+                            "tth": 20.0,
+                            "frames": 5,
+                            "slow_attenuator_position": "0.01%",
+                            "fast_attenuator": "In",
+                        },
+                        {
+                            "tth": 30.0,
+                            "frames": 10,
+                            "slow_attenuator_position": "0.1%",
+                            "fast_attenuator": "In",
+                        },
+                        {
+                            "tth": 40.0,
+                            "frames": 20,
+                            "slow_attenuator_position": "10%",
+                            "fast_attenuator": "Out",
+                        },
+                        {
+                            "tth": 50.0,
+                            "frames": 30,
+                            "slow_attenuator_position": "50%",
+                            "fast_attenuator": "Out",
+                        },
+                        {
+                            "tth": 60.0,
+                            "frames": 30,
+                            "slow_attenuator_position": "100%",
+                            "fast_attenuator": "Out",
+                        },
+                    ],
+                },
+            ]
+        ),
         "blower_calibration": {
             "real_to_setpoint": {
                 "coefficients": pytest.approx(
