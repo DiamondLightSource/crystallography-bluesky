@@ -34,7 +34,7 @@ def _collection(
     generic_collection_devices: GenericCollectionDevices,
     blower: Blower,
     collection_spec: TemperatureCollectionSpecification,
-    exposure_time_per_frame: float,
+    time_between_frames: float,
     signals_to_read_per_point: list[StandardReadable | SignalR],
 ):
     for collection in collection_spec:
@@ -47,7 +47,7 @@ def _collection(
             generic_collection_devices.slow_attenuator,
             generic_collection_devices.fast_attenuator,
             collection.collection_specification,
-            exposure_time_per_frame,
+            time_between_frames,
             signals_to_read_per_point,
         )
 
@@ -104,7 +104,7 @@ def blower_collection(
         generic_collection_devices,
         blower,
         temperature_collection_spec,
-        exposure_time_per_frame,
+        time_between_frames,
         signals_to_read_per_point,
     )
 
