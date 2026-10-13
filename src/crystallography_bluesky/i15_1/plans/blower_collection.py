@@ -33,7 +33,7 @@ def _collection(
     generic_collection_devices: GenericCollectionDevices,
     blower: Blower,
     collection_spec: TemperatureCollectionSpecification,
-    exposure_time_per_frame: float,
+    time_between_frames: float,
 ):
     for collection in collection_spec:
         LOGGER.info(f"Moving to temperature {collection.temperature_celsius}")
@@ -45,7 +45,7 @@ def _collection(
             generic_collection_devices.slow_attenuator,
             generic_collection_devices.fast_attenuator,
             collection.collection_specification,
-            exposure_time_per_frame,
+            time_between_frames,
             [blower.temperature],
         )
 
@@ -98,7 +98,7 @@ def blower_collection(
         generic_collection_devices,
         blower,
         temperature_collection_spec,
-        exposure_time_per_frame,
+        time_between_frames,
     )
 
     all_baseline_devices = get_default_baseline_devices(generic_collection_devices) + (
