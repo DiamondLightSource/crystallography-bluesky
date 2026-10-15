@@ -1,4 +1,5 @@
 import json
+import time
 from functools import partial
 from math import ceil
 from typing import Any, Literal, Self, TypeAlias
@@ -143,7 +144,8 @@ def inner_collection(
 ):
     if not signals_to_read_per_point:
         signals_to_read_per_point = []
-    signals_to_read_per_point.append(tth)
+    if tth not in signals_to_read_per_point:
+        signals_to_read_per_point.append(tth)
     for point_spec in collection_spec:
         yield from bps.mv(fast_shutter, OpenClose.CLOSE)
         yield from bps.mv(
@@ -177,24 +179,35 @@ def inner_collection(
         LOGGER.info(
             f"Triggered i0 and eiger {point_spec.frames} times at tth of {current_tth}"
         )
-
+        t0 = time.monotonic()
         # Collected signals at roughly the same time as the frames, by dead reckoning
-        for _ in range(int(point_spec.frames)):
+        for i in range(int(point_spec.frames)):
             yield from bps.create(name="data")
             for signal in signals_to_read_per_point:
                 yield from bps.read(signal)
             yield from bps.save()
-            yield from bps.sleep(time_between_frames)
+
+            time_taken = time.monotonic() - t0
+            next_hardware_trigger_time = (i + 1) * time_between_frames
+            if (diff := (next_hardware_trigger_time - time_taken)) >= 0:
+                yield from bps.sleep(diff)
+            else:
+                LOGGER.warning(
+                    "Signal reading is behind hardware triggering of the detectors by "
+                    + f"{-diff} seconds. Choose a longer exposure time per frame to "
+                    + f"better correlate {signals_to_read_per_point} readings with "
+                    + "detector frames."
+                )
 
         LOGGER.info(
             f"Collected {point_spec.frames} signals at tth of {current_tth}"
             f" by dead reckoning"
         )
 
-        # Sleeping for time_between_frames for each iteration of the loop
-        # above should result in the overall trigger sequence having finished
-        # as or before we get here, but on the off-chance that it hasn't,
-        # explicitly wait for the zebra Arm Status signal to go to disarmed.
+        # Sleeping after each frame to align with hardware triggers should result in the
+        # overall trigger sequence having finished as or before we get here, but on the
+        # off-chance that it hasn't, explicitly wait for the zebra Arm Status signal to
+        # go to disarmed.
         yield from bps.wait_for(
             [lambda: wait_for_value(zebra.pc.arm.armed, 0, timeout=5.0)]
         )
