@@ -96,7 +96,7 @@ def move_hexapod_to_home_position(
     ry_home: float = 0.0,
     rz_home: float = 0.0,
     group: Hashable | None = None,
-    wait=True,
+    wait: bool = True,
 ) -> MsgGenerator[None]:
     yield from bps.abs_set(
         hexapod,
