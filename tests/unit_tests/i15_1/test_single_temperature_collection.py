@@ -338,11 +338,11 @@ async def test_warning_logged_if_signal_reading_falls_behind_hardware_triggering
 
     run_engine = RunEngineSimulator()
     with (
+        caplog.at_level(logging.WARNING),
         patch(
             "crystallography_bluesky.i15_1.plans.single_temperature_collection.bps.read",
             fake_read,
         ),
-        caplog.at_level(logging.WARNING),
     ):
         run_engine.simulate_plan(
             inner_collection(
