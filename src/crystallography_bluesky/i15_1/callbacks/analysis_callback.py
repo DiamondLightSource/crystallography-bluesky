@@ -3,7 +3,7 @@ from pathlib import Path
 from bluesky.callbacks import CallbackBase
 from dodal.log import LOGGER
 from event_model.documents import RunStart, RunStop
-from heliotrapi.client import AnalysisClient
+from heliotrapi.client import AnalysisClient, AnalysisResult
 
 I15_1_ANALYSIS_URL = "https://i15-1-analysis.diamond.ac.uk"
 
@@ -47,9 +47,9 @@ class TriggerAnalysisCallback(CallbackBase):
         )
         LOGGER.info(f"Submitted analysis request {self.request_id}")
 
-    def wait_on_and_retrieve_result(self):
+    def wait_on_and_retrieve_result(self) -> AnalysisResult:
         if not self.request_id:
             raise ValueError("Results requested but analysis has not been triggered")
         result = self._client.get_request_id_result(self.request_id)
         LOGGER.info(f"Received result from analysis {result} for {self.request_id}")
-        return result.result
+        return result

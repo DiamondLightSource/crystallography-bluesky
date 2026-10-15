@@ -36,7 +36,9 @@ def mock_analysis_callback():
         "crystallography_bluesky.i15_1.plans.centre_sample.TriggerAnalysisCallback"
     ) as patch_analysis_callback:
         instance = patch_analysis_callback.return_value
-        instance.wait_on_and_retrieve_result.return_value = {"centre": 15}
+        instance.wait_on_and_retrieve_result.return_value = AnalysisResult(
+            result={"centre": 15}, status="completed", analysis_name="centring"
+        )
         yield patch_analysis_callback
 
 
