@@ -343,6 +343,10 @@ async def test_warning_logged_if_signal_reading_falls_behind_hardware_triggering
             "crystallography_bluesky.i15_1.plans.single_temperature_collection.bps.read",
             fake_read,
         ),
+        patch(
+            "crystallography_bluesky.i15_1.plans.single_temperature_collection.bps.sleep",
+            MagicMock(wraps=bps.sleep),
+        ) as mock_sleep,
     ):
         run_engine.simulate_plan(
             inner_collection(
@@ -368,3 +372,38 @@ async def test_warning_logged_if_signal_reading_falls_behind_hardware_triggering
         + '[Motor(name="tth")] readings with detector frames.'
         in caplog.text
     )
+    mock_sleep.assert_not_called()
+
+
+async def test_if_software_read_faster_than_time_between_frames_then_sleep_called(
+    common_collection_devices: GenericCollectionDevices, caplog: LogCaptureFixture
+):
+    run_engine = RunEngineSimulator()
+    with (
+        caplog.at_level(logging.WARNING),
+        patch(
+            "crystallography_bluesky.i15_1.plans.single_temperature_collection.bps.sleep",
+            MagicMock(wraps=bps.sleep),
+        ) as mock_sleep,
+    ):
+        run_engine.simulate_plan(
+            inner_collection(
+                tth=common_collection_devices.tth,
+                zebra=common_collection_devices.zebra,
+                fast_shutter=common_collection_devices.fast_shutter,
+                slow_attenuator=common_collection_devices.slow_attenuator,
+                fast_attenuator=common_collection_devices.fast_attenuator,
+                collection_spec=[
+                    CollectionSpecPerPosition(
+                        tth=10,
+                        frames=10,
+                        slow_attenuator_position=SlowAttenuatorPositions.TRANS_1,
+                        fast_attenuator=FastAttenuatorDemand.IN,
+                    )
+                ],
+                time_between_frames=1,
+                signals_to_read_per_point=[common_collection_devices.tth],
+            )
+        )
+    assert not caplog.text
+    assert mock_sleep.call_count == 10
