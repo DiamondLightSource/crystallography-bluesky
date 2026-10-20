@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import pytest
-from bluesky.run_engine import RunEngine
+from bluesky.run_engine import RunEngine, RunEngineResult
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from dodal.devices.motors import XYZStage
 from heliotrapi.models import AnalysisResult
@@ -24,7 +24,7 @@ from crystallography_bluesky.i15_1.plans.generic_collection import (
 @pytest.fixture
 def blueapi_run_engine():
     # This adds the info the blueapi will add in prod
-    RE = RunEngine()
+    RE = RunEngine(call_returns_result=True)
     RE.md["data_session_directory"] = "/dls/i15-1/data/2026/cm44163-3"
     RE.md["scan_file"] = "i15-1-95557"
     return RE
@@ -52,7 +52,7 @@ def mock_analysis_client():
             analysis_name="fake_sample_alignment_i15_1",
             result={"centre": 17},
             status="completed",
-            created_at=datetime.now(),
+            created_at=datetime(2026, 10, 20, 14, 35, 46, 96041),
         )
 
         yield mock_client
@@ -263,7 +263,7 @@ def test_centre_sample_moved_to_start_before_stage(
 
 
 @patch("crystallography_bluesky.i15_1.plans.centre_sample.generic_per_step_collection")
-def test_centre_sample_calls_analysis_and_retrieves_result(
+def test_centre_sample_calls_analysis_and_retrieves_and_returns_result(
     mock_generic_collection: MagicMock,
     mock_analysis_client: MagicMock,
     hexapod: XYZStage,
@@ -278,12 +278,22 @@ def test_centre_sample_calls_analysis_and_retrieves_result(
         yield from bps.null()
 
     mock_generic_collection.side_effect = my_plan
-    blueapi_run_engine(
+    result = blueapi_run_engine(
         centre_sample(10, 20, 10, 0.01, generic_collection_devices, hexapod)
     )
 
     mock_analysis_client.submit.assert_called_once()
     mock_analysis_client.get_request_id_result.assert_called_once()
+    assert isinstance(result, RunEngineResult) and result.plan_result == AnalysisResult(
+        request_id=None,
+        status="completed",
+        analysis_name="fake_sample_alignment_i15_1",
+        inputs=None,
+        result={"centre": 17},
+        created_at=datetime(2026, 10, 20, 14, 35, 46, 96041),
+        finished_at=None,
+        version="0.3.3",
+    )
 
 
 @patch("crystallography_bluesky.i15_1.plans.centre_sample.generic_per_step_collection")
