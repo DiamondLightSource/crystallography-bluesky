@@ -1,7 +1,10 @@
 import json
-from unittest.mock import MagicMock, patch
+import logging
+import time
+from unittest.mock import MagicMock, call, patch
 
 import bluesky.plan_stubs as bps
+import pytest
 from bluesky import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from daq_config_server.models.i15_1.collection_specification import (
@@ -13,6 +16,7 @@ from dodal.devices.beamlines.i15_1.attenuators import (
 )
 from dodal.devices.zebra.zebra import ArmDemand
 from dodal.devices.zebra.zebra_controlled_shutter import OpenClose
+from pytest import LogCaptureFixture
 
 from crystallography_bluesky.i15_1.plans.generic_collection import (
     DataCollectionScanType,
@@ -20,8 +24,10 @@ from crystallography_bluesky.i15_1.plans.generic_collection import (
 )
 from crystallography_bluesky.i15_1.plans.single_temperature_collection import (
     COLLECTION_SPEC_FILEPATH,
+    CollectionSpecPerPosition,
     _calculate_number_of_frames,
     data_collection,
+    inner_collection,
 )
 
 
@@ -322,3 +328,101 @@ def test_data_collection_adds_expected_info_to_metadata(
             ]
         )
     }
+
+
+async def test_warning_logged_if_signal_reading_falls_behind_hardware_triggering(
+    common_collection_devices: GenericCollectionDevices, caplog: LogCaptureFixture
+):
+
+    def fake_read(signal):
+        yield bps.read(signal)
+        time.sleep(0.001)
+
+    run_engine = RunEngineSimulator()
+    with (
+        caplog.at_level(logging.WARNING),
+        patch(
+            "crystallography_bluesky.i15_1.plans.single_temperature_collection.bps.read",
+            fake_read,
+        ),
+        patch(
+            "crystallography_bluesky.i15_1.plans.single_temperature_collection.bps.sleep",
+            MagicMock(wraps=bps.sleep),
+        ) as mock_sleep,
+    ):
+        run_engine.simulate_plan(
+            inner_collection(
+                tth=common_collection_devices.tth,
+                zebra=common_collection_devices.zebra,
+                fast_shutter=common_collection_devices.fast_shutter,
+                slow_attenuator=common_collection_devices.slow_attenuator,
+                fast_attenuator=common_collection_devices.fast_attenuator,
+                collection_spec=[
+                    CollectionSpecPerPosition(
+                        tth=10,
+                        frames=10,
+                        slow_attenuator_position=SlowAttenuatorPositions.TRANS_1,
+                        fast_attenuator=FastAttenuatorDemand.IN,
+                    )
+                ],
+                time_between_frames=0.0001,
+                signals_to_read_per_point=[common_collection_devices.tth],
+            )
+        )
+    assert (
+        "Choose a longer exposure time per frame to better correlate "
+        + '[Motor(name="tth")] readings with detector frames.'
+        in caplog.text
+    )
+    mock_sleep.assert_not_called()
+
+
+async def test_if_software_read_faster_than_time_between_frames_then_sleep_called(
+    common_collection_devices: GenericCollectionDevices, caplog: LogCaptureFixture
+):
+    run_engine = RunEngineSimulator()
+    with (
+        caplog.at_level(logging.WARNING),
+        patch(
+            "crystallography_bluesky.i15_1.plans.single_temperature_collection.bps.sleep",
+            MagicMock(wraps=bps.sleep),
+        ) as mock_sleep,
+        patch(
+            "crystallography_bluesky.i15_1.plans.single_temperature_collection.time.monotonic",
+            side_effect=[
+                10,
+                10.1,
+                11.1,
+                12.1,
+                13.1,
+                14.1,
+                15.1,
+                16.1,
+                17.1,
+                18.1,
+                19.1,
+            ],
+        ),
+    ):
+        run_engine.simulate_plan(
+            inner_collection(
+                tth=common_collection_devices.tth,
+                zebra=common_collection_devices.zebra,
+                fast_shutter=common_collection_devices.fast_shutter,
+                slow_attenuator=common_collection_devices.slow_attenuator,
+                fast_attenuator=common_collection_devices.fast_attenuator,
+                collection_spec=[
+                    CollectionSpecPerPosition(
+                        tth=10,
+                        frames=10,
+                        slow_attenuator_position=SlowAttenuatorPositions.TRANS_1,
+                        fast_attenuator=FastAttenuatorDemand.IN,
+                    )
+                ],
+                time_between_frames=1,
+                signals_to_read_per_point=[common_collection_devices.tth],
+            )
+        )
+    assert not caplog.text
+    assert mock_sleep.call_count == 10
+    assert mock_sleep.call_args_list == [call(pytest.approx(0.9)) for _ in range(10)]
