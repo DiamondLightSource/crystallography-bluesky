@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -188,7 +188,9 @@ def positions_to_spec():
 
 
 @pytest.fixture
-def mock_collection_spec_config_client(positions_to_spec):
+def mock_collection_spec_config_client(
+    positions_to_spec: dict[int, tuple[float, float, Literal["IN", "OUT"]]],
+):
     mock_client = MagicMock()
     mock_client.get_file_contents = MagicMock(
         return_value=CollectionSpecification(
@@ -202,6 +204,7 @@ def mock_collection_spec_config_client(positions_to_spec):
             }
         )
     )
+
     with patch(
         "crystallography_bluesky.i15_1.plans.single_temperature_collection.get_config_client",
         return_value=mock_client,
@@ -231,3 +234,12 @@ def mock_geometry_calibration_config_client(geometry_calibration: dict[str, Any]
         return_value=mock_client,
     ):
         yield mock_client
+
+
+@pytest.fixture
+def blueapi_run_engine():
+    # This adds the info the blueapi will add in prod
+    run_engine = RunEngine()
+    run_engine.md["data_session_directory"] = "/dls/i15-1/data/2026/cm44163-3"
+    run_engine.md["scan_file"] = "i15-1-95557"
+    return run_engine

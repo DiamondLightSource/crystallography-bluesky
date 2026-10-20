@@ -34,7 +34,7 @@ def static_collection(
     devices: GenericCollectionDevices = devices,
     baseline_devices: list[StandardReadable] | None = None,
     metadata: dict[str, Any] | None = None,
-) -> MsgGenerator:
+) -> MsgGenerator[None]:
     """Take a hardware-triggered static collection with the eiger and i0 detectors.
 
     Args:
@@ -63,7 +63,7 @@ def static_collection(
         devices.zebra, frames, time_between_frames
     )
 
-    def collection():
+    def collection() -> MsgGenerator[None]:
         yield from bps.create(name="synchrotron")
         yield from bps.read(devices.synchrotron)
         yield from bps.save()

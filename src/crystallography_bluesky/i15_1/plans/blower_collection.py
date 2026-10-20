@@ -34,7 +34,7 @@ def _collection(
     blower: Blower,
     collection_spec: TemperatureCollectionSpecification,
     time_between_frames: float,
-):
+) -> MsgGenerator[None]:
     for collection in collection_spec:
         LOGGER.info(f"Moving to temperature {collection.temperature_celsius}")
         yield from bps.mv(blower.temperature, collection.temperature_celsius)
@@ -61,7 +61,7 @@ def blower_collection(
     blower: Blower = blower,
     baseline_devices: list[StandardReadable] | None = None,
     metadata: dict[str, Any] | None = None,
-) -> MsgGenerator:
+) -> MsgGenerator[None]:
 
     yield from bps.abs_set(blower.settle_time_s, settle_time)
     yield from bps.abs_set(blower.ramp_rate_c_per_sec, ramp_rate_c_per_min / 60)

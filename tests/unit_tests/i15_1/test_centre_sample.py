@@ -1,5 +1,6 @@
 import json
 from datetime import datetime
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import bluesky.plan_stubs as bps
@@ -7,6 +8,7 @@ import bluesky.preprocessors as bpp
 import pytest
 from bluesky.run_engine import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
+from bluesky.utils import MsgGenerator
 from dodal.devices.motors import XYZStage
 from heliotrapi.models import AnalysisResult
 from ophyd_async.core import get_mock_put
@@ -272,7 +274,7 @@ def test_centre_sample_calls_analysis_and_retrieves_result(
     generic_collection_devices.tth = tth
 
     @bpp.run_decorator()
-    def my_plan(*_, **__):
+    def my_plan(*_, **__: Any) -> MsgGenerator[None]:
         yield from bps.null()
 
     mock_generic_collection.side_effect = my_plan
@@ -296,7 +298,7 @@ def test_centre_sample_moves_to_analysis_result(
     generic_collection_devices.tth = tth
 
     @bpp.run_decorator()
-    def my_plan(*_, **__):
+    def my_plan(*_, **__: Any) -> MsgGenerator[None]:
         yield from bps.null()
 
     mock_generic_collection.side_effect = my_plan
@@ -321,7 +323,7 @@ def test_centre_sample_throws_error_if_result_out_of_bounds_of_scan(
     mock_analysis_client.get_request_id_result.return_value.result = {"centre": 21}
 
     @bpp.run_decorator()
-    def my_plan(*_, **__):
+    def my_plan(*_, **__: Any) -> MsgGenerator[None]:
         yield from bps.null()
 
     mock_generic_collection.side_effect = my_plan

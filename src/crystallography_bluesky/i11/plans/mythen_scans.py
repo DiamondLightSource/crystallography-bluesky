@@ -42,7 +42,7 @@ def mythen_scan(
     duration: NonNegativeFloat | NonNegativeInt = 1.0,
     mythen: Mythen3 = DEFAULT_MYTHEN,
     axis: Motor = DEFAULT_AXIS,
-) -> MsgGenerator:
+) -> MsgGenerator[None]:
     """
     Simple software triggered count plan for the mythen3 on i11
     This will go to the start angle,

@@ -1,7 +1,9 @@
+from typing import Any
 from unittest.mock import patch
 
 import bluesky.plan_stubs as bps
 from bluesky import RunEngine
+from bluesky.utils import MsgGenerator
 from dodal.devices.beamlines.i15_1.beam_health import BeamHealth
 from ophyd_async.core import set_mock_value
 
@@ -25,7 +27,7 @@ def test_wait_for_beam_waits_until_beam_healthy_to_return(
 ):
     i = 0
 
-    def _mock_sleep(*_, **__):
+    def _mock_sleep(*_, **__: dict[str, Any]) -> MsgGenerator[None]:
         nonlocal i
         yield from bps.null()
         i += 1

@@ -2,6 +2,6 @@ import bluesky.plan_stubs as bps
 from bluesky.utils import MsgGenerator
 
 
-def bad_plan(message: str | None = None) -> MsgGenerator:
+def bad_plan(message: str | None = None) -> MsgGenerator[None]:
     yield from bps.null()
     raise Exception(message)

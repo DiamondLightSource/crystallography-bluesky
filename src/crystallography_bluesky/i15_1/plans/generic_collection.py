@@ -16,7 +16,7 @@ from dodal.devices.tetramm import SummingTetrammDetector
 from dodal.devices.zebra.zebra import Zebra
 from dodal.devices.zebra.zebra_controlled_shutter import OpenClose, ZebraFastShutter
 from dodal.log import LOGGER
-from ophyd_async.core import DetectorTrigger, StandardReadable, TriggerInfo
+from ophyd_async.core import DetectorTrigger, SignalR, StandardReadable, TriggerInfo
 from ophyd_async.epics.motor import Motor
 from ophyd_async.fastcs.eiger import EigerDetector
 
@@ -66,7 +66,9 @@ class GenericCollectionDevices:
     synchrotron: Synchrotron
 
 
-def get_default_baseline_devices(all_devices: GenericCollectionDevices):
+def get_default_baseline_devices(
+    all_devices: GenericCollectionDevices,
+) -> list[StandardReadable | SignalR[Any]]:
     return [
         all_devices.robot.spinner,
         all_devices.xtal,
@@ -89,11 +91,11 @@ def setup_and_teardown_collection(
     frames: int,
     exposure_time: float,
     devices: GenericCollectionDevices,
-    collection: Callable[[], MsgGenerator],
+    collection: Callable[[], MsgGenerator[Any]],
     scan_type: ScanType,
-    baseline_devices: list[StandardReadable] | None = None,
+    baseline_devices: list[StandardReadable | SignalR[Any]] | None = None,
     metadata: dict[str, Any] | None = None,
-) -> MsgGenerator:
+) -> MsgGenerator[None]:
     """Setup and tear down the eiger and i0 detectors for a collection. The specific
     collection performed (including triggering the detectors through the zebra) should
     be specified in the provided `collection`.
@@ -144,7 +146,7 @@ def setup_and_teardown_collection(
     baseline_devices = baseline_devices or []
     LOGGER.info(f"Baseline devices: {baseline_devices}")
 
-    def cleanup(*_):
+    def cleanup(*_) -> MsgGenerator[None]:
         # Close the shutter
         yield from bps.mv(devices.fast_shutter, OpenClose.CLOSE)
         # If we fail whilst the soft in is high we will end up immediately triggering
@@ -155,7 +157,7 @@ def setup_and_teardown_collection(
     @bpp.baseline_decorator(baseline_devices)
     @bpp.run_decorator(md=metadata)
     @bpp.contingency_decorator(final_plan=cleanup)
-    def inner_run():
+    def inner_run() -> MsgGenerator[None]:
 
         LOGGER.info("Preparing eiger and i0")
         yield from bps.prepare(
@@ -185,12 +187,12 @@ def setup_and_teardown_collection(
 def generic_per_step_collection(
     frames: int,
     exposure_time: float,
-    per_step: Callable[[], MsgGenerator],
+    per_step: Callable[[], MsgGenerator[Any]],
     devices: GenericCollectionDevices,
     scan_type: ScanType,
     baseline_devices: list[StandardReadable] | None = None,
     metadata: dict[str, Any] | None = None,
-) -> MsgGenerator:
+) -> MsgGenerator[None]:
     """Take a collection with the eiger and i0 detectors. Metadata from the robot
     spinner, tth, and any other baseline devices will be added to the nexus file.
     The plan provided in `per_step` is what will be run for each scan point, after
@@ -209,7 +211,7 @@ def generic_per_step_collection(
 
     yield from setup_zebra_for_software_triggering(devices.zebra)
 
-    def software_triggered_collection():
+    def software_triggered_collection() -> MsgGenerator[None]:
         LOGGER.info(f"Triggering i0 and eiger {frames} times")
         for _ in range(frames):
             yield from bps.create(name="synchrotron")

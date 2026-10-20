@@ -6,7 +6,7 @@ from ophyd_async.epics.adcore import ContAcqDetector
 
 
 @bpp.run_decorator()
-def take_snapshot(camera: ContAcqDetector) -> MsgGenerator:
+def take_snapshot(camera: ContAcqDetector) -> MsgGenerator[None]:
     yield from bps.stage(camera)
     yield from bps.prepare(camera, TriggerInfo(number_of_events=1), wait=True)
     yield from bps.trigger_and_read([camera])
