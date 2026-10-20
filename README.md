@@ -10,8 +10,9 @@ Bluesky plans, plan stubs, and utilities for crystallography beamlines
 This is where you should write a short paragraph that describes what your module does,
 how it does it, and why people should use it.
 
-Source          | <https://github.com/DiamondLightSource/crystallography-bluesky>
+What            | Where
 :---:           | :---:
+Source          | <https://github.com/DiamondLightSource/crystallography-bluesky>
 Releases        | <https://github.com/DiamondLightSource/crystallography-bluesky/releases>
 
 This is where you should put some images or code snippets that illustrate
