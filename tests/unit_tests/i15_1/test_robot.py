@@ -94,8 +94,8 @@ async def test_plan_loads_robot(
     blower: Blower,
     cobra: Cobra,
 ):
-    RE = RunEngine()
-    RE(
+    run_engine = RunEngine()
+    run_engine(
         robot_load(
             1,
             2,
@@ -120,8 +120,8 @@ async def test_load_robot_plan_starts_spinner(
     blower: Blower,
     cobra: Cobra,
 ):
-    RE = RunEngine()
-    RE(
+    run_engine = RunEngine()
+    run_engine(
         robot_load(
             1,
             2,
@@ -144,8 +144,8 @@ async def test_prepare_beamline_for_robot_action_moves_sample_env_into_safe_posi
     gonio_interlock: IntPLCInterlock,
     hexapod: Hexapod,
 ):
-    RE = RunEngine()
-    RE(
+    run_engine = RunEngine()
+    run_engine(
         prepare_beamline_for_robot_action(
             blower, cobra, hutch_interlock, gonio_interlock, hexapod
         )
@@ -171,9 +171,9 @@ async def test_correct_error_is_raised_when_hutch_is_not_safe_to_operate(
     reason: str,
 ):
     set_mock_value(hutch_interlock.status, status)
-    RE = RunEngine()
+    run_engine = RunEngine()
     with pytest.raises(AssertionError, match=reason):
-        RE(
+        run_engine(
             prepare_beamline_for_robot_action(
                 blower, cobra, hutch_interlock, gonio_interlock, hexapod
             )
@@ -197,9 +197,9 @@ async def test_correct_error_is_raised_when_gonio_is_not_safe_to_operate(
     reason: str,
 ):
     set_mock_value(gonio_interlock.status, status)
-    RE = RunEngine()
+    run_engine = RunEngine()
     with pytest.raises(AssertionError, match=reason):
-        RE(
+        run_engine(
             prepare_beamline_for_robot_action(
                 blower, cobra, hutch_interlock, gonio_interlock, hexapod
             )
@@ -219,8 +219,8 @@ async def test_plan_moves_hexapod_to_home_position(
     ry_home: float,
     rz_home: float,
 ):
-    RE = RunEngine()
-    RE(
+    run_engine = RunEngine()
+    run_engine(
         move_hexapod_to_home_position(
             hexapod=hexapod,
             x_home=x_home,
@@ -250,8 +250,8 @@ async def test_prepare_beamline_homes_hexapod(
     gonio_interlock: IntPLCInterlock,
     hexapod: Hexapod,
 ):
-    RE = RunEngine()
-    RE(
+    run_engine = RunEngine()
+    run_engine(
         prepare_beamline_for_robot_action(
             blower,
             cobra,
@@ -273,8 +273,8 @@ async def test_robot_load_calls_prepare_beamline(
     blower: Blower,
     cobra: Cobra,
 ):
-    RE = RunEngine()
-    RE(
+    run_engine = RunEngine()
+    run_engine(
         robot_load(
             1,
             2,
@@ -299,8 +299,8 @@ async def test_robot_unload_calls_prepare_beamline(
     blower: Blower,
     cobra: Cobra,
 ):
-    RE = RunEngine()
-    RE(
+    run_engine = RunEngine()
+    run_engine(
         robot_unload(
             robot,
             hutch_interlock,
@@ -324,8 +324,10 @@ async def test_plan_unloads_robot(
     set_mock_value(robot.current_sample.puck, 1)
     set_mock_value(robot.current_sample.position, 2)
 
-    RE = RunEngine()
-    RE(robot_unload(robot, hutch_interlock, gonio_interlock, hexapod, blower, cobra))
+    run_engine = RunEngine()
+    run_engine(
+        robot_unload(robot, hutch_interlock, gonio_interlock, hexapod, blower, cobra)
+    )
 
     assert await robot.current_sample.puck.get_value() == 0
     assert await robot.current_sample.position.get_value() == 0

@@ -14,19 +14,19 @@ from crystallography_bluesky.i15_1.callbacks.analysis_callback import (
 @pytest.fixture
 def blueapi_run_engine():
     # This adds the info the blueapi will add in prod
-    RE = RunEngine()
-    RE.md["data_session_directory"] = "/dls/i15-1/data/2026/cm44163-3"
-    RE.md["scan_file"] = "i15-1-95557"
-    return RE
+    run_engine = RunEngine()
+    run_engine.md["data_session_directory"] = "/dls/i15-1/data/2026/cm44163-3"
+    run_engine.md["scan_file"] = "i15-1-95557"
+    return run_engine
 
 
-def _run_plan_with_callback(RE, callback):
+def _run_plan_with_callback(run_engine, callback):
     @bpp.subs_decorator(callback)
     @bpp.run_decorator()
     def my_plan():
         yield from bps.null()
 
-    RE(my_plan())
+    run_engine(my_plan())
 
 
 @pytest.mark.skip("This test uses the real analysis endpoint")
@@ -67,12 +67,12 @@ def test_submit_called_with_correct_path(mock_client_cls, blueapi_run_engine):
 def test_missing_directory_logs_warning(mock_client_cls, mock_logger):
     mock_client = mock_client_cls.return_value
 
-    RE = RunEngine()
-    RE.md["scan_file"] = "scan123"  # directory missing
+    run_engine = RunEngine()
+    run_engine.md["scan_file"] = "scan123"  # directory missing
 
     callback = TriggerAnalysisCallback("url", "analysis")
 
-    _run_plan_with_callback(RE, callback)
+    _run_plan_with_callback(run_engine, callback)
 
     mock_logger.warning.assert_called_once()
     mock_client.submit.assert_not_called()
@@ -83,12 +83,12 @@ def test_missing_directory_logs_warning(mock_client_cls, mock_logger):
 def test_missing_scan_file_logs_warning(mock_client_cls, mock_logger):
     mock_client = mock_client_cls.return_value
 
-    RE = RunEngine()
-    RE.md["data_session_directory"] = "/tmp/data"  # scan_file missing
+    run_engine = RunEngine()
+    run_engine.md["data_session_directory"] = "/tmp/data"  # scan_file missing
 
     callback = TriggerAnalysisCallback("url", "analysis")
 
-    _run_plan_with_callback(RE, callback)
+    _run_plan_with_callback(run_engine, callback)
 
     mock_logger.warning.assert_called_once()
     mock_client.submit.assert_not_called()

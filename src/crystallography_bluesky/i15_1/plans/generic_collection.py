@@ -27,6 +27,7 @@ from crystallography_bluesky.i15_1.plans.setup_zebra import (
 GEOMETRY_CALIBRATION_FILEPATH = (
     "/dls_sw/i15-1/software/daq_configuration/geometry/geometry_calibration.json"
 )
+I0_DEADTIME = 0.0001
 
 devices = inject("")
 
@@ -107,7 +108,6 @@ def setup_and_teardown_collection(
         baseline_devices (list[StandardReadable] | None, optional): Any other devices to
                 record metadata from. Defaults to None.
     """
-    I0_DEADTIME = 0.0001
 
     #  Workaround for https://github.com/bluesky/ophyd-async/issues/1288 for now
     yield from bps.abs_set(devices.fastcs_eiger.detector.ntrigger, frames, wait=True)
