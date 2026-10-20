@@ -1,9 +1,10 @@
 import json
 import logging
 import time
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
 import bluesky.plan_stubs as bps
+import pytest
 from bluesky import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
 from daq_config_server.models.i15_1.collection_specification import (
@@ -385,6 +386,22 @@ async def test_if_software_read_faster_than_time_between_frames_then_sleep_calle
             "crystallography_bluesky.i15_1.plans.single_temperature_collection.bps.sleep",
             MagicMock(wraps=bps.sleep),
         ) as mock_sleep,
+        patch(
+            "crystallography_bluesky.i15_1.plans.single_temperature_collection.time.monotonic",
+            side_effect=[
+                10,
+                10.1,
+                11.1,
+                12.1,
+                13.1,
+                14.1,
+                15.1,
+                16.1,
+                17.1,
+                18.1,
+                19.1,
+            ],
+        ),
     ):
         run_engine.simulate_plan(
             inner_collection(
@@ -407,3 +424,4 @@ async def test_if_software_read_faster_than_time_between_frames_then_sleep_calle
         )
     assert not caplog.text
     assert mock_sleep.call_count == 10
+    assert mock_sleep.call_args_list == [call(pytest.approx(0.9)) for _ in range(10)]
