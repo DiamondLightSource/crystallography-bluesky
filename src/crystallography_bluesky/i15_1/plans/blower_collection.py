@@ -1,3 +1,4 @@
+import json
 from functools import partial
 from typing import Any
 
@@ -14,13 +15,14 @@ from crystallography_bluesky.i15_1.plans.generic_collection import (
     get_default_baseline_devices,
     setup_and_teardown_collection,
 )
-from crystallography_bluesky.i15_1.plans.room_temperature_collection import (
-    CollectionSpecification,
-    get_collection_specification,
-    inner_collection,
-)
 from crystallography_bluesky.i15_1.plans.setup_zebra import (
     setup_zebra_for_hardware_triggering,
+)
+from crystallography_bluesky.i15_1.plans.single_temperature_collection import (
+    CollectionSpecPerTemp,
+    TemperatureCollectionSpecification,
+    get_collection_specification,
+    inner_collection,
 )
 
 devices = inject("")
@@ -30,25 +32,22 @@ blower = inject("blower")
 def _collection(
     generic_collection_devices: GenericCollectionDevices,
     blower: Blower,
-    temperatures_celsius: list[float],
-    collection_spec: CollectionSpecification,
+    collection_spec: TemperatureCollectionSpecification,
     time_between_frames: float,
 ):
-    for temperature in temperatures_celsius:
-        LOGGER.info(f"Moving to temperature {temperature}")
-        yield from bps.mv(blower.temperature, temperature)
+    for collection in collection_spec:
+        LOGGER.info(f"Moving to temperature {collection.temperature_celsius}")
+        yield from bps.mv(blower.temperature, collection.temperature_celsius)
         yield from inner_collection(
             generic_collection_devices.tth,
             generic_collection_devices.zebra,
             generic_collection_devices.fast_shutter,
             generic_collection_devices.slow_attenuator,
             generic_collection_devices.fast_attenuator,
-            collection_spec,
+            collection.collection_specification,
             time_between_frames,
             [blower.temperature],
         )
-        # TODO: As it better describes the way it is used, rename
-        # room_temperature_collection to be single_temperature_collection
 
 
 def blower_collection(
@@ -67,18 +66,22 @@ def blower_collection(
     yield from bps.abs_set(blower.settle_time_s, settle_time)
     yield from bps.abs_set(blower.ramp_rate_c_per_sec, ramp_rate_c_per_min / 60)
 
+    single_collection_spec, total_frames = get_collection_specification(
+        time_per_collection, exposure_time_per_frame
+    )
     minimum_dead_time = 0.0001  # Minimum value independent of timebase
     trigger_pulse_width = 0.0001  # Assumes zebra is set to seconds timebase
 
-    collection_spec, total_frames = get_collection_specification(
-        time_per_collection, exposure_time_per_frame
-    )
-    data_shape: list[tuple[int, str]] = [
-        (len(temperatures_celsius), "temperatures_celsius"),
-        (total_frames, "collection"),
+    temperature_collection_spec = [
+        CollectionSpecPerTemp(
+            temperature_celsius=temperature,
+            collection_specification=single_collection_spec,
+            temperature_unit="C",
+        )
+        for temperature in temperatures_celsius
     ]
 
-    first_frames_value = next(iter(collection_spec.values())).frames
+    first_frames_value = next(iter(single_collection_spec)).frames
     time_between_frames = exposure_time_per_frame + minimum_dead_time
 
     yield from setup_zebra_for_hardware_triggering(
@@ -94,9 +97,8 @@ def blower_collection(
         _collection,
         generic_collection_devices,
         blower,
-        temperatures_celsius,
-        collection_spec,
-        exposure_time_per_frame,
+        temperature_collection_spec,
+        time_between_frames,
     )
 
     all_baseline_devices = get_default_baseline_devices(generic_collection_devices) + (
@@ -108,10 +110,10 @@ def blower_collection(
 
     metadata = metadata or {}
     metadata.update(
-        {
-            "variables": {"temperatures_celsius": temperatures_celsius},
-            "collection_specification": collection_spec,
-            "data_shape": data_shape,
+        {  # Need to serialise because nexus writer can't handle lists
+            "collection_specification": json.dumps(
+                [spec.model_dump() for spec in temperature_collection_spec]
+            )
         }
     )
 

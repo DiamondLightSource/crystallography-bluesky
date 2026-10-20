@@ -1,3 +1,5 @@
+from collections.abc import Hashable
+
 from bluesky import plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
@@ -26,6 +28,30 @@ HUTCH_SAFE_FOR_OPERATIONS = 0
 GONIO_SAFE_FOR_OPERATIONS = 65535  # All 16 bits are true
 
 
+def prepare_beamline_for_robot_action(
+    blower: Blower = blower,
+    cobra: Cobra = cobra,
+    hutch_interlock: PSSInterlock = hutch_interlock,
+    gonio_interlock: IntPLCInterlock = gonio_interlock,
+    hexapod: Hexapod = hexapod,
+) -> MsgGenerator[None]:
+    gonio_status = yield from bps.rd(gonio_interlock.is_safe)
+    assert gonio_status is True, "Goniometer interlock status was not safe to operate."
+
+    hutch_status = yield from bps.rd(hutch_interlock.is_safe)
+    assert hutch_status is True, (
+        "Experimental hutch interlock status was not safe to operate."
+    )
+
+    group = "safe_position_for_robot_action"
+
+    yield from move_hexapod_to_home_position(hexapod, group=group)
+
+    yield from bps.abs_set(blower, SafeOrBeamPosition.SAFE, group=group)
+    yield from bps.abs_set(cobra, SafeOrBeamPosition.SAFE, group=group)
+    yield from bps.wait(group)
+
+
 def robot_load(
     puck: int,
     position: int,
@@ -36,16 +62,9 @@ def robot_load(
     blower: Blower = blower,
     cobra: Cobra = cobra,
 ) -> MsgGenerator[None]:
-    gonio_status = yield from bps.rd(gonio_interlock.is_safe)
-    assert gonio_status is True, "Goniometer interlock status was not safe to operate."
-
-    hutch_status = yield from bps.rd(hutch_interlock.is_safe)
-    assert hutch_status is True, (
-        "Experimental hutch interlock status was not safe to operate."
+    yield from prepare_beamline_for_robot_action(
+        blower, cobra, hutch_interlock, gonio_interlock, hexapod
     )
-    yield from prepare_beamline_for_robot_load(blower, cobra)
-
-    yield from move_hexapod_to_home_position(hexapod)
 
     sample = SampleLocation(puck, position)
     yield from bps.abs_set(robot, sample, wait=True)
@@ -53,30 +72,17 @@ def robot_load(
     yield from bps.abs_set(robot.spinner, SpinnerState.ON, wait=True)
 
 
-def prepare_beamline_for_robot_load(
-    blower: Blower = blower, cobra: Cobra = cobra
-) -> MsgGenerator[None]:
-    group = "safe_position_for_robot_load"
-    yield from bps.abs_set(blower, SafeOrBeamPosition.SAFE, group=group)
-    yield from bps.abs_set(cobra, SafeOrBeamPosition.SAFE, group=group)
-    yield from bps.wait(group)
-
-
 def robot_unload(
     robot: Robot = robot,
     hutch_interlock: PSSInterlock = hutch_interlock,
     gonio_interlock: IntPLCInterlock = gonio_interlock,
     hexapod: Hexapod = hexapod,
+    blower: Blower = blower,
+    cobra: Cobra = cobra,
 ) -> MsgGenerator[None]:
-    gonio_status = yield from bps.rd(gonio_interlock.is_safe)
-    assert gonio_status is True, "Goniometer interlock status was not safe to operate."
-
-    hutch_status = yield from bps.rd(hutch_interlock.is_safe)
-    assert hutch_status is True, (
-        "Experimental hutch interlock status was not safe to operate."
+    yield from prepare_beamline_for_robot_action(
+        blower, cobra, hutch_interlock, gonio_interlock, hexapod
     )
-
-    yield from move_hexapod_to_home_position(hexapod)
 
     yield from bps.abs_set(robot, SAMPLE_LOCATION_EMPTY, wait=True)
 
@@ -89,8 +95,10 @@ def move_hexapod_to_home_position(
     rx_home: float = 0.0,
     ry_home: float = 0.0,
     rz_home: float = 0.0,
+    group: Hashable | None = None,
+    wait: bool = True,
 ) -> MsgGenerator[None]:
-    yield from bps.mv(
+    yield from bps.abs_set(
         hexapod,
         {
             "x": x_home,
@@ -100,4 +108,6 @@ def move_hexapod_to_home_position(
             "ry": ry_home,
             "rz": rz_home,
         },
+        group=group,
+        wait=wait,
     )
