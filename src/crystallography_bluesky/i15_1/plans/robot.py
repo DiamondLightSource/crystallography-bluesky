@@ -58,6 +58,7 @@ def prepare_beamline_for_robot_action(
 def robot_load(
     puck: int,
     position: int,
+    turn_spinner_on: bool = True,
     robot: Robot = robot,
     hutch_interlock: PSSInterlock = hutch_interlock,
     gonio_interlock: IntPLCInterlock = gonio_interlock,
@@ -72,7 +73,8 @@ def robot_load(
     sample = SampleLocation(puck, position)
     yield from bps.abs_set(robot, sample, wait=True)
 
-    yield from bps.abs_set(robot.spinner, SpinnerState.ON, wait=True)
+    if turn_spinner_on:
+        yield from bps.abs_set(robot.spinner, SpinnerState.ON, wait=True)
 
 
 def robot_unload(
