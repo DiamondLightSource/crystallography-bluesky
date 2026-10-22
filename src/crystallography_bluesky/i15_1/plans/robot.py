@@ -16,6 +16,7 @@ from dodal.devices.beamlines.i15_1.safe_or_beam_positioner import (
     SafeOrBeamPosition,
 )
 from dodal.devices.interlocks import IntPLCInterlock, PSSInterlock
+from dodal.log import LOGGER
 
 robot = inject("robot")
 hutch_interlock = inject("hutch_interlock")
@@ -48,7 +49,9 @@ def prepare_beamline_for_robot_action(
     yield from move_hexapod_to_home_position(hexapod, group=group)
 
     yield from bps.abs_set(blower, SafeOrBeamPosition.SAFE, group=group)
-    yield from bps.abs_set(cobra, SafeOrBeamPosition.SAFE, group=group)
+    # Cobra currently is not mounted on the beamline
+    # yield from bps.abs_set(cobra, SafeOrBeamPosition.SAFE, group=group)
+    LOGGER.warning("Skipping cobra move")
     yield from bps.wait(group)
 
 
