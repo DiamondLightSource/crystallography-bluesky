@@ -49,6 +49,7 @@ dev = [
     "types-mock",
     "pytest-asyncio",
     "pytest-timeout",
+    "uv>=0.13.4",
 ]
 
 [project.scripts]
