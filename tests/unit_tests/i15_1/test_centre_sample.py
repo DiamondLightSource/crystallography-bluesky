@@ -24,15 +24,6 @@ from crystallography_bluesky.i15_1.plans.generic_collection import (
 
 
 @pytest.fixture
-def blueapi_run_engine():
-    # This adds the info the blueapi will add in prod
-    run_engine = RunEngine()
-    run_engine.md["data_session_directory"] = "/dls/i15-1/data/2026/cm44163-3"
-    run_engine.md["scan_file"] = "i15-1-95557"
-    return run_engine
-
-
-@pytest.fixture
 def mock_analysis_callback():
     with patch(
         "crystallography_bluesky.i15_1.plans.centre_sample.TriggerAnalysisCallback"
