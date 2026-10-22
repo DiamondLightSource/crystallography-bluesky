@@ -49,7 +49,6 @@ dev = [
     "types-mock",
     "pytest-asyncio",
     "pytest-timeout",
-    "uv>=0.13.4",
 ]
 
 [project.scripts]
@@ -77,6 +76,11 @@ name = "Noemi Frisina"
 [[project.authors]]
 email = "Jacob.Williamson@diamond.ac.uk"
 name = "Jacob Williamson"
+
+[tool.uv]
+# https://github.com/astral-sh/uv/security/advisories/GHSA-hq85-5cpj-mr62
+required-version = ">=0.13.5"
+constraint-dependencies = ["certifi>=v2026.10.19", "starlette>=1.1.0"]
 
 [tool.setuptools_scm]
 version_file = "src/crystallography_bluesky/_version.py"
