@@ -1,3 +1,4 @@
+from pathlib import Path
 from unittest.mock import AsyncMock
 
 import pytest
@@ -10,7 +11,7 @@ from crystallography_bluesky.i15_1.plans.snapshots import take_snapshot
 
 
 @pytest.fixture
-async def camera(tmp_path) -> ContAcqDetector:
+async def camera(tmp_path: Path) -> ContAcqDetector:
     path_provider = StaticVisitPathProvider("i15_1", tmp_path)
     path_provider._filename_provider.collectionId = DataCollectionIdentifier(
         collectionNumber=0

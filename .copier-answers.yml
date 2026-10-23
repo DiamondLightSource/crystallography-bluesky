@@ -1,9 +1,9 @@
 # Changes here will be overwritten by Copier
-_commit: 4.0.1
+_commit: 5.4.0
 _src_path: https://github.com/DiamondLightSource/python-copier-template.git
 author_email: 1576793+Mark-Booth@users.noreply.github.com
 author_name: Mark Booth
-component_lifecycle: experimental
+component_lifecycle: production
 component_owner: group:default/data-acquisition
 component_type: library
 description: Bluesky plans, plan stubs, and utilities for crystallography beamlines
