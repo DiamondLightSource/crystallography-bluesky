@@ -5,13 +5,14 @@ from typing import Any
 from bluesky import plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
-from dodal.devices.beamlines.i15_1.blower import Blower
+from dodal.devices.beamlines.i15_1.blower import Blower, CalibratedBlower
 from dodal.log import LOGGER
-from ophyd_async.core import StandardReadable
+from ophyd_async.core import SignalR, StandardReadable
 
 from crystallography_bluesky.i15_1.plans.generic_collection import (
+    AuxiliaryScanType,
+    DataCollectionScanType,
     GenericCollectionDevices,
-    ScanType,
     get_default_baseline_devices,
     setup_and_teardown_collection,
 )
@@ -26,7 +27,7 @@ from crystallography_bluesky.i15_1.plans.single_temperature_collection import (
 )
 
 devices = inject("")
-blower = inject("blower")
+blower = inject("calibrated_blower")
 
 
 def _collection(
@@ -34,6 +35,7 @@ def _collection(
     blower: Blower,
     collection_spec: TemperatureCollectionSpecification,
     time_between_frames: float,
+    signals_to_read_per_point: list[StandardReadable | SignalR],
 ):
     for collection in collection_spec:
         LOGGER.info(f"Moving to temperature {collection.temperature_celsius}")
@@ -46,7 +48,7 @@ def _collection(
             generic_collection_devices.fast_attenuator,
             collection.collection_specification,
             time_between_frames,
-            [blower.temperature],
+            signals_to_read_per_point,
         )
 
 
@@ -56,10 +58,11 @@ def blower_collection(
     temperatures_celsius: list[float],
     ramp_rate_c_per_min: float,
     settle_time: float,
-    scan_type: ScanType,
+    scan_type: DataCollectionScanType | AuxiliaryScanType,
     generic_collection_devices: GenericCollectionDevices = devices,
     blower: Blower = blower,
     baseline_devices: list[StandardReadable] | None = None,
+    signals_to_read_per_point: list[StandardReadable | SignalR] | None = None,
     metadata: dict[str, Any] | None = None,
 ) -> MsgGenerator:
 
@@ -93,12 +96,16 @@ def blower_collection(
 
     total_frames *= len(temperatures_celsius)
 
+    if signals_to_read_per_point is None:
+        signals_to_read_per_point = [blower.temperature, blower.raw_temperature]
+
     collection = partial(
         _collection,
         generic_collection_devices,
         blower,
         temperature_collection_spec,
         time_between_frames,
+        signals_to_read_per_point,
     )
 
     all_baseline_devices = get_default_baseline_devices(generic_collection_devices) + (
@@ -116,6 +123,10 @@ def blower_collection(
             )
         }
     )
+    if isinstance(blower, CalibratedBlower):
+        metadata.update(
+            {"blower_calibration": blower.temperature_calibration.model_dump()}
+        )
 
     yield from setup_and_teardown_collection(
         total_frames,
