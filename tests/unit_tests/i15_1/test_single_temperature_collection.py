@@ -96,6 +96,7 @@ def test_data_collection_calls_setup_with_expected_arguments(
             common_collection_devices.xtal,
             common_collection_devices.fast_attenuator,
             common_collection_devices.slow_attenuator,
+            common_collection_devices.hexapod,
         ]
         + baseline_devices
     )
