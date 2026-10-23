@@ -96,7 +96,7 @@ def test_data_collection_calls_setup_with_expected_arguments(
     assert (
         setup_call_args[5]
         == [
-            common_collection_devices.robot.spinner,
+            common_collection_devices.robot,
             common_collection_devices.xtal,
             common_collection_devices.fast_attenuator,
             common_collection_devices.slow_attenuator,

@@ -70,7 +70,7 @@ def get_default_baseline_devices(
     all_devices: GenericCollectionDevices,
 ) -> list[StandardReadable | SignalR[Any]]:
     return [
-        all_devices.robot.spinner,
+        all_devices.robot,
         all_devices.xtal,
         all_devices.tth,
         all_devices.fast_attenuator,
@@ -158,7 +158,6 @@ def setup_and_teardown_collection(
     @bpp.run_decorator(md=metadata)
     @bpp.contingency_decorator(final_plan=cleanup)
     def inner_run() -> MsgGenerator[None]:
-
         LOGGER.info("Preparing eiger and i0")
         yield from bps.prepare(
             devices.fastcs_eiger, eiger_trigger_info, group="prepare"
