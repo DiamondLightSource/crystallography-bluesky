@@ -126,7 +126,7 @@ def test_static_collection_plan_makes_expected_calls(
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        predicate=lambda msg: msg.command == "read" and msg.obj.name == "robot-spinner",
+        predicate=lambda msg: msg.command == "read" and msg.obj.name == "robot",
     )
     msgs = assert_message_and_return_remaining(
         msgs,
@@ -200,7 +200,7 @@ def test_static_collection_plan_makes_expected_calls(
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        predicate=lambda msg: msg.command == "read" and msg.obj.name == "robot-spinner",
+        predicate=lambda msg: msg.command == "read" and msg.obj.name == "robot",
     )
     msgs = assert_message_and_return_remaining(
         msgs,
