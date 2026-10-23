@@ -5,7 +5,7 @@ import bluesky.plans as bsp
 import numpy as np
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
-from dodal.devices.i11.mythen import Mythen3
+from dodal.devices.beamlines.i11.mythen import Mythen3
 from dodal.devices.motors import Motor
 from dodal.log import LOGGER
 from dodal.utils import get_beamline_name
