@@ -143,5 +143,6 @@ def blower_collection(
         collection,
         scan_type,
         all_baseline_devices,
+        [blower],
         metadata=metadata,
     )

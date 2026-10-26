@@ -139,7 +139,7 @@ def test_blower_collection_collects_at_all_specified_temperatures(
             def _check_tth_being_set(msg, tth):
                 return (
                     msg.command == "set"
-                    and msg.obj.name == "tth"
+                    and msg.obj == common_collection_devices.tth
                     and msg.args[0] == tth
                 )
 
@@ -152,7 +152,7 @@ def test_blower_collection_collects_at_all_specified_temperatures(
                 msgs,
                 predicate=lambda msg: (
                     msg.command == "set"
-                    and msg.obj.name == common_collection_devices.zebra.pc.arm.name
+                    and msg.obj == common_collection_devices.zebra.pc.arm
                     and msg.args[0] == ArmDemand.ARM
                 ),
             )
@@ -326,13 +326,53 @@ def test_by_default_blower_collection_reads_raw_and_calibrated_temperature(
             msgs = assert_message_and_return_remaining(
                 msgs,
                 predicate=lambda msg: (
-                    msg.command == "read" and msg.obj.name == blower.temperature.name
+                    msg.command == "read" and msg.obj == blower.temperature
                 ),
             )
             msgs = assert_message_and_return_remaining(
                 msgs,
                 predicate=lambda msg: (
-                    msg.command == "read"
-                    and msg.obj.name == blower.raw_temperature.name
+                    msg.command == "read" and msg.obj == blower.raw_temperature
                 ),
             )
+
+
+def test_blower_collection_prepares_stages_and_unstages_blower(
+    common_collection_devices: GenericCollectionDevices,
+    blower: Blower,
+    blower_calibration_path: Path,
+):
+    """Test that temperatures read at each tth."""
+    temperatures = [25.0, 50.0, 75.0]
+
+    run_engine = RunEngineSimulator()
+    msgs = run_engine.simulate_plan(
+        blower_collection(
+            time_per_collection=1.0,
+            exposure_time_per_frame=0.01,
+            temperatures_celsius=temperatures,
+            ramp_rate_c_per_min=60,
+            settle_time=0.1,
+            scan_type=DataCollectionScanType.DATA_COLLECTION,
+            generic_collection_devices=common_collection_devices,
+            blower=blower,
+            temperature_calibration_path=str(blower_calibration_path),
+        )
+    )
+
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        predicate=lambda msg: (
+            msg.command == "prepare"
+            and msg.obj == blower
+            and msg.args == (blower_calibration_path,)
+        ),
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        predicate=lambda msg: msg.command == "stage" and msg.obj == blower,
+    )
+    msgs = assert_message_and_return_remaining(
+        msgs,
+        predicate=lambda msg: msg.command == "unstage" and msg.obj == blower,
+    )

@@ -353,7 +353,6 @@ def mock_config(
     positions_to_spec: dict[int, tuple[float, float, Literal["IN", "OUT"]]],
     standards_puck: StandardsPuck,
     temperature_controller_params: TemperatureControllersConfig,
-    blower_calibration: TemperatureCalibration,
     geometry_calibration: str,
 ) -> PathToMockDataDict:
     return {
