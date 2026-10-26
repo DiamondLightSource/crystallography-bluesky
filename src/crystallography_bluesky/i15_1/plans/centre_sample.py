@@ -58,7 +58,7 @@ def centre_sample(
         "sample_alignment_i15_1",
         beamline="i15-1",
         username=os.getenv("HELIOTRAPI_USERNAME"),
-        password=os.getenv("HELIORAPI_PASSWORD"),
+        password=os.getenv("HELIOTRAPI_PASSWORD"),
     )
 
     yield from bps.mv(
