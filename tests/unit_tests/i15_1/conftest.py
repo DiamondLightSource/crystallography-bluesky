@@ -19,10 +19,7 @@ from daq_config_server.models.i15_1.xpdf_parameters import (
     TemperatureControllersConfig,
 )
 from daq_config_server.testing import MockServerResponse, PathToMockDataDict
-from dodal.beamlines.i15_1 import (
-    BLOWER_TEMPERATURE_CALIBRATION_FILEPATH,
-    XPDF_PARAMETERS_FILEPATH,
-)
+from dodal.beamlines.i15_1 import XPDF_PARAMETERS_FILEPATH
 from dodal.devices.beamlines.i15_1.attenuators import FastAttenuator, SlowAttenuator
 from dodal.devices.beamlines.i15_1.beam_health import BeamHealth
 from dodal.devices.beamlines.i15_1.blower import Blower
@@ -372,7 +369,6 @@ def mock_config(
         ),
         STANDARDS_PUCK_CONFIG_PATH: standards_puck,
         XPDF_PARAMETERS_FILEPATH: temperature_controller_params,
-        BLOWER_TEMPERATURE_CALIBRATION_FILEPATH: blower_calibration,
         GEOMETRY_CALIBRATION_FILEPATH: geometry_calibration,
     }
 
