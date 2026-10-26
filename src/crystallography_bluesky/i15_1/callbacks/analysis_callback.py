@@ -24,6 +24,8 @@ class TriggerAnalysisCallback(CallbackBase):
         Args:
             analysis_url (str): The url where the analysis listener is running.
             analysis_name (str): The name of the analysis to trigger.
+            username (str or None): The username for heliotrapi
+            password (str or None): The password for heliotrapi
             **kwargs: Additional kwargs passed on to the analysis
         """
         self._client = AnalysisClient(
