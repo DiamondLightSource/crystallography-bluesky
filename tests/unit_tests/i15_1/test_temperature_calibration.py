@@ -72,14 +72,15 @@ def test_temperature_calibration_calls_expected_plans(
         -20, 5, 100, 0.1, common_collection_devices, hexapod
     )
     patch_blower_collection.assert_called_once_with(
-        100,
-        0.1,
-        [100, 200, 300, 400, 500],
-        0,
-        5,
-        AuxiliaryScanType.STANDARD_SAMPLE,
-        common_collection_devices,
-        blower,
+        time_per_collection=100,
+        exposure_time_per_frame=0.1,
+        temperatures_celsius=[100, 200, 300, 400, 500],
+        ramp_rate_c_per_min=0,
+        settle_time=5,
+        scan_type=AuxiliaryScanType.STANDARD_SAMPLE,
+        temperature_calibration_path="",
+        generic_collection_devices=common_collection_devices,
+        blower=blower,
         signals_to_read_per_point=[blower.raw_temperature],
     )
     patch_robot_unload.assert_called_once_with(
@@ -102,7 +103,7 @@ def do_nothing(*_, **__):
     "crystallography_bluesky.i15_1.plans.temperature_calibration.robot_unload",
     do_nothing,
 )
-def test_by_default_blower_collection_reads_only_raw_temperature_per_point(
+def test_calibration_blower_collection_reads_only_raw_temperature_per_point(
     common_collection_devices: GenericCollectionDevices,
     robot: Robot,
     hutch_interlock: PSSInterlock,

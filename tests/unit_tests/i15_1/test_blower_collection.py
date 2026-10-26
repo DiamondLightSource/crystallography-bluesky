@@ -1,12 +1,13 @@
 import json
 from functools import partial
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import bluesky.plan_stubs as bps
 import pytest
 from bluesky import RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
-from dodal.devices.beamlines.i15_1.blower import CalibratedBlower
+from dodal.devices.beamlines.i15_1.blower import Blower
 from dodal.devices.zebra.zebra import ArmDemand
 
 from crystallography_bluesky.i15_1.plans.blower_collection import (
@@ -34,7 +35,7 @@ from crystallography_bluesky.i15_1.plans.generic_collection import (
 def test_blower_collection_calls_setup_with_expected_frame_counts(
     mock_setup: MagicMock,
     common_collection_devices: GenericCollectionDevices,
-    calibrated_blower: CalibratedBlower,
+    blower: Blower,
     temperatures,
     time_per_collection,
     exposure_per_frame,
@@ -56,7 +57,7 @@ def test_blower_collection_calls_setup_with_expected_frame_counts(
             settle_time=0.5,
             scan_type=DataCollectionScanType.DATA_COLLECTION,
             generic_collection_devices=common_collection_devices,
-            blower=calibrated_blower,
+            blower=blower,
         )
     )
 
@@ -70,7 +71,7 @@ def test_blower_collection_calls_setup_with_expected_frame_counts(
 async def test_blower_collection_sets_blower_ramp_rate_from_per_minute_to_per_second(
     mock_setup: MagicMock,
     common_collection_devices: GenericCollectionDevices,
-    calibrated_blower: CalibratedBlower,
+    blower: Blower,
 ):
     """Test that blower ramp rate is converted from per_min to per_sec."""
     ramp_rate_per_min = 120  # 2 degrees per second
@@ -90,17 +91,17 @@ async def test_blower_collection_sets_blower_ramp_rate_from_per_minute_to_per_se
             settle_time=0.5,
             scan_type=DataCollectionScanType.DATA_COLLECTION,
             generic_collection_devices=common_collection_devices,
-            blower=calibrated_blower,
+            blower=blower,
         )
     )
 
     expected_per_sec = ramp_rate_per_min / 60
-    assert await calibrated_blower.ramp_rate_c_per_sec.get_value() == expected_per_sec
+    assert await blower.ramp_rate_c_per_sec.get_value() == expected_per_sec
 
 
 def test_blower_collection_collects_at_all_specified_temperatures(
     common_collection_devices: GenericCollectionDevices,
-    calibrated_blower: CalibratedBlower,
+    blower: Blower,
 ):
     """Test that data collection occurs at each specified temperature."""
     temperatures = [25.0, 50.0, 75.0]
@@ -115,7 +116,7 @@ def test_blower_collection_collects_at_all_specified_temperatures(
             settle_time=0.1,
             scan_type=DataCollectionScanType.DATA_COLLECTION,
             generic_collection_devices=common_collection_devices,
-            blower=calibrated_blower,
+            blower=blower,
         )
     )
 
@@ -163,7 +164,8 @@ def test_blower_collection_collects_at_all_specified_temperatures(
 async def test_blower_collection_adds_expected_info_to_metadata(
     mock_setup: MagicMock,
     common_collection_devices: GenericCollectionDevices,
-    calibrated_blower: CalibratedBlower,
+    blower: Blower,
+    blower_calibration_path: Path,
 ):
     run_engine = RunEngine()
     run_engine(
@@ -175,7 +177,8 @@ async def test_blower_collection_adds_expected_info_to_metadata(
             settle_time=0.5,
             scan_type=AuxiliaryScanType.EMPTY_CAPILLARY,
             generic_collection_devices=common_collection_devices,
-            blower=calibrated_blower,
+            blower=blower,
+            temperature_calibration_path=str(blower_calibration_path),
         )
     )
     _, kwargs = mock_setup.call_args
@@ -299,7 +302,7 @@ async def test_blower_collection_adds_expected_info_to_metadata(
 
 def test_by_default_blower_collection_reads_raw_and_calibrated_temperature(
     common_collection_devices: GenericCollectionDevices,
-    calibrated_blower: CalibratedBlower,
+    blower: Blower,
 ):
     """Test that temperatures read at each tth."""
     temperatures = [25.0, 50.0, 75.0]
@@ -314,7 +317,7 @@ def test_by_default_blower_collection_reads_raw_and_calibrated_temperature(
             settle_time=0.1,
             scan_type=DataCollectionScanType.DATA_COLLECTION,
             generic_collection_devices=common_collection_devices,
-            blower=calibrated_blower,
+            blower=blower,
         )
     )
     frames = int(1.0 / 0.01)
@@ -323,14 +326,13 @@ def test_by_default_blower_collection_reads_raw_and_calibrated_temperature(
             msgs = assert_message_and_return_remaining(
                 msgs,
                 predicate=lambda msg: (
-                    msg.command == "read"
-                    and msg.obj.name == calibrated_blower.temperature.name
+                    msg.command == "read" and msg.obj.name == blower.temperature.name
                 ),
             )
             msgs = assert_message_and_return_remaining(
                 msgs,
                 predicate=lambda msg: (
                     msg.command == "read"
-                    and msg.obj.name == calibrated_blower.raw_temperature.name
+                    and msg.obj.name == blower.raw_temperature.name
                 ),
             )

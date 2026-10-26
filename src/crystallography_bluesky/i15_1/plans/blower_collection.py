@@ -1,11 +1,12 @@
 import json
 from functools import partial
+from pathlib import Path
 from typing import Any
 
 from bluesky import plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
-from dodal.devices.beamlines.i15_1.blower import Blower, CalibratedBlower
+from dodal.devices.beamlines.i15_1.blower import Blower
 from dodal.log import LOGGER
 from ophyd_async.core import SignalR, StandardReadable
 
@@ -59,6 +60,7 @@ def blower_collection(
     ramp_rate_c_per_min: float,
     settle_time: float,
     scan_type: DataCollectionScanType | AuxiliaryScanType,
+    temperature_calibration_path: str = "",
     generic_collection_devices: GenericCollectionDevices = devices,
     blower: Blower = blower,
     baseline_devices: list[StandardReadable] | None = None,
@@ -94,6 +96,8 @@ def blower_collection(
         trigger_pulse_width,
     )
 
+    yield from bps.prepare(blower, Path(temperature_calibration_path))
+
     total_frames *= len(temperatures_celsius)
 
     if signals_to_read_per_point is None:
@@ -123,9 +127,13 @@ def blower_collection(
             )
         }
     )
-    if isinstance(blower, CalibratedBlower):
+    if temperature_calibration_path:
         metadata.update(
-            {"blower_calibration": blower.temperature_calibration.model_dump()}
+            {
+                "blower_calibration": blower.get_temperature_calibration(
+                    temperature_calibration_path
+                ).model_dump()
+            }
         )
 
     yield from setup_and_teardown_collection(

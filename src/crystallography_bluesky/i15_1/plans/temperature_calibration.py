@@ -72,14 +72,15 @@ def temperature_calibration(
     )
     yield from centre_sample(-20, 5, 100, 0.1, generic_collection_devices, hexapod)
     yield from blower_collection(
-        time_per_collection,
-        exposure_time_per_frame,
-        temperatures_celsius,
-        ramp_rate_c_per_min,
-        settle_time,
-        AuxiliaryScanType.STANDARD_SAMPLE,
-        generic_collection_devices,
-        blower,
+        time_per_collection=time_per_collection,
+        exposure_time_per_frame=exposure_time_per_frame,
+        temperatures_celsius=temperatures_celsius,
+        ramp_rate_c_per_min=ramp_rate_c_per_min,
+        settle_time=settle_time,
+        scan_type=AuxiliaryScanType.STANDARD_SAMPLE,
+        temperature_calibration_path="",
+        generic_collection_devices=generic_collection_devices,
+        blower=blower,
         signals_to_read_per_point=[blower.raw_temperature],
     )
     yield from robot_unload(robot, hutch_interlock, gonio_interlock, hexapod)

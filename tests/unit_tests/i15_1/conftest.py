@@ -25,7 +25,7 @@ from dodal.beamlines.i15_1 import (
 )
 from dodal.devices.beamlines.i15_1.attenuators import FastAttenuator, SlowAttenuator
 from dodal.devices.beamlines.i15_1.beam_health import BeamHealth
-from dodal.devices.beamlines.i15_1.blower import Blower, CalibratedBlower
+from dodal.devices.beamlines.i15_1.blower import Blower
 from dodal.devices.beamlines.i15_1.cobra import Cobra
 from dodal.devices.beamlines.i15_1.hexapod import Hexapod
 from dodal.devices.beamlines.i15_1.laue import LaueMonochrometer
@@ -203,18 +203,16 @@ async def blower(mock_config_client: ConfigClient) -> Blower:
 
 
 @pytest.fixture
-async def calibrated_blower(mock_config_client: ConfigClient) -> Blower:
-    """Blower device for testing."""
-    async with init_devices(mock=True):
-        blower = CalibratedBlower(
-            "",
-            "",
-            "",
-            mock_config_client,
-            XPDF_PARAMETERS_FILEPATH,
-            BLOWER_TEMPERATURE_CALIBRATION_FILEPATH,
-        )
-    return blower
+async def blower_calibration_path(
+    blower_calibration: TemperatureCalibration,
+    mock_config: PathToMockDataDict,
+    tmp_path: Path,
+) -> Path:
+    """Temp filepath that matches mock config dict."""
+    temp_calibration_filepath = tmp_path / "calibration.txt"
+    temp_calibration_filepath.write_text("")
+    mock_config[str(temp_calibration_filepath)] = blower_calibration
+    return temp_calibration_filepath
 
 
 @pytest.fixture
