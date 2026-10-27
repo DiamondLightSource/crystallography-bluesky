@@ -50,6 +50,7 @@ def prepare_beamline_for_robot_action(
 
     yield from bps.abs_set(blower, SafeOrBeamPosition.SAFE, group=group)
     # Cobra currently is not mounted on the beamline
+    # See https://github.com/DiamondLightSource/crystallography-bluesky/issues/200
     # yield from bps.abs_set(cobra, SafeOrBeamPosition.SAFE, group=group)
     LOGGER.warning("Skipping cobra move")
     yield from bps.wait(group)
