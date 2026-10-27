@@ -9,6 +9,7 @@ from dodal.common import inject
 from dodal.common.beamlines.beamline_utils import get_config_client
 from dodal.devices.beamlines.i15_1.blower import Blower
 from dodal.devices.beamlines.i15_1.cobra import Cobra
+from dodal.devices.beamlines.i15_1.hexapod import Hexapod
 from dodal.devices.beamlines.i15_1.robot import Robot
 from dodal.devices.interlocks import IntPLCInterlock, PSSInterlock
 
@@ -48,7 +49,7 @@ def temperature_calibration(
     robot: Robot = robot,
     hutch_interlock: PSSInterlock = hutch_interlock,
     gonio_interlock: IntPLCInterlock = gonio_interlock,
-    hexapod=hexapod,
+    hexapod: Hexapod = hexapod,
     blower: Blower = blower,
     cobra: Cobra = cobra,
 ) -> MsgGenerator:
