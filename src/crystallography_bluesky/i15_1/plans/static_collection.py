@@ -34,7 +34,7 @@ def static_collection(
     devices: GenericCollectionDevices = devices,
     baseline_devices: list[StandardReadable] | None = None,
     metadata: dict[str, Any] | None = None,
-) -> MsgGenerator:
+) -> MsgGenerator[None]:
     """Take a hardware-triggered static collection with the eiger and i0 detectors.
 
     Args:
@@ -50,7 +50,7 @@ def static_collection(
         baseline_devices (list[StandardReadable] | None, optional): Any other devices to
                 record metadata from. Defaults to None.
     """
-    DEFAULT_BASELINE_DEVICES = get_default_baseline_devices(devices)
+    default_baseline_devices = get_default_baseline_devices(devices)
 
     yield from bps.mv(
         devices.slow_attenuator,
@@ -63,7 +63,7 @@ def static_collection(
         devices.zebra, frames, time_between_frames
     )
 
-    def collection():
+    def collection() -> MsgGenerator[None]:
         yield from bps.create(name="synchrotron")
         yield from bps.read(devices.synchrotron)
         yield from bps.save()
@@ -76,6 +76,6 @@ def static_collection(
         devices=devices,
         collection=collection,
         scan_type=scan_type,
-        baseline_devices=DEFAULT_BASELINE_DEVICES + (baseline_devices or []),
+        baseline_devices=default_baseline_devices + (baseline_devices or []),
         metadata=metadata,
     )

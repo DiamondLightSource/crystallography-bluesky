@@ -5,7 +5,7 @@ from dodal.devices.zebra.zebra import TrigSource, Zebra
 
 def update_zebra_hardware_triggering(
     zebra: Zebra, frames: int, time_between_frames: float, group: str | None = None
-) -> MsgGenerator:
+) -> MsgGenerator[None]:
     group = group or "zebra_update_frames"
     yield from bps.abs_set(zebra.pc.pulse_max, frames, group=group)
     yield from bps.abs_set(
@@ -18,7 +18,7 @@ def setup_zebra_for_hardware_triggering(
     frames: int,
     time_between_frames: float,
     pulse_width: float | None = None,
-) -> MsgGenerator:
+) -> MsgGenerator[None]:
     # Note that this all assumes the time units (PC_TSPRE PV) are set to s, rather than
     # ms or 10s
 
@@ -58,7 +58,7 @@ def setup_zebra_for_hardware_triggering(
     yield from bps.wait(group)
 
 
-def setup_zebra_for_software_triggering(zebra: Zebra) -> MsgGenerator:
+def setup_zebra_for_software_triggering(zebra: Zebra) -> MsgGenerator[None]:
     group = "zebra_setup"
 
     # Set eiger and i0 to be triggered directly from SOFT_IN1

@@ -1,12 +1,15 @@
 import json
 import logging
 import time
+from typing import Any
 from unittest.mock import MagicMock, call, patch
 
 import bluesky.plan_stubs as bps
 import pytest
 from bluesky import RunEngine
+from bluesky.protocols import Reading
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
+from bluesky.utils import MsgGenerator
 from daq_config_server.models.i15_1.collection_specification import (
     CollectionSpecification,
 )
@@ -16,6 +19,7 @@ from dodal.devices.beamlines.i15_1.attenuators import (
 )
 from dodal.devices.zebra.zebra import ArmDemand
 from dodal.devices.zebra.zebra_controlled_shutter import OpenClose
+from ophyd_async.core import SignalR
 from pytest import LogCaptureFixture
 
 from crystallography_bluesky.i15_1.plans.generic_collection import (
@@ -58,11 +62,11 @@ def test_data_collection_calls_setup_with_expected_arguments(
     mock_setup: MagicMock,
     common_collection_devices: GenericCollectionDevices,
     positions_to_spec: dict[float, tuple[float, float]],
-    mock_collection_spec_config_client,
+    mock_collection_spec_config_client: MagicMock,
 ):
     baseline_devices = [common_collection_devices.tth]
 
-    def fake_setup(*_, **__):
+    def fake_setup(*_, **__: dict[str, Any]) -> MsgGenerator[None]:
         yield from bps.null()
 
     mock_setup.side_effect = fake_setup
@@ -104,7 +108,7 @@ def test_data_collection_calls_setup_with_expected_arguments(
 def test_data_collection_takes_one_frame_per_position_for_short_collection(
     common_collection_devices: GenericCollectionDevices,
     positions_to_spec: dict[float, tuple[float, float]],
-    mock_collection_spec_config_client,
+    mock_collection_spec_config_client: MagicMock,
 ):
     run_engine = RunEngineSimulator()
     msgs = run_engine.simulate_plan(
@@ -141,7 +145,7 @@ def test_data_collection_takes_one_frame_per_position_for_short_collection(
 def test_data_collection_changes_transmission_per_position(
     common_collection_devices: GenericCollectionDevices,
     positions_to_spec: dict[float, tuple[float, float, str]],
-    mock_collection_spec_config_client,
+    mock_collection_spec_config_client: MagicMock,
 ):
     full_collection_time = 1
     exposure_time_per_frame = 0.01
@@ -333,9 +337,10 @@ async def test_warning_logged_if_signal_reading_falls_behind_hardware_triggering
     common_collection_devices: GenericCollectionDevices, caplog: LogCaptureFixture
 ):
 
-    def fake_read(signal):
-        yield bps.read(signal)
+    def fake_read(signal: SignalR[Any]) -> MsgGenerator[Reading[Any]]:
+        result = yield bps.read(signal)  # type: ignore
         time.sleep(0.001)
+        return result
 
     run_engine = RunEngineSimulator()
     with (
