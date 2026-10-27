@@ -6,6 +6,7 @@ from bluesky import plan_stubs as bps
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
 from dodal.devices.beamlines.i15_1.blower import Blower
+from dodal.devices.beamlines.i15_1.safe_or_beam_positioner import SafeOrBeamPosition
 from dodal.log import LOGGER
 from ophyd_async.core import StandardReadable
 
@@ -63,6 +64,7 @@ def blower_collection(
     metadata: dict[str, Any] | None = None,
 ) -> MsgGenerator:
 
+    yield from bps.mv(blower, SafeOrBeamPosition.BEAM)
     yield from bps.abs_set(blower.settle_time_s, settle_time)
     yield from bps.abs_set(blower.ramp_rate_c_per_sec, ramp_rate_c_per_min / 60)
 
