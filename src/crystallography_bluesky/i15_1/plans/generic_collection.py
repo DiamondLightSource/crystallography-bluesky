@@ -5,6 +5,7 @@ from typing import Any, TypeAlias
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import pydantic
+from bluesky.protocols import Stageable
 from bluesky.utils import MsgGenerator
 from dodal.common import inject
 from dodal.common.beamlines.beamline_utils import get_config_client
@@ -91,6 +92,7 @@ def setup_and_teardown_collection(
     collection: Callable[[], MsgGenerator],
     scan_type: ScanType,
     baseline_devices: list[StandardReadable] | None = None,
+    stage_devices: list[Stageable] | None = None,
     metadata: dict[str, Any] | None = None,
 ) -> MsgGenerator:
     """Setup and tear down the eiger and i0 detectors for a collection. The specific
@@ -128,6 +130,9 @@ def setup_and_teardown_collection(
     )
 
     detectors = [devices.fastcs_eiger, devices.i0]
+    stage_devices = stage_devices or []
+    stage_devices = list(dict.fromkeys(stage_devices + detectors))  # Remove duplicates
+
     metadata = metadata or {}
     metadata.update(
         {
@@ -151,7 +156,7 @@ def setup_and_teardown_collection(
         # the detector on the next run
         yield from bps.abs_set(devices.zebra.inputs.soft_in_1, 0, wait=True)
 
-    @bpp.stage_decorator(detectors)
+    @bpp.stage_decorator(stage_devices)
     @bpp.baseline_decorator(baseline_devices)
     @bpp.run_decorator(md=metadata)
     @bpp.contingency_decorator(final_plan=cleanup)
