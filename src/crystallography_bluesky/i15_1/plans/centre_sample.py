@@ -1,3 +1,4 @@
+import os
 from typing import Any
 
 import bluesky.plan_stubs as bps
@@ -56,6 +57,8 @@ def centre_sample(
         I15_1_ANALYSIS_URL,
         "sample_alignment_i15_1",
         beamline="i15-1",
+        username=os.getenv("HELIOTRAPI_USERNAME"),
+        password=os.getenv("HELIOTRAPI_PASSWORD"),
     )
 
     yield from bps.mv(

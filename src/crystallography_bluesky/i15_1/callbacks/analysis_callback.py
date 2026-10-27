@@ -11,15 +11,26 @@ I15_1_ANALYSIS_URL = "https://i15-1-analysis.diamond.ac.uk"
 class TriggerAnalysisCallback(CallbackBase):
     """A callback that will pass the nexus file location to analysis on a plan end."""
 
-    def __init__(self, analysis_url: str, analysis_name: str, **kwargs):
+    def __init__(
+        self,
+        analysis_url: str,
+        analysis_name: str,
+        username: str | None = None,
+        password: str | None = None,
+        **kwargs,
+    ):
         """Create a callback to trigger analysis on plan end.
 
         Args:
             analysis_url (str): The url where the analysis listener is running.
             analysis_name (str): The name of the analysis to trigger.
+            username (str or None): The username for heliotrapi
+            password (str or None): The password for heliotrapi
             **kwargs: Additional kwargs passed on to the analysis
         """
-        self._client = AnalysisClient(analysis_url)
+        self._client = AnalysisClient(
+            base_url=analysis_url, username=username, password=password
+        )
         self._analysis_name = analysis_name
         self._kwargs = kwargs
         self.request_id = None
