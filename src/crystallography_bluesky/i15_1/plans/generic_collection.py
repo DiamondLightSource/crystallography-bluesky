@@ -69,7 +69,7 @@ class GenericCollectionDevices:
 
 def get_default_baseline_devices(all_devices: GenericCollectionDevices):
     return [
-        all_devices.robot.spinner,
+        all_devices.robot,
         all_devices.xtal,
         all_devices.tth,
         all_devices.fast_attenuator,
@@ -159,7 +159,6 @@ def setup_and_teardown_collection(
     @bpp.run_decorator(md=metadata)
     @bpp.contingency_decorator(final_plan=cleanup)
     def inner_run():
-
         LOGGER.info("Preparing eiger and i0")
         yield from bps.prepare(
             devices.fastcs_eiger, eiger_trigger_info, group="prepare"
@@ -215,7 +214,9 @@ def generic_per_step_collection(
     def software_triggered_collection():
         LOGGER.info(f"Triggering i0 and eiger {frames} times")
         for _ in range(frames):
-            yield from bps.rd(devices.synchrotron)
+            yield from bps.create(name="synchrotron")
+            yield from bps.read(devices.synchrotron)
+            yield from bps.save()
             yield from bps.abs_set(devices.zebra.inputs.soft_in_1, 1, wait=True)
             yield from bps.sleep(exposure_time)
             yield from bps.abs_set(devices.zebra.inputs.soft_in_1, 0, wait=True)
