@@ -14,10 +14,10 @@ from daq_config_server.models.i15_1.collection_specification import (
 from dodal.devices.beamlines.i15_1.attenuators import FastAttenuator, SlowAttenuator
 from dodal.devices.beamlines.i15_1.beam_health import BeamHealth
 from dodal.devices.beamlines.i15_1.blower import Blower
+from dodal.devices.beamlines.i15_1.hexapod import Hexapod
 from dodal.devices.beamlines.i15_1.cobra import Cobra
 from dodal.devices.beamlines.i15_1.laue import LaueMonochrometer
 from dodal.devices.beamlines.i15_1.robot import Robot
-from dodal.devices.motors import XYZStage
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.tetramm import SummingTetrammDetector
 from dodal.devices.zebra.zebra import Zebra, ZebraMapping
@@ -115,9 +115,9 @@ async def fast_shutter() -> ZebraFastShutter:
 
 
 @pytest.fixture
-async def hexapod() -> XYZStage:
+async def hexapod() -> Hexapod:
     async with init_devices(mock=True):
-        hexapod = XYZStage("")
+        hexapod = Hexapod("", "")
     return hexapod
 
 
@@ -154,6 +154,7 @@ async def common_collection_devices(
     slow_attenuator: SlowAttenuator,
     fast_attenuator: FastAttenuator,
     synchrotron: Synchrotron,
+    hexapod: Hexapod,
 ) -> GenericCollectionDevices:
     return GenericCollectionDevices(
         eiger,
@@ -166,6 +167,7 @@ async def common_collection_devices(
         fast_attenuator,
         slow_attenuator,
         synchrotron,
+        hexapod,
     )
 
 
