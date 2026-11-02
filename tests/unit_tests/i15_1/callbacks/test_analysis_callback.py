@@ -5,28 +5,20 @@ import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import pytest
 from bluesky.run_engine import RunEngine
+from bluesky.utils import MsgGenerator
 
 from crystallography_bluesky.i15_1.callbacks.analysis_callback import (
     TriggerAnalysisCallback,
 )
 
 
-@pytest.fixture
-def blueapi_run_engine():
-    # This adds the info the blueapi will add in prod
-    RE = RunEngine()
-    RE.md["data_session_directory"] = "/dls/i15-1/data/2026/cm44163-3"
-    RE.md["scan_file"] = "i15-1-95557"
-    return RE
-
-
-def _run_plan_with_callback(RE, callback):
+def _run_plan_with_callback(run_engine: RunEngine, callback: TriggerAnalysisCallback):
     @bpp.subs_decorator(callback)
     @bpp.run_decorator()
-    def my_plan():
+    def my_plan() -> MsgGenerator[None]:
         yield from bps.null()
 
-    RE(my_plan())
+    run_engine(my_plan())
 
 
 @pytest.mark.skip("This test uses the real analysis endpoint")
@@ -44,7 +36,9 @@ def test_system_against_prod(blueapi_run_engine: RunEngine):
 
 
 @patch("crystallography_bluesky.i15_1.callbacks.analysis_callback.AnalysisClient")
-def test_submit_called_with_correct_path(mock_client_cls, blueapi_run_engine):
+def test_submit_called_with_correct_path(
+    mock_client_cls: MagicMock, blueapi_run_engine: RunEngine
+):
     mock_client = mock_client_cls.return_value
 
     callback = TriggerAnalysisCallback(
@@ -64,15 +58,17 @@ def test_submit_called_with_correct_path(mock_client_cls, blueapi_run_engine):
 
 @patch("crystallography_bluesky.i15_1.callbacks.analysis_callback.LOGGER")
 @patch("crystallography_bluesky.i15_1.callbacks.analysis_callback.AnalysisClient")
-def test_missing_directory_logs_warning(mock_client_cls, mock_logger):
+def test_missing_directory_logs_warning(
+    mock_client_cls: MagicMock, mock_logger: MagicMock
+):
     mock_client = mock_client_cls.return_value
 
-    RE = RunEngine()
-    RE.md["scan_file"] = "scan123"  # directory missing
+    run_engine = RunEngine()
+    run_engine.md["scan_file"] = "scan123"  # directory missing
 
     callback = TriggerAnalysisCallback("url", "analysis")
 
-    _run_plan_with_callback(RE, callback)
+    _run_plan_with_callback(run_engine, callback)
 
     mock_logger.warning.assert_called_once()
     mock_client.submit.assert_not_called()
@@ -80,22 +76,24 @@ def test_missing_directory_logs_warning(mock_client_cls, mock_logger):
 
 @patch("crystallography_bluesky.i15_1.callbacks.analysis_callback.LOGGER")
 @patch("crystallography_bluesky.i15_1.callbacks.analysis_callback.AnalysisClient")
-def test_missing_scan_file_logs_warning(mock_client_cls, mock_logger):
+def test_missing_scan_file_logs_warning(
+    mock_client_cls: MagicMock, mock_logger: MagicMock
+):
     mock_client = mock_client_cls.return_value
 
-    RE = RunEngine()
-    RE.md["data_session_directory"] = "/tmp/data"  # scan_file missing
+    run_engine = RunEngine()
+    run_engine.md["data_session_directory"] = "/tmp/data"  # scan_file missing
 
     callback = TriggerAnalysisCallback("url", "analysis")
 
-    _run_plan_with_callback(RE, callback)
+    _run_plan_with_callback(run_engine, callback)
 
     mock_logger.warning.assert_called_once()
     mock_client.submit.assert_not_called()
 
 
 @patch("crystallography_bluesky.i15_1.callbacks.analysis_callback.AnalysisClient")
-def test_wait_on_and_retrieve_result(mock_client_cls):
+def test_wait_on_and_retrieve_result(mock_client_cls: MagicMock):
     mock_client = mock_client_cls.return_value
 
     mock_result = MagicMock()
@@ -110,14 +108,16 @@ def test_wait_on_and_retrieve_result(mock_client_cls):
 
 
 @patch("crystallography_bluesky.i15_1.callbacks.analysis_callback.AnalysisClient")
-def test_submit_not_called_until_end_of_plan(mock_client_cls, blueapi_run_engine):
+def test_submit_not_called_until_end_of_plan(
+    mock_client_cls: MagicMock, blueapi_run_engine: MagicMock
+):
     mock_client = mock_client_cls.return_value
 
     callback = TriggerAnalysisCallback("url", "analysis")
 
     @bpp.subs_decorator(callback)
     @bpp.run_decorator()
-    def my_plan():
+    def my_plan() -> MsgGenerator[None]:
         mock_client.submit.assert_not_called()
 
         yield from bps.null()
@@ -128,7 +128,9 @@ def test_submit_not_called_until_end_of_plan(mock_client_cls, blueapi_run_engine
 
 
 @patch("crystallography_bluesky.i15_1.callbacks.analysis_callback.AnalysisClient")
-def test_submit_not_called_if_plan_fails(mock_client_cls, blueapi_run_engine):
+def test_submit_not_called_if_plan_fails(
+    mock_client_cls: MagicMock, blueapi_run_engine: MagicMock
+):
     mock_client = mock_client_cls.return_value
 
     callback = TriggerAnalysisCallback("url", "analysis")
@@ -146,7 +148,9 @@ def test_submit_not_called_if_plan_fails(mock_client_cls, blueapi_run_engine):
 
 
 @patch("crystallography_bluesky.i15_1.callbacks.analysis_callback.AnalysisClient")
-def test_given_no_request_id_then_retrieving_analysis_result_fails(mock_client_cls):
+def test_given_no_request_id_then_retrieving_analysis_result_fails(
+    mock_client_cls: MagicMock,
+):
     mock_client = mock_client_cls.return_value
 
     callback = TriggerAnalysisCallback("url", "analysis")
@@ -158,7 +162,7 @@ def test_given_no_request_id_then_retrieving_analysis_result_fails(mock_client_c
 
 @patch("crystallography_bluesky.i15_1.callbacks.analysis_callback.AnalysisClient")
 def test_given_request_id_returned_by_analysis_then_this_result_is_requested(
-    mock_client_cls, blueapi_run_engine
+    mock_client_cls: MagicMock, blueapi_run_engine: RunEngine
 ):
     mock_client = mock_client_cls.return_value
     mock_request_id = MagicMock()

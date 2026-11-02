@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Any
 
 from bluesky.callbacks import CallbackBase
 from dodal.log import LOGGER
@@ -11,7 +12,7 @@ I15_1_ANALYSIS_URL = "https://i15-1-analysis.diamond.ac.uk"
 class TriggerAnalysisCallback(CallbackBase):
     """A callback that will pass the nexus file location to analysis on a plan end."""
 
-    def __init__(self, analysis_url: str, analysis_name: str, **kwargs):
+    def __init__(self, analysis_url: str, analysis_name: str, **kwargs: Any):
         """Create a callback to trigger analysis on plan end.
 
         Args:

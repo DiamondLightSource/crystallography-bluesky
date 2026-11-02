@@ -1,11 +1,13 @@
 import json
 from functools import partial
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import bluesky.plan_stubs as bps
 import pytest
-from bluesky import RunEngine
+from bluesky import Msg, RunEngine
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
+from bluesky.utils import MsgGenerator
 from dodal.devices.beamlines.i15_1.blower import Blower
 from dodal.devices.zebra.zebra import ArmDemand
 
@@ -21,7 +23,7 @@ from crystallography_bluesky.i15_1.plans.generic_collection import (
 
 @pytest.fixture(autouse=True)
 def always_mock_collection_spec_config_client(
-    mock_collection_spec_config_client,
+    mock_collection_spec_config_client: MagicMock,
 ): ...
 
 
@@ -41,13 +43,13 @@ def test_blower_collection_calls_setup_with_expected_frame_counts(
     mock_setup: MagicMock,
     common_collection_devices: GenericCollectionDevices,
     blower: Blower,
-    temperatures,
-    time_per_collection,
-    exposure_per_frame,
-    expected_frames,
+    temperatures: list[float],
+    time_per_collection: int,
+    exposure_per_frame: float,
+    expected_frames: int,
 ):
 
-    def fake_setup(*_, **__):
+    def fake_setup(*_, **__: Any) -> MsgGenerator[None]:
         yield from bps.null()
 
     mock_setup.side_effect = fake_setup
@@ -81,7 +83,7 @@ async def test_blower_collection_sets_blower_ramp_rate_from_per_minute_to_per_se
     """Test that blower ramp rate is converted from per_min to per_sec."""
     ramp_rate_per_min = 120  # 2 degrees per second
 
-    def fake_setup(*_, **__):
+    def fake_setup(*_, **__: Any) -> MsgGenerator[None]:
         yield from bps.null()
 
     mock_setup.side_effect = fake_setup
@@ -127,7 +129,7 @@ def test_blower_collection_collects_at_all_specified_temperatures(
 
     for temp in temperatures:
 
-        def _check_temp_being_set(msg, temp):
+        def _check_temp_being_set(msg: Msg, temp: float) -> bool:
             return (
                 msg.command == "set"
                 and msg.obj.name == "blower-temperature"
@@ -141,7 +143,7 @@ def test_blower_collection_collects_at_all_specified_temperatures(
 
         for tth in [10, 20, 30, 40, 50, 60]:
 
-            def _check_tth_being_set(msg, tth):
+            def _check_tth_being_set(msg: Msg, tth: float) -> bool:
                 return (
                     msg.command == "set"
                     and msg.obj.name == "tth"

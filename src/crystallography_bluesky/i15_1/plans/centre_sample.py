@@ -6,6 +6,7 @@ from bluesky.utils import MsgGenerator
 from dodal.common import inject
 from dodal.devices.motors import XYZStage
 from dodal.log import LOGGER
+from heliotrapi.models import AnalysisResult
 from ophyd_async.core import StandardReadable
 
 from crystallography_bluesky.i15_1.callbacks.analysis_callback import (
@@ -36,7 +37,7 @@ def centre_sample(
     baseline_devices: list[StandardReadable] | None = None,
     tth_angle: float = DEFAULT_CENTRING_TTH_ANGLE,
     metadata: dict[str, Any] | None = None,
-) -> MsgGenerator:
+) -> MsgGenerator[AnalysisResult]:
     """Run a step scan in hexapod z, trigger analysis to find the centre and
     move to the centre that is returned.
 
@@ -69,7 +70,7 @@ def centre_sample(
     # e.g. fence post counting
     step_size = (end_z - start_z) / (steps - 1)
 
-    def per_step():
+    def per_step() -> MsgGenerator[None]:
         yield from bps.create(name="hexapod")
         yield from bps.read(hexapod)
         yield from bps.save()
