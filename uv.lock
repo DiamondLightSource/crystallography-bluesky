@@ -1061,7 +1061,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "bluesky", specifier = ">=1.13.1" },
+    { name = "bluesky", specifier = "==1.15.1" },
     { name = "daq-config-server", specifier = ">=1.5.3" },
     { name = "deepdiff" },
     { name = "dls-dodal", git = "https://github.com/DiamondLightSource/dodal.git?rev=main" },
