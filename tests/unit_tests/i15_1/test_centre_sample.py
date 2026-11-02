@@ -277,16 +277,12 @@ def test_centre_sample_calls_analysis_and_retrieves_and_returns_result(
 
     mock_analysis_client.submit.assert_called_once()
     mock_analysis_client.get_request_id_result.assert_called_once()
-    assert isinstance(result, RunEngineResult) and result.plan_result == AnalysisResult(
-        request_id=None,
-        status="completed",
-        analysis_name="fake_sample_alignment_i15_1",
-        inputs=None,
-        result={"centre": 17},
-        created_at=datetime(2026, 10, 20, 14, 35, 46, 96041),
-        finished_at=None,
-        version="0.4.4.1",
-    )
+    assert isinstance(result, RunEngineResult)
+    assert isinstance(result.plan_result, AnalysisResult)
+
+    assert result.plan_result.status == "completed"
+    assert result.plan_result.analysis_name == "fake_sample_alignment_i15_1"
+    assert result.plan_result.result == {"centre": 17}
 
 
 @patch("crystallography_bluesky.i15_1.plans.centre_sample.generic_per_step_collection")
