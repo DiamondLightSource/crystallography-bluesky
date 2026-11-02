@@ -42,6 +42,7 @@ requires-python = ">=3.11"
 dev = [
     "pre-commit",
     "pyright",
+    "pyright[nodejs]",
     "pytest",
     "pytest-cov",
     "ruff",
