@@ -1064,7 +1064,7 @@ requires-dist = [
     { name = "bluesky", specifier = ">=1.16.0" },
     { name = "daq-config-server", specifier = ">=1.5.3" },
     { name = "deepdiff" },
-    { name = "dls-dodal", git = "https://github.com/DiamondLightSource/dodal.git?rev=main" },
+    { name = "dls-dodal", git = "https://github.com/DiamondLightSource/dodal.git?rev=improve_zebra_typing" },
     { name = "h5py" },
     { name = "heliotrapi", specifier = ">=0.3.3" },
     { name = "ispyb" },
@@ -1148,8 +1148,8 @@ wheels = [
 
 [[package]]
 name = "dls-dodal"
-version = "3.0.5.dev4+gb48576c3d"
-source = { git = "https://github.com/DiamondLightSource/dodal.git?rev=main#b48576c3d3352440fdc3e027b2151dc7ba680e72" }
+version = "3.0.7.dev1+g6715d559b"
+source = { git = "https://github.com/DiamondLightSource/dodal.git?rev=improve_zebra_typing#6715d559bd1fd1d89cc2e538832eb038871c3eed" }
 dependencies = [
     { name = "aiofiles" },
     { name = "aiohttp" },
