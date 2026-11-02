@@ -285,7 +285,7 @@ def test_centre_sample_calls_analysis_and_retrieves_and_returns_result(
         result={"centre": 17},
         created_at=datetime(2026, 10, 20, 14, 35, 46, 96041),
         finished_at=None,
-        version="0.3.3",
+        version="0.4.4.1",
     )
 
 

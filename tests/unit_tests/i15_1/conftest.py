@@ -14,8 +14,8 @@ from daq_config_server.models.i15_1.collection_specification import (
 from dodal.devices.beamlines.i15_1.attenuators import FastAttenuator, SlowAttenuator
 from dodal.devices.beamlines.i15_1.beam_health import BeamHealth
 from dodal.devices.beamlines.i15_1.blower import Blower
-from dodal.devices.beamlines.i15_1.hexapod import Hexapod
 from dodal.devices.beamlines.i15_1.cobra import Cobra
+from dodal.devices.beamlines.i15_1.hexapod import Hexapod
 from dodal.devices.beamlines.i15_1.laue import LaueMonochrometer
 from dodal.devices.beamlines.i15_1.robot import Robot
 from dodal.devices.synchrotron import Synchrotron
@@ -280,7 +280,7 @@ def mock_geometry_calibration_config_client(geometry_calibration: dict[str, Any]
 @pytest.fixture
 def blueapi_run_engine():
     # This adds the info the blueapi will add in prod
-    run_engine = RunEngine()
+    run_engine = RunEngine(call_returns_result=True)
     run_engine.md["data_session_directory"] = "/dls/i15-1/data/2026/cm44163-3"
     run_engine.md["scan_file"] = "i15-1-95557"
     return run_engine
