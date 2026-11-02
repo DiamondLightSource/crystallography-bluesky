@@ -103,7 +103,7 @@ def test_wait_on_and_retrieve_result(mock_client_cls: MagicMock):
     callback = TriggerAnalysisCallback("url", "analysis")
     callback.request_id = MagicMock()
 
-    assert callback.wait_on_and_retrieve_result() == 42
+    assert callback.wait_on_and_retrieve_result().result == 42
     mock_client.get_request_id_result.assert_called_once()
 
 

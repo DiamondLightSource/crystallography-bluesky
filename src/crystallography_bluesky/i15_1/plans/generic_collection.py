@@ -9,6 +9,7 @@ from bluesky.utils import MsgGenerator
 from dodal.common import inject
 from dodal.common.beamlines.beamline_utils import get_config_client
 from dodal.devices.beamlines.i15_1.attenuators import FastAttenuator, SlowAttenuator
+from dodal.devices.beamlines.i15_1.hexapod import Hexapod
 from dodal.devices.beamlines.i15_1.laue import LaueMonochrometer
 from dodal.devices.beamlines.i15_1.robot import Robot
 from dodal.devices.synchrotron import Synchrotron
@@ -64,6 +65,7 @@ class GenericCollectionDevices:
     fast_attenuator: FastAttenuator
     slow_attenuator: SlowAttenuator
     synchrotron: Synchrotron
+    hexapod: Hexapod
 
 
 def get_default_baseline_devices(
@@ -75,6 +77,7 @@ def get_default_baseline_devices(
         all_devices.tth,
         all_devices.fast_attenuator,
         all_devices.slow_attenuator,
+        all_devices.hexapod,
     ]
 
 
