@@ -5,16 +5,14 @@ on:
     branches:
       - main
     tags:
-      - '*'
+      - "*"
   pull_request:
 
 jobs:
-
   lint:
     uses: ./.github/workflows/_tox.yml
     with:
       tox: pre-commit,type-checking
-      skip_hooks: local-dodal
 
   test:
     strategy:
@@ -29,7 +27,7 @@ jobs:
 
   dist:
     uses: ./.github/workflows/_dist.yml
-  
+
   release:
     needs: [dist, test]
     if: github.ref_type == 'tag'

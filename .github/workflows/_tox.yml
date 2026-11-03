@@ -5,12 +5,6 @@ on:
         type: string
         description: What to run under tox
         required: true
-      skip_hooks:
-        description: "Comma-separated pre-commit hook IDs to skip"
-        required: false
-        type: string
-        default: ""
-
 
 jobs:
   run:
