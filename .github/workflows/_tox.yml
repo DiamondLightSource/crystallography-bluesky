@@ -18,6 +18,4 @@ jobs:
         uses: astral-sh/setup-uv@v10.0.0
 
       - name: Run tox
-        env:
-          SKIP: ${{ inputs.skip_hooks }}
         run: uv run --locked tox -e ${{ inputs.tox }}
