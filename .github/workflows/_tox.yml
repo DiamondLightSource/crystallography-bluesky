@@ -6,7 +6,6 @@ on:
         description: What to run under tox
         required: true
 
-
 jobs:
   run:
     runs-on: "ubuntu-latest"
