@@ -30,8 +30,8 @@ blueapi_config_path = (
 
 @main.command(name="login")
 def login():
-    os.system(
-        f"blueapi -c {blueapi_config_path} login"  # noqa
+    os.system(  # type: ignore
+        f"blueapi -c {blueapi_config_path} login"
     )
 
 

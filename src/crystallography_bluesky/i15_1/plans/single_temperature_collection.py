@@ -141,7 +141,7 @@ def inner_collection(
     collection_spec: CollectionSpecification,
     time_between_frames: float,
     signals_to_read_per_point: list[StandardReadable] | None = None,
-):
+) -> MsgGenerator[None]:
     if not signals_to_read_per_point:
         signals_to_read_per_point = []
     if tth not in signals_to_read_per_point:
@@ -225,7 +225,7 @@ def data_collection(
     generic_collection_devices: GenericCollectionDevices = devices,
     baseline_devices: list[StandardReadable] | None = None,
     metadata: dict[str, Any] | None = None,
-) -> MsgGenerator:
+) -> MsgGenerator[None]:
 
     minimum_dead_time = 0.0001  # Minimum value independent of timebase
     trigger_pulse_width = 0.0001  # Assumes zebra is set to seconds timebase

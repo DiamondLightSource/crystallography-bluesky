@@ -1,12 +1,14 @@
 import json
 from datetime import datetime
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
 import pytest
-from bluesky.run_engine import RunEngine
+from bluesky.run_engine import RunEngine, RunEngineResult
 from bluesky.simulators import RunEngineSimulator, assert_message_and_return_remaining
+from bluesky.utils import MsgGenerator
 from dodal.devices.motors import XYZStage
 from heliotrapi.models import AnalysisResult
 from ophyd_async.core import get_mock_put
@@ -22,21 +24,14 @@ from crystallography_bluesky.i15_1.plans.generic_collection import (
 
 
 @pytest.fixture
-def blueapi_run_engine():
-    # This adds the info the blueapi will add in prod
-    RE = RunEngine()
-    RE.md["data_session_directory"] = "/dls/i15-1/data/2026/cm44163-3"
-    RE.md["scan_file"] = "i15-1-95557"
-    return RE
-
-
-@pytest.fixture
 def mock_analysis_callback():
     with patch(
         "crystallography_bluesky.i15_1.plans.centre_sample.TriggerAnalysisCallback"
     ) as patch_analysis_callback:
         instance = patch_analysis_callback.return_value
-        instance.wait_on_and_retrieve_result.return_value = {"centre": 15}
+        instance.wait_on_and_retrieve_result.return_value = AnalysisResult(
+            result={"centre": 15}, status="completed", analysis_name="centring"
+        )
         yield patch_analysis_callback
 
 
@@ -50,7 +45,7 @@ def mock_analysis_client():
             analysis_name="fake_sample_alignment_i15_1",
             result={"centre": 17},
             status="completed",
-            created_at=datetime.now(),
+            created_at=datetime(2026, 10, 20, 14, 35, 46, 96041),
         )
 
         yield mock_client
@@ -134,15 +129,18 @@ def test_centre_sample_plan_makes_expected_calls(
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        predicate=lambda msg: msg.command == "read" and msg.obj.name == "robot",
-    )
-    msgs = assert_message_and_return_remaining(
-        msgs,
-        predicate=lambda msg: msg.command == "read" and msg.obj.name == "xtal",
-    )
-    msgs = assert_message_and_return_remaining(
-        msgs,
-        predicate=lambda msg: msg.command == "read" and msg.obj.name == "tth",
+        predicate=lambda msg: (
+            msg.command == "read"
+            and msg.obj is common_collection_devices.robot
+            and msg.args
+            == (
+                common_collection_devices.xtal,
+                common_collection_devices.tth,
+                common_collection_devices.fast_attenuator,
+                common_collection_devices.slow_attenuator,
+                common_collection_devices.hexapod,
+            )
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
@@ -211,15 +209,18 @@ def test_centre_sample_plan_makes_expected_calls(
     )
     msgs = assert_message_and_return_remaining(
         msgs,
-        predicate=lambda msg: msg.command == "read" and msg.obj.name == "robot",
-    )
-    msgs = assert_message_and_return_remaining(
-        msgs,
-        predicate=lambda msg: msg.command == "read" and msg.obj.name == "xtal",
-    )
-    msgs = assert_message_and_return_remaining(
-        msgs,
-        predicate=lambda msg: msg.command == "read" and msg.obj.name == "tth",
+        predicate=lambda msg: (
+            msg.command == "read"
+            and msg.obj is common_collection_devices.robot
+            and msg.args
+            == (
+                common_collection_devices.xtal,
+                common_collection_devices.tth,
+                common_collection_devices.fast_attenuator,
+                common_collection_devices.slow_attenuator,
+                common_collection_devices.hexapod,
+            )
+        ),
     )
     msgs = assert_message_and_return_remaining(
         msgs,
@@ -261,7 +262,7 @@ def test_centre_sample_moved_to_start_before_stage(
 
 
 @patch("crystallography_bluesky.i15_1.plans.centre_sample.generic_per_step_collection")
-def test_centre_sample_calls_analysis_and_retrieves_result(
+def test_centre_sample_calls_analysis_and_retrieves_and_returns_result(
     mock_generic_collection: MagicMock,
     mock_analysis_client: MagicMock,
     hexapod: XYZStage,
@@ -272,16 +273,22 @@ def test_centre_sample_calls_analysis_and_retrieves_result(
     generic_collection_devices.tth = tth
 
     @bpp.run_decorator()
-    def my_plan(*_, **__):
+    def my_plan(*_, **__: Any) -> MsgGenerator[None]:
         yield from bps.null()
 
     mock_generic_collection.side_effect = my_plan
-    blueapi_run_engine(
+    result = blueapi_run_engine(
         centre_sample(10, 20, 10, 0.01, generic_collection_devices, hexapod)
     )
 
     mock_analysis_client.submit.assert_called_once()
     mock_analysis_client.get_request_id_result.assert_called_once()
+    assert isinstance(result, RunEngineResult)
+    assert isinstance(result.plan_result, AnalysisResult)
+
+    assert result.plan_result.status == "completed"
+    assert result.plan_result.analysis_name == "fake_sample_alignment_i15_1"
+    assert result.plan_result.result == {"centre": 17}
 
 
 @patch("crystallography_bluesky.i15_1.plans.centre_sample.generic_per_step_collection")
@@ -296,7 +303,7 @@ def test_centre_sample_moves_to_analysis_result(
     generic_collection_devices.tth = tth
 
     @bpp.run_decorator()
-    def my_plan(*_, **__):
+    def my_plan(*_, **__: Any) -> MsgGenerator[None]:
         yield from bps.null()
 
     mock_generic_collection.side_effect = my_plan
@@ -321,7 +328,7 @@ def test_centre_sample_throws_error_if_result_out_of_bounds_of_scan(
     mock_analysis_client.get_request_id_result.return_value.result = {"centre": 21}
 
     @bpp.run_decorator()
-    def my_plan(*_, **__):
+    def my_plan(*_, **__: Any) -> MsgGenerator[None]:
         yield from bps.null()
 
     mock_generic_collection.side_effect = my_plan

@@ -1,11 +1,12 @@
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 from unittest.mock import MagicMock, patch
 
 import pytest
 from bluesky import RunEngine
 from daq_config_server.client import ConfigClient
+from daq_config_server.models.i15_1 import TemperatureControllerParams
 from daq_config_server.models.i15_1.collection_specification import (
     CollectionSpecification,
     SpecificationPerPosition,
@@ -13,9 +14,10 @@ from daq_config_server.models.i15_1.collection_specification import (
 from dodal.devices.beamlines.i15_1.attenuators import FastAttenuator, SlowAttenuator
 from dodal.devices.beamlines.i15_1.beam_health import BeamHealth
 from dodal.devices.beamlines.i15_1.blower import Blower
+from dodal.devices.beamlines.i15_1.cobra import Cobra
+from dodal.devices.beamlines.i15_1.hexapod import Hexapod
 from dodal.devices.beamlines.i15_1.laue import LaueMonochrometer
 from dodal.devices.beamlines.i15_1.robot import Robot
-from dodal.devices.motors import XYZStage
 from dodal.devices.synchrotron import Synchrotron
 from dodal.devices.tetramm import SummingTetrammDetector
 from dodal.devices.zebra.zebra import Zebra, ZebraMapping
@@ -113,9 +115,9 @@ async def fast_shutter() -> ZebraFastShutter:
 
 
 @pytest.fixture
-async def hexapod() -> XYZStage:
+async def hexapod() -> Hexapod:
     async with init_devices(mock=True):
-        hexapod = XYZStage("")
+        hexapod = Hexapod("", "")
     return hexapod
 
 
@@ -152,6 +154,7 @@ async def common_collection_devices(
     slow_attenuator: SlowAttenuator,
     fast_attenuator: FastAttenuator,
     synchrotron: Synchrotron,
+    hexapod: Hexapod,
 ) -> GenericCollectionDevices:
     return GenericCollectionDevices(
         eiger,
@@ -164,6 +167,7 @@ async def common_collection_devices(
         fast_attenuator,
         slow_attenuator,
         synchrotron,
+        hexapod,
     )
 
 
@@ -171,8 +175,45 @@ async def common_collection_devices(
 async def blower() -> Blower:
     """Blower device for testing."""
     async with init_devices(mock=True):
-        blower = Blower("", "", "", MagicMock(), "")
+        blower = Blower("", "", "", ConfigClient.from_url(""), "")
+
+    def mock_config():
+        return TemperatureControllerParams(
+            beam_position=40.7,
+            safe_position=6.0,
+            settle_time=0,
+            tolerance=5.0,
+            units="C",
+            ramp_units="/min",
+            use_calibration=True,
+            use_fast_cool=None,
+            calibration_file="blower_cal_10_03_2026.txt",
+        )
+
+    blower.get_config = mock_config
     return blower
+
+
+@pytest.fixture
+async def cobra() -> Cobra:
+    async with init_devices(mock=True):
+        cobra = Cobra("", ConfigClient.from_url(""), "")
+
+    def mock_config():
+        return TemperatureControllerParams(
+            beam_position=400.5,
+            safe_position=5.0,
+            settle_time=600,
+            tolerance=5.0,
+            units="K",
+            ramp_units="/h",
+            use_calibration=True,
+            use_fast_cool=True,
+            calibration_file="cobra_calibration_2025-09-11.txt",
+        )
+
+    cobra.get_config = mock_config
+    return cobra
 
 
 @pytest.fixture
@@ -188,7 +229,9 @@ def positions_to_spec():
 
 
 @pytest.fixture
-def mock_collection_spec_config_client(positions_to_spec):
+def mock_collection_spec_config_client(
+    positions_to_spec: dict[int, tuple[float, float, Literal["IN", "OUT"]]],
+):
     mock_client = MagicMock()
     mock_client.get_file_contents = MagicMock(
         return_value=CollectionSpecification(
@@ -202,6 +245,7 @@ def mock_collection_spec_config_client(positions_to_spec):
             }
         )
     )
+
     with patch(
         "crystallography_bluesky.i15_1.plans.single_temperature_collection.get_config_client",
         return_value=mock_client,
@@ -231,3 +275,12 @@ def mock_geometry_calibration_config_client(geometry_calibration: dict[str, Any]
         return_value=mock_client,
     ):
         yield mock_client
+
+
+@pytest.fixture
+def blueapi_run_engine():
+    # This adds the info the blueapi will add in prod
+    run_engine = RunEngine(call_returns_result=True)
+    run_engine.md["data_session_directory"] = "/dls/i15-1/data/2026/cm44163-3"
+    run_engine.md["scan_file"] = "i15-1-95557"
+    return run_engine
