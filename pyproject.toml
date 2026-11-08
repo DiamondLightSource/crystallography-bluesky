@@ -62,6 +62,7 @@ GitHub = "https://github.com/DiamondLightSource/crystallography-bluesky"
 email = "1576793+Mark-Booth@users.noreply.github.com"
 name = "Mark Booth"
 
+<<<<<<< before updating
 [[project.authors]]
 email = "Richard.Dixey@diamond.ac.uk"
 name = "Richard Dixey"
@@ -82,6 +83,11 @@ name = "Jacob Williamson"
 # https://github.com/astral-sh/uv/security/advisories/GHSA-hq85-5cpj-mr62
 required-version = ">=0.13.5"
 constraint-dependencies = ["certifi>=v2026.10.19", "starlette>=1.1.0"]
+=======
+[tool.uv]
+# Minimum uv to fix eMudhra CA cert incident (see discuss.python.org/t/109576)
+required-version = ">=0.13.5"
+>>>>>>> after updating
 
 [tool.setuptools_scm]
 version_file = "src/crystallography_bluesky/_version.py"
