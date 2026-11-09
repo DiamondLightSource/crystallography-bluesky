@@ -1066,7 +1066,7 @@ requires-dist = [
     { name = "deepdiff" },
     { name = "dls-dodal", git = "https://github.com/DiamondLightSource/dodal.git?rev=main" },
     { name = "h5py" },
-    { name = "heliotrapi", specifier = ">=0.3.3" },
+    { name = "heliotrapi", specifier = ">=0.4.1" },
     { name = "ispyb" },
     { name = "matplotlib" },
     { name = "numpy", specifier = ">=2.2.6" },
@@ -1557,7 +1557,7 @@ wheels = [
 
 [[package]]
 name = "heliotrapi"
-version = "0.3.3"
+version = "0.4.4.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "event-model" },
@@ -1576,9 +1576,9 @@ dependencies = [
     { name = "stomp-py" },
     { name = "uvicorn" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/49/98/163ae4261b86db25541eaf93b17d71db977e9abc002e37eb6bb33b1ab147/heliotrapi-0.3.3.tar.gz", hash = "sha256:d47acda8b6030639cccde9a2d9d96f34c2b5b58197ec79215a16fe07a1086f2d", size = 775011, upload-time = "2026-09-29T08:50:03.036Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/01/ec/96ddd939768d323fcb1929a1d6c537bc2a5331fa42d3864bfbea6bb2c36a/heliotrapi-0.4.4.1.tar.gz", hash = "sha256:d13b3a7a909e93c349cb340a2981d820822cf27cde9a6be933431fef53ddc124", size = 789511, upload-time = "2026-10-30T16:12:14.647Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/66/ff/7ee1d5c638a7bff270251bfcd2ad5e23e0801402e890028a23e15c10f4af/heliotrapi-0.3.3-py3-none-any.whl", hash = "sha256:a1a9ceb600acfb9f919283b42d90350f0d43eaf69236d19e6848f03327a2770e", size = 55565, upload-time = "2026-09-29T08:50:01.787Z" },
+    { url = "https://files.pythonhosted.org/packages/65/35/65b77e1569f0c8f184b25d8209c33fbc2889b7ad61373be1c29b65f8c644/heliotrapi-0.4.4.1-py3-none-any.whl", hash = "sha256:b6787f3b51c36e924a42a3e3425a0fcb4358a9d088362b3fe771d69d8ad81bc7", size = 63155, upload-time = "2026-10-30T16:12:13.588Z" },
 ]
 
 [[package]]
