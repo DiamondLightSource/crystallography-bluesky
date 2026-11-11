@@ -114,11 +114,8 @@ def setup_and_teardown_collection(
                 record metadata from. Defaults to None.
     """
 
-    #  Workaround for https://github.com/bluesky/ophyd-async/issues/1288 for now
-    yield from bps.abs_set(devices.fastcs_eiger.detector.ntrigger, frames, wait=True)
-
     eiger_trigger_info = TriggerInfo(
-        collections_per_event=1,
+        collections_per_event=frames,
         number_of_events=1,
         trigger=DetectorTrigger.EXTERNAL_EDGE,
         livetime=exposure_time,
