@@ -28,7 +28,7 @@ from crystallography_bluesky.i15_1.plans.generic_collection import (
 )
 from crystallography_bluesky.i15_1.plans.single_temperature_collection import (
     BASE_COLLECTION_SPEC_FILEPATH,
-    QMAX_OPTIONS,
+    Q_MAX_OPTIONS,
     CollectionSpecPerPosition,
     _calculate_number_of_frames,
     _get_collection_spec_filepath,
@@ -438,7 +438,7 @@ async def test_if_software_read_faster_than_time_between_frames_then_sleep_calle
 
 
 @pytest.mark.parametrize(
-    "qmax, expected_filepath",
+    "q_max, expected_filepath",
     [
         (
             25,
@@ -463,6 +463,6 @@ async def test_if_software_read_faster_than_time_between_frames_then_sleep_calle
     ],
 )
 def test__get_collection_spec_filepath_returns_expected_filepath(
-    qmax: QMAX_OPTIONS | None, expected_filepath: str
+    q_max: Q_MAX_OPTIONS | None, expected_filepath: str
 ):
-    assert _get_collection_spec_filepath(qmax) == expected_filepath
+    assert _get_collection_spec_filepath(q_max) == expected_filepath

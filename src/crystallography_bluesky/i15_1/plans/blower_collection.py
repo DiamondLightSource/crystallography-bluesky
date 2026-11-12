@@ -20,7 +20,7 @@ from crystallography_bluesky.i15_1.plans.setup_zebra import (
     setup_zebra_for_hardware_triggering,
 )
 from crystallography_bluesky.i15_1.plans.single_temperature_collection import (
-    QMAX_OPTIONS,
+    Q_MAX_OPTIONS,
     CollectionSpecPerTemp,
     TemperatureCollectionSpecification,
     get_collection_specification,
@@ -59,7 +59,7 @@ def blower_collection(
     ramp_rate_c_per_min: float,
     settle_time: float,
     scan_type: ScanType,
-    qmax: QMAX_OPTIONS | None = None,
+    q_max: Q_MAX_OPTIONS | None = None,
     generic_collection_devices: GenericCollectionDevices = devices,
     blower: Blower = blower,
     baseline_devices: list[StandardReadable] | None = None,
@@ -71,7 +71,7 @@ def blower_collection(
     yield from bps.abs_set(blower.ramp_rate_c_per_sec, ramp_rate_c_per_min / 60)
 
     single_collection_spec, total_frames = get_collection_specification(
-        time_per_collection, exposure_time_per_frame, qmax
+        time_per_collection, exposure_time_per_frame, q_max
     )
     minimum_dead_time = 0.0001  # Minimum value independent of timebase
     trigger_pulse_width = 0.0001  # Assumes zebra is set to seconds timebase

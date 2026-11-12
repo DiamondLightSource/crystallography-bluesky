@@ -82,7 +82,7 @@ BASE_COLLECTION_SPEC_FILEPATH = (
 
 devices = inject("")
 
-QMAX_OPTIONS = Literal[25, 30, 35, 40]
+Q_MAX_OPTIONS = Literal[25, 30, 35, 40]
 
 
 def _calculate_number_of_frames(
@@ -93,14 +93,14 @@ def _calculate_number_of_frames(
     return ceil((fraction_of_time * full_collection_time) / exposure_time_per_frame)
 
 
-def _get_collection_spec_filepath(qmax: QMAX_OPTIONS | None):
-    return BASE_COLLECTION_SPEC_FILEPATH + (f"_{str(qmax)}" if qmax else "") + ".txt"
+def _get_collection_spec_filepath(q_max: Q_MAX_OPTIONS | None):
+    return BASE_COLLECTION_SPEC_FILEPATH + (f"_{str(q_max)}" if q_max else "") + ".txt"
 
 
 def get_collection_specification(
     full_collection_time: float,
     exposure_time_per_frame: float,
-    qmax: QMAX_OPTIONS | None = None,
+    q_max: Q_MAX_OPTIONS | None = None,
 ) -> tuple[CollectionSpecification, int]:
     """The standard collection specification is defined in configuration but needs
     conversion:
@@ -109,7 +109,7 @@ def get_collection_specification(
      * The transmission is just a float, we want to convert to one of the aperture
        options.
     """
-    filepath = _get_collection_spec_filepath(qmax)
+    filepath = _get_collection_spec_filepath(q_max)
     config_client = get_config_client()
     collection_spec_from_config = config_client.get_file_contents(
         filepath,
@@ -232,7 +232,7 @@ def data_collection(
     full_collection_time: float,
     exposure_time_per_frame: float,
     scan_type: DataCollectionScanType | AuxiliaryScanType,
-    qmax: QMAX_OPTIONS | None = None,
+    q_max: Q_MAX_OPTIONS | None = None,
     generic_collection_devices: GenericCollectionDevices = devices,
     baseline_devices: list[StandardReadable] | None = None,
     metadata: dict[str, Any] | None = None,
@@ -242,7 +242,7 @@ def data_collection(
     trigger_pulse_width = 0.0001  # Assumes zebra is set to seconds timebase
 
     collection_spec, total_frames = get_collection_specification(
-        full_collection_time, exposure_time_per_frame, qmax
+        full_collection_time, exposure_time_per_frame, q_max
     )
 
     first_frames_value = next(iter(collection_spec)).frames
