@@ -110,6 +110,7 @@ def get_collection_specification(
        options.
     """
     filepath = _get_collection_spec_filepath(q_max)
+    LOGGER.info(f"Using collection spec from {filepath}")
     config_client = get_config_client()
     collection_spec_from_config = config_client.get_file_contents(
         filepath,
