@@ -75,11 +75,14 @@ class CollectionSpecPerTemp(BaseModel):
 
 TemperatureCollectionSpecification: TypeAlias = list[CollectionSpecPerTemp]
 
-COLLECTION_SPEC_FILEPATH = (
-    "/dls_sw/i15-1/software/daq_configuration/collection_specification.txt"
+BASE_COLLECTION_SPEC_FILEPATH = (
+    "/dls_sw/i15-1/software/daq_configuration/"
+    + "collection_specifications/collection_specification"
 )
 
 devices = inject("")
+
+QMAX_OPTIONS = Literal[25, 30, 35, 40]
 
 
 def _calculate_number_of_frames(
@@ -90,8 +93,14 @@ def _calculate_number_of_frames(
     return ceil((fraction_of_time * full_collection_time) / exposure_time_per_frame)
 
 
+def _get_collection_spec_filepath(qmax: QMAX_OPTIONS | None):
+    return BASE_COLLECTION_SPEC_FILEPATH + (f"_{str(qmax)}" if qmax else "") + ".txt"
+
+
 def get_collection_specification(
-    full_collection_time: float, exposure_time_per_frame: float
+    full_collection_time: float,
+    exposure_time_per_frame: float,
+    qmax: QMAX_OPTIONS | None = None,
 ) -> tuple[CollectionSpecification, int]:
     """The standard collection specification is defined in configuration but needs
     conversion:
@@ -100,9 +109,10 @@ def get_collection_specification(
      * The transmission is just a float, we want to convert to one of the aperture
        options.
     """
+    filepath = _get_collection_spec_filepath(qmax)
     config_client = get_config_client()
     collection_spec_from_config = config_client.get_file_contents(
-        COLLECTION_SPEC_FILEPATH,
+        filepath,
         CollectionSpecFromConfig,
         reset_cached_result=True,
     ).tth_angle_to_specification
@@ -222,6 +232,7 @@ def data_collection(
     full_collection_time: float,
     exposure_time_per_frame: float,
     scan_type: DataCollectionScanType | AuxiliaryScanType,
+    qmax: QMAX_OPTIONS | None = None,
     generic_collection_devices: GenericCollectionDevices = devices,
     baseline_devices: list[StandardReadable] | None = None,
     metadata: dict[str, Any] | None = None,
@@ -231,7 +242,7 @@ def data_collection(
     trigger_pulse_width = 0.0001  # Assumes zebra is set to seconds timebase
 
     collection_spec, total_frames = get_collection_specification(
-        full_collection_time, exposure_time_per_frame
+        full_collection_time, exposure_time_per_frame, qmax
     )
 
     first_frames_value = next(iter(collection_spec)).frames

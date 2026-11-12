@@ -27,9 +27,11 @@ from crystallography_bluesky.i15_1.plans.generic_collection import (
     GenericCollectionDevices,
 )
 from crystallography_bluesky.i15_1.plans.single_temperature_collection import (
-    COLLECTION_SPEC_FILEPATH,
+    BASE_COLLECTION_SPEC_FILEPATH,
+    QMAX_OPTIONS,
     CollectionSpecPerPosition,
     _calculate_number_of_frames,
+    _get_collection_spec_filepath,
     data_collection,
     inner_collection,
 )
@@ -262,7 +264,9 @@ def test_data_collection_gets_positions_to_fraction_from_config_server(
         )
     )
     mock_collection_spec_config_client.get_file_contents.assert_called_once_with(
-        COLLECTION_SPEC_FILEPATH, CollectionSpecification, reset_cached_result=True
+        BASE_COLLECTION_SPEC_FILEPATH + ".txt",
+        CollectionSpecification,
+        reset_cached_result=True,
     )
 
 
@@ -431,3 +435,34 @@ async def test_if_software_read_faster_than_time_between_frames_then_sleep_calle
     assert not caplog.text
     assert mock_sleep.call_count == 10
     assert mock_sleep.call_args_list == [call(pytest.approx(0.9)) for _ in range(10)]
+
+
+@pytest.mark.parametrize(
+    "qmax, expected_filepath",
+    [
+        (
+            25,
+            "/dls_sw/i15-1/software/daq_configuration/collection_specifications/collection_specification_25.txt",
+        ),
+        (
+            30,
+            "/dls_sw/i15-1/software/daq_configuration/collection_specifications/collection_specification_30.txt",
+        ),
+        (
+            35,
+            "/dls_sw/i15-1/software/daq_configuration/collection_specifications/collection_specification_35.txt",
+        ),
+        (
+            40,
+            "/dls_sw/i15-1/software/daq_configuration/collection_specifications/collection_specification_40.txt",
+        ),
+        (
+            None,
+            "/dls_sw/i15-1/software/daq_configuration/collection_specifications/collection_specification.txt",
+        ),
+    ],
+)
+def test__get_collection_spec_filepath_returns_expected_filepath(
+    qmax: QMAX_OPTIONS | None, expected_filepath: str
+):
+    assert _get_collection_spec_filepath(qmax) == expected_filepath
