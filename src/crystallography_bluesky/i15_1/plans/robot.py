@@ -86,6 +86,16 @@ def robot_unload(
     blower: Blower = blower,
     cobra: Cobra = cobra,
 ) -> MsgGenerator[None]:
+    current_puck = yield from bps.rd(robot.current_sample.puck)
+    current_position = yield from bps.rd(robot.current_sample.position)
+
+    if current_puck == 0 or current_position == 0:
+        LOGGER.warning(
+            "Robot unload called but current sample position set "
+            f"to {current_puck, current_position} so doing nothing."
+        )
+        return
+
     yield from prepare_beamline_for_robot_action(
         blower, cobra, hutch_interlock, gonio_interlock, hexapod
     )

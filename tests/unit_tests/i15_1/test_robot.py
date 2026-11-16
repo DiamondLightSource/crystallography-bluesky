@@ -247,6 +247,25 @@ async def test_robot_load_calls_prepare_beamline(
     mock_prepare.assert_called_once()
 
 
+@pytest.mark.parametrize("puck, position", [(0, 0), (0, 2), (1, 0)])
+@patch("crystallography_bluesky.i15_1.plans.robot.prepare_beamline_for_robot_action")
+async def test_robot_unload_is_noop_when_no_current_sample(
+    mock_prepare: MagicMock,
+    robot: Robot,
+    puck: int,
+    position: int,
+):
+    set_mock_value(robot.current_sample.puck, puck)
+    set_mock_value(robot.current_sample.position, position)
+
+    run_engine = RunEngine()
+    with patch.object(Robot, "set") as mock_set:
+        run_engine(robot_unload(robot=robot))
+
+    mock_prepare.assert_not_called()
+    mock_set.assert_not_called()
+
+
 @patch("crystallography_bluesky.i15_1.plans.robot.prepare_beamline_for_robot_action")
 async def test_robot_unload_calls_prepare_beamline(
     mock_prepare: MagicMock,
@@ -257,6 +276,9 @@ async def test_robot_unload_calls_prepare_beamline(
     blower: Blower,
     cobra: Cobra,
 ):
+    set_mock_value(robot.current_sample.puck, 1)
+    set_mock_value(robot.current_sample.position, 2)
+
     run_engine = RunEngine()
     run_engine(
         robot_unload(
