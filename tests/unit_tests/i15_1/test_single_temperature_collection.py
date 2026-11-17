@@ -442,19 +442,19 @@ async def test_if_software_read_faster_than_time_between_frames_then_sleep_calle
     [
         (
             25,
-            "/dls_sw/i15-1/software/daq_configuration/collection_specifications/collection_specification_25.txt",
+            "/dls_sw/i15-1/software/daq_configuration/collection_specifications/collection_specification_25_q_max.txt",
         ),
         (
             30,
-            "/dls_sw/i15-1/software/daq_configuration/collection_specifications/collection_specification_30.txt",
+            "/dls_sw/i15-1/software/daq_configuration/collection_specifications/collection_specification_30_q_max.txt",
         ),
         (
             35,
-            "/dls_sw/i15-1/software/daq_configuration/collection_specifications/collection_specification_35.txt",
+            "/dls_sw/i15-1/software/daq_configuration/collection_specifications/collection_specification_35_q_max.txt",
         ),
         (
             40,
-            "/dls_sw/i15-1/software/daq_configuration/collection_specifications/collection_specification_40.txt",
+            "/dls_sw/i15-1/software/daq_configuration/collection_specifications/collection_specification_40_q_max.txt",
         ),
         (
             None,

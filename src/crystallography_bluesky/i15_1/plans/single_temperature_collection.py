@@ -94,7 +94,11 @@ def _calculate_number_of_frames(
 
 
 def _get_collection_spec_filepath(q_max: Q_MAX_OPTIONS | None):
-    return BASE_COLLECTION_SPEC_FILEPATH + (f"_{str(q_max)}" if q_max else "") + ".txt"
+    return (
+        BASE_COLLECTION_SPEC_FILEPATH
+        + (f"_{str(q_max)}_q_max" if q_max else "")
+        + ".txt"
+    )
 
 
 def get_collection_specification(
