@@ -1,6 +1,7 @@
 from .bad_plan import bad_plan
 from .blower_collection import blower_collection
 from .centre_sample import centre_sample
+from .eiger_utils import eiger_hv_reset
 from .robot import (
     move_hexapod_to_home_position,
     prepare_beamline_for_robot_action,
@@ -26,4 +27,5 @@ __all__ = [
     "blower_collection",
     "wait_for_beam",
     "bad_plan",
+    "eiger_hv_reset",
 ]
