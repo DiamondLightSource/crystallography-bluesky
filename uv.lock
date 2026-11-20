@@ -1070,7 +1070,7 @@ requires-dist = [
     { name = "ispyb" },
     { name = "matplotlib" },
     { name = "numpy", specifier = ">=2.2.6" },
-    { name = "ophyd-async", extras = ["ca", "pva"], specifier = ">=0.21.2" },
+    { name = "ophyd-async", extras = ["ca", "pva"], git = "https://github.com/bluesky/ophyd-async.git?rev=jw%2Ffix_eiger_trigger_logic" },
     { name = "pandas" },
     { name = "pydantic", specifier = ">=2.0" },
     { name = "pyepics" },
@@ -2724,8 +2724,8 @@ wheels = [
 
 [[package]]
 name = "ophyd-async"
-version = "0.21.3"
-source = { registry = "https://pypi.org/simple" }
+version = "0.21.5.dev1+g3db57169e"
+source = { git = "https://github.com/bluesky/ophyd-async.git?rev=jw%2Ffix_eiger_trigger_logic#3db57169eb9aca21f059f8e31c4e3a07ca69655f" }
 dependencies = [
     { name = "bluesky" },
     { name = "colorlog" },
@@ -2738,10 +2738,6 @@ dependencies = [
     { name = "scanspec" },
     { name = "stamina" },
     { name = "velocity-profile" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/2a/f6/d1878af8283b63c7af960e160122b0c7d565c6440ec6abd900776388dfce/ophyd_async-0.21.3.tar.gz", hash = "sha256:373b60c432366cb12b8ce40f289826ab53708b2b95d0e6be0c75404ea39bf9c0", size = 679766, upload-time = "2026-09-23T08:37:03.14Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/6c/01/626bf9585228485b82f0afb4460413f34d2898c8482fab9bfc200be369e1/ophyd_async-0.21.3-py3-none-any.whl", hash = "sha256:63a868c0c64cd2b349983dcce5a46ba9dcea6c922de1f7a3ea92c717f918afd4", size = 261955, upload-time = "2026-09-23T08:37:01.818Z" },
 ]
 
 [package.optional-dependencies]

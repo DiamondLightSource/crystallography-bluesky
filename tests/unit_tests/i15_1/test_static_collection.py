@@ -79,16 +79,6 @@ def test_static_collection_plan_makes_expected_calls(
             and msg.args[0] == 31  # PC_PULSE
         ),
     )
-
-    msgs = assert_message_and_return_remaining(
-        msgs,
-        predicate=lambda msg: (
-            msg.command == "set"
-            and msg.obj.name == "fastcs-eiger-detector-ntrigger"
-            and msg.args[0] == 10
-        ),
-    )
-
     msgs = assert_message_and_return_remaining(
         msgs,
         predicate=lambda msg: msg.command == "stage" and msg.obj.name == "fastcs-eiger",

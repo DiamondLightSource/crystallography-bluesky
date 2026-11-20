@@ -82,16 +82,6 @@ def test_centre_sample_plan_makes_expected_calls(
             and msg.args == (DEFAULT_CENTRING_TTH_ANGLE,)
         ),
     )
-
-    msgs = assert_message_and_return_remaining(
-        msgs,
-        predicate=lambda msg: (
-            msg.command == "set"
-            and msg.obj.name == "fastcs-eiger-detector-ntrigger"
-            and msg.args[0] == 12
-        ),
-    )
-
     msgs = assert_message_and_return_remaining(
         msgs,
         predicate=lambda msg: msg.command == "stage" and msg.obj.name == "fastcs-eiger",
