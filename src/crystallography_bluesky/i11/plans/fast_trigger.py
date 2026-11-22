@@ -107,13 +107,13 @@ def scan_delta_with_mythen(
 
         LOGGER.info("Kickoff mythen")
         yield from bps.kickoff_all(*detectors, wait=True)
-        LOGGER.info("Waiting for running")
 
         LOGGER.info("Reading delta")
         yield from bps.create(name="delta")
         yield from bps.read(diff_stage)
         yield from bps.save()
 
+        LOGGER.info("Waiting for running")
         for _ in range(4):
             status = yield from bps.rd(mythen.driver.detector_status)
 
@@ -313,7 +313,8 @@ def fast_trigger_mythen(
 
     def _while_collect() -> MsgGenerator[None]:
         LOGGER.info("Reading mercury")
-        for _ in range(1000):
+        timeout = time.monotonic() + number_of_frames * exposure_time + 5
+        while time.monotonic() < timeout:
             yield from bps.create(name="mercury")
             yield from bps.read(mercury_itc)
             yield from bps.read(panda)
