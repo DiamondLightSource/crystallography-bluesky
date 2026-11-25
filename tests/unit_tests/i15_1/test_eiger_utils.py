@@ -31,7 +31,6 @@ def test_eiger_hv_reset_runs_reset_and_waits(eiger):
     assert_message_and_return_remaining(
         msgs,
         predicate=lambda msg: (
-            msg.command == "sleep"
-            and msg.args[0] == time_for_reset_seconds + 60 * minutes_to_wait_after_reset
+            msg.command == "sleep" and msg.args[0] == 60 * minutes_to_wait_after_reset
         ),
     )
