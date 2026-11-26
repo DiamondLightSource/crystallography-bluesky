@@ -45,21 +45,16 @@ class ScanType(StrEnum):
 def scan_delta_with_mythen(
     exposure_time_per_point: float,
     delta_positions: list[float],
-    time_between_frames: float = 20,
     mythen: FastCSMythen3 = fastcs_mythen3,
     diff_stage: DiffractometerStage = diff_stage,
     diff_base: DiffractometerBase = diff_base,
     synchrotron: Synchrotron = synchrotron,
     fast_shutter: FastShutter[OpenCloseUpper] = fast_shutter,
     dcm: DCM = dcm,
+    panda: SimplePanda = panda,
 ) -> MsgGenerator[None]:
     """
-    Scan the delta stage with the Mythen detector.
-
-    Ideally this would trigger the Mythen at each delta position. However, the
-    Mythen currently does not support multiple external triggers. Instead the Mythen
-    will be triggered with enough time between frames for us to move delta.
-
+    Step scan the delta stage with the Mythen detector.
 
     Parameters
     ----------
@@ -67,15 +62,12 @@ def scan_delta_with_mythen(
         Exposure time for each point in seconds.
     delta_positions : list[float]
         List of delta positions to scan.
-    time_between_frames : float, optional
-        Time between frames in seconds, by default 20.
     """
     mythen_trigger_info = TriggerInfo(
         collections_per_event=1,
         number_of_events=len(delta_positions),
-        trigger=DetectorTrigger.INTERNAL,
+        trigger=DetectorTrigger.EXTERNAL_EDGE,
         livetime=exposure_time_per_point,
-        deadtime=time_between_frames,
     )
 
     detectors = [mythen]
@@ -88,14 +80,15 @@ def scan_delta_with_mythen(
     LOGGER.info(f"Baseline devices: {baseline_devices}")
 
     yield from bps.mv(mythen.driver.bitdepth, 32)
+    yield from bps.mv(panda.pulse_width, 0.01)
+    yield from bps.mv(panda._trigger, False)
 
     @bpp.stage_decorator([mythen])
     @bpp.baseline_decorator(baseline_devices)
     @bpp.run_decorator(md=metadata)
     def inner_run() -> MsgGenerator[None]:
-        position = delta_positions[0]
-        LOGGER.info(f"Moving to {position}")
-        yield from bps.mv(diff_stage.delta, position)
+        LOGGER.info(f"Moving to {delta_positions[0]}")
+        yield from bps.abs_set(diff_stage.delta, delta_positions[0], group="det_move")
 
         LOGGER.info("Opening shutter")
         yield from bps.stage(fast_shutter, wait=True)
@@ -108,11 +101,8 @@ def scan_delta_with_mythen(
         LOGGER.info("Kickoff mythen")
         yield from bps.kickoff_all(*detectors, wait=True)
 
-        LOGGER.info("Reading delta")
-        yield from bps.create(name="delta")
-        yield from bps.read(diff_stage)
-        yield from bps.save()
-
+        # We need to wait for running first as the number of frames written does not
+        # reset until during the collection, see https://github.com/DiamondLightSource/crystallography-bluesky/issues/219
         LOGGER.info("Waiting for running")
         for _ in range(4):
             status = yield from bps.rd(mythen.driver.detector_status)
@@ -122,7 +112,20 @@ def scan_delta_with_mythen(
                 break
             yield from bps.sleep(1)
 
-        for idx, position in enumerate(delta_positions[1:]):
+        yield from bps.wait("det_move")
+
+        for idx, position in enumerate(delta_positions):
+            LOGGER.info(f"Moving to {position}")
+            yield from bps.mv(diff_stage.delta, position)
+
+            LOGGER.info("Reading delta")
+            yield from bps.create(name="delta")
+            yield from bps.read(diff_stage)
+            yield from bps.save()
+
+            LOGGER.info("Triggering panda")
+            yield from bps.mv(panda._trigger, True)
+
             LOGGER.info(f"Waiting for frame {idx}")
             for _ in range(int(exposure_time_per_point) + 10):
                 frames_written = yield from bps.rd(mythen.driver.frames_written)
@@ -131,14 +134,10 @@ def scan_delta_with_mythen(
                     LOGGER.info(f"Frame {idx} written")
                     break
                 yield from bps.sleep(1)
+            else:
+                raise Exception(f"Frame {idx} has not been written in sufficient time")
 
-            LOGGER.info(f"Moving to {position}")
-            yield from bps.mv(diff_stage.delta, position)
-
-            LOGGER.info("Reading delta")
-            yield from bps.create(name="delta")
-            yield from bps.read(diff_stage)
-            yield from bps.save()
+            yield from bps.mv(panda._trigger, False)
 
         LOGGER.info("Completing Capture")
         yield from bps.complete_all(*detectors, wait=True)
@@ -173,7 +172,7 @@ def _generic_fast_trigger_mythen(
     mythen_trigger_info = TriggerInfo(
         collections_per_event=1,
         number_of_events=number_of_frames,
-        trigger=DetectorTrigger.EXTERNAL_EDGE,
+        trigger=DetectorTrigger.INTERNAL,  # This is a hack to get round no external_start mode
         livetime=exposure_time,
     )
 
@@ -205,7 +204,6 @@ def _generic_fast_trigger_mythen(
     @bpp.baseline_decorator(baseline_devices)
     @bpp.run_decorator(md=metadata)
     def inner_run() -> MsgGenerator[None]:
-
         LOGGER.info("Preparing mythen")
         yield from bps.prepare(mythen, mythen_trigger_info, wait=True)
 
@@ -236,6 +234,8 @@ def _generic_fast_trigger_mythen(
         LOGGER.info("Collecting")
         yield from bps.collect(*detectors, return_payload=False, name="primary")
 
+        yield from bps.mv(panda._trigger, False)
+
     yield from inner_run()
 
 
@@ -255,7 +255,6 @@ def psu_ramp_with_fast_trigger(
     fast_shutter: FastShutter[OpenCloseUpper] = fast_shutter,
     dcm: DCM = dcm,
 ) -> MsgGenerator[None]:
-
     def _while_collect() -> MsgGenerator[None]:
         yield from bps.create(name="mercury")
         yield from bps.read(mercury_itc)
@@ -310,7 +309,6 @@ def fast_trigger_mythen(
     fast_shutter: FastShutter[OpenCloseUpper] = fast_shutter,
     dcm: DCM = dcm,
 ) -> MsgGenerator[None]:
-
     def _while_collect() -> MsgGenerator[None]:
         LOGGER.info("Reading mercury")
         timeout = time.monotonic() + number_of_frames * exposure_time + 5
