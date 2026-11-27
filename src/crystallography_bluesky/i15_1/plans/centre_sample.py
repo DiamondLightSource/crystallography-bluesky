@@ -9,6 +9,7 @@ from dodal.devices.motors import XYZStage
 from dodal.log import LOGGER
 from heliotrapi.models import AnalysisResult
 from ophyd_async.core import StandardReadable
+from pydantic import BaseModel
 
 from crystallography_bluesky.i15_1.callbacks.analysis_callback import (
     I15_1_ANALYSIS_URL,
@@ -28,6 +29,11 @@ hexapod = inject("hexapod")
 tth = inject("tth")
 
 
+class CentreResult(BaseModel):
+    analysis_result: AnalysisResult | None
+    actual_move: float
+
+
 def centre_sample(
     start_z: float,
     end_z: float,
@@ -38,7 +44,7 @@ def centre_sample(
     baseline_devices: list[StandardReadable] | None = None,
     tth_angle: float = DEFAULT_CENTRING_TTH_ANGLE,
     metadata: dict[str, Any] | None = None,
-) -> MsgGenerator[AnalysisResult]:
+) -> MsgGenerator[CentreResult]:
     """Run a step scan in hexapod z, trigger analysis to find the centre and
     move to the centre that is returned.
 
@@ -94,14 +100,31 @@ def centre_sample(
         analysis_callback,
     )
 
-    analysis_result = analysis_callback.wait_on_and_retrieve_result()
-    centre = analysis_result.result["centre"]
-    assert (start_z < centre < end_z) or (start_z > centre > end_z), (
-        f"Analysis result {centre} is not within the bounds of the scan: "
-        + f"({start_z, end_z})"
-    )
-    LOGGER.info(f"Got {centre} from analysis, moving there now")
+    try:
+        analysis_result = analysis_callback.wait_on_and_retrieve_result()
+    except TimeoutError:
+        destination = 0
+        LOGGER.warning(
+            f"Sample alignment analysis timed out or failed. Moving to {destination} "
+            + "instead"
+        )
+        ret = CentreResult(analysis_result=None, actual_move=destination)
 
-    yield from bps.mv(hexapod.z, centre)
+    else:
+        centre = analysis_result.result["centre"]
+        if not ((start_z < centre < end_z) or (start_z > centre > end_z)):
+            destination = 0
+            LOGGER.error(
+                f"Analysis result {centre} is not within the bounds of the scan: "
+                + f"{start_z, end_z}. Moving to {destination} instead"
+            )
 
-    return analysis_result
+        else:
+            LOGGER.info(f"Got {centre} from analysis, moving there now")
+            destination = centre
+
+        ret = CentreResult(analysis_result=analysis_result, actual_move=destination)
+
+    yield from bps.mv(hexapod.z, destination)
+
+    return ret

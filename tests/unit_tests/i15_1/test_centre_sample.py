@@ -1,4 +1,5 @@
 import json
+import logging
 from datetime import datetime
 from typing import Any
 from unittest.mock import MagicMock, patch
@@ -13,9 +14,11 @@ from dodal.devices.motors import XYZStage
 from heliotrapi.models import AnalysisResult
 from ophyd_async.core import get_mock_put
 from ophyd_async.epics.motor import Motor
+from pytest import LogCaptureFixture
 
 from crystallography_bluesky.i15_1.plans.centre_sample import (
     DEFAULT_CENTRING_TTH_ANGLE,
+    CentreResult,
     centre_sample,
 )
 from crystallography_bluesky.i15_1.plans.generic_collection import (
@@ -284,11 +287,12 @@ def test_centre_sample_calls_analysis_and_retrieves_and_returns_result(
     mock_analysis_client.submit.assert_called_once()
     mock_analysis_client.get_request_id_result.assert_called_once()
     assert isinstance(result, RunEngineResult)
-    assert isinstance(result.plan_result, AnalysisResult)
-
-    assert result.plan_result.status == "completed"
-    assert result.plan_result.analysis_name == "fake_sample_alignment_i15_1"
-    assert result.plan_result.result == {"centre": 17}
+    assert isinstance(result.plan_result, CentreResult)
+    analysis_result = result.plan_result.analysis_result
+    assert analysis_result
+    assert analysis_result.status == "completed"
+    assert analysis_result.analysis_name == "fake_sample_alignment_i15_1"
+    assert analysis_result.result == {"centre": 17}
 
 
 @patch("crystallography_bluesky.i15_1.plans.centre_sample.generic_per_step_collection")
@@ -315,12 +319,13 @@ def test_centre_sample_moves_to_analysis_result(
 
 
 @patch("crystallography_bluesky.i15_1.plans.centre_sample.generic_per_step_collection")
-def test_centre_sample_throws_error_if_result_out_of_bounds_of_scan(
+def test_if_result_out_of_bounds_of_scan_then_centre_sample_warns_and_moves_to_0(
     mock_generic_collection: MagicMock,
     mock_analysis_client: MagicMock,
     hexapod: XYZStage,
     blueapi_run_engine: RunEngine,
     tth: Motor,
+    caplog: LogCaptureFixture,
 ):
     generic_collection_devices = MagicMock()
     generic_collection_devices.tth = tth
@@ -332,7 +337,53 @@ def test_centre_sample_throws_error_if_result_out_of_bounds_of_scan(
         yield from bps.null()
 
     mock_generic_collection.side_effect = my_plan
-    with pytest.raises(AssertionError):
-        blueapi_run_engine(
+    with caplog.at_level(logging.ERROR):
+        result = blueapi_run_engine(
             centre_sample(10, 20, 10, 0.01, generic_collection_devices, hexapod)
         )
+
+    get_mock_put(hexapod.z.user_setpoint).assert_awaited_with(0)
+    assert (
+        "Analysis result 21 is not within the bounds of the scan: (10, 20). "
+        + "Moving to 0 instead"
+        in caplog.text
+    )
+    assert isinstance(result, RunEngineResult)
+    assert isinstance(result.plan_result, CentreResult)
+    assert result.plan_result.analysis_result
+    assert result.plan_result.analysis_result.result == {"centre": 21}
+    assert result.plan_result.actual_move == 0.0
+
+
+@patch("crystallography_bluesky.i15_1.plans.centre_sample.generic_per_step_collection")
+def test_if_analysis_fails_then_centre_sample_warns_and_moves_to_0(
+    mock_generic_collection: MagicMock,
+    mock_analysis_client: MagicMock,
+    hexapod: XYZStage,
+    blueapi_run_engine: RunEngine,
+    tth: Motor,
+    caplog: LogCaptureFixture,
+):
+    generic_collection_devices = MagicMock()
+    generic_collection_devices.tth = tth
+
+    mock_analysis_client.get_request_id_result.side_effect = TimeoutError
+
+    @bpp.run_decorator()
+    def my_plan(*_, **__: Any) -> MsgGenerator[None]:
+        yield from bps.null()
+
+    mock_generic_collection.side_effect = my_plan
+    with caplog.at_level(logging.WARNING):
+        result = blueapi_run_engine(
+            centre_sample(10, 20, 10, 0.01, generic_collection_devices, hexapod)
+        )
+
+    get_mock_put(hexapod.z.user_setpoint).assert_awaited_with(0)
+    assert (
+        "Sample alignment analysis timed out or failed. Moving to 0 instead"
+        in caplog.text
+    )
+    assert isinstance(result, RunEngineResult)
+    assert isinstance(result.plan_result, CentreResult)
+    assert result.plan_result == CentreResult(analysis_result=None, actual_move=0)
