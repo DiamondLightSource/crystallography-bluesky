@@ -1,4 +1,5 @@
 import json
+import logging
 from datetime import datetime
 from typing import Any
 from unittest.mock import MagicMock, patch
@@ -13,6 +14,7 @@ from dodal.devices.motors import XYZStage
 from heliotrapi.models import AnalysisResult
 from ophyd_async.core import get_mock_put
 from ophyd_async.epics.motor import Motor
+from pytest import LogCaptureFixture
 
 from crystallography_bluesky.i15_1.plans.centre_sample import (
     DEFAULT_CENTRING_TTH_ANGLE,
@@ -315,12 +317,13 @@ def test_centre_sample_moves_to_analysis_result(
 
 
 @patch("crystallography_bluesky.i15_1.plans.centre_sample.generic_per_step_collection")
-def test_centre_sample_throws_error_if_result_out_of_bounds_of_scan(
+def test_if_result_out_of_bounds_of_scan_then_centre_sample_warns_and_moves_to_0_(
     mock_generic_collection: MagicMock,
     mock_analysis_client: MagicMock,
     hexapod: XYZStage,
     blueapi_run_engine: RunEngine,
     tth: Motor,
+    caplog: LogCaptureFixture,
 ):
     generic_collection_devices = MagicMock()
     generic_collection_devices.tth = tth
@@ -332,7 +335,45 @@ def test_centre_sample_throws_error_if_result_out_of_bounds_of_scan(
         yield from bps.null()
 
     mock_generic_collection.side_effect = my_plan
-    with pytest.raises(AssertionError):
+    with caplog.at_level(logging.WARNING):
         blueapi_run_engine(
             centre_sample(10, 20, 10, 0.01, generic_collection_devices, hexapod)
         )
+
+    get_mock_put(hexapod.z.user_setpoint).assert_awaited_with(0)
+    assert (
+        "Analysis result 21 is not within the bounds of the scan: (10, 20). "
+        + "Moving to 0 instead"
+        in caplog.text
+    )
+
+
+@patch("crystallography_bluesky.i15_1.plans.centre_sample.generic_per_step_collection")
+def test_if_analysis_fails_then_centre_sample_warns_and_moves_to_0(
+    mock_generic_collection: MagicMock,
+    mock_analysis_client: MagicMock,
+    hexapod: XYZStage,
+    blueapi_run_engine: RunEngine,
+    tth: Motor,
+    caplog: LogCaptureFixture,
+):
+    generic_collection_devices = MagicMock()
+    generic_collection_devices.tth = tth
+
+    mock_analysis_client.get_request_id_result.side_effect = TimeoutError
+
+    @bpp.run_decorator()
+    def my_plan(*_, **__: Any) -> MsgGenerator[None]:
+        yield from bps.null()
+
+    mock_generic_collection.side_effect = my_plan
+    with caplog.at_level(logging.WARNING):
+        blueapi_run_engine(
+            centre_sample(10, 20, 10, 0.01, generic_collection_devices, hexapod)
+        )
+
+    get_mock_put(hexapod.z.user_setpoint).assert_awaited_with(0)
+    assert (
+        "Sample alignment analysis timed out or failed. Moving to 0 instead"
+        in caplog.text
+    )
