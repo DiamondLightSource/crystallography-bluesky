@@ -9,6 +9,7 @@ from dodal.devices.motors import XYZStage
 from dodal.log import LOGGER
 from heliotrapi.models import AnalysisResult
 from ophyd_async.core import StandardReadable
+from pydantic import BaseModel
 
 from crystallography_bluesky.i15_1.callbacks.analysis_callback import (
     I15_1_ANALYSIS_URL,
@@ -28,6 +29,11 @@ hexapod = inject("hexapod")
 tth = inject("tth")
 
 
+class CentreResult(BaseModel):
+    analysis_result: AnalysisResult | None
+    actual_move: float
+
+
 def centre_sample(
     start_z: float,
     end_z: float,
@@ -38,7 +44,7 @@ def centre_sample(
     baseline_devices: list[StandardReadable] | None = None,
     tth_angle: float = DEFAULT_CENTRING_TTH_ANGLE,
     metadata: dict[str, Any] | None = None,
-) -> MsgGenerator[AnalysisResult | str]:
+) -> MsgGenerator[CentreResult]:
     """Run a step scan in hexapod z, trigger analysis to find the centre and
     move to the centre that is returned.
 
@@ -102,13 +108,13 @@ def centre_sample(
             f"Sample alignment analysis timed out or failed. Moving to {destination} "
             + "instead"
         )
-        ret = "Sample alignment analysis timed out or failed"
+        ret = CentreResult(analysis_result=None, actual_move=destination)
+
     else:
-        ret = analysis_result
         centre = analysis_result.result["centre"]
         if not ((start_z < centre < end_z) or (start_z > centre > end_z)):
             destination = 0
-            LOGGER.warning(
+            LOGGER.error(
                 f"Analysis result {centre} is not within the bounds of the scan: "
                 + f"{start_z, end_z}. Moving to {destination} instead"
             )
@@ -116,6 +122,8 @@ def centre_sample(
         else:
             LOGGER.info(f"Got {centre} from analysis, moving there now")
             destination = centre
+
+        ret = CentreResult(analysis_result=analysis_result, actual_move=destination)
 
     yield from bps.mv(hexapod.z, destination)
 
